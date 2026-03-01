@@ -118,20 +118,29 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          logo_url: string | null
+          management_mode: string
           name: string
           owner_id: string
+          website: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          logo_url?: string | null
+          management_mode?: string
           name: string
           owner_id: string
+          website?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          logo_url?: string | null
+          management_mode?: string
           name?: string
           owner_id?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -140,6 +149,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_team_admin: { Args: { _team_id: string }; Returns: boolean }
       is_team_member: { Args: { _team_id: string }; Returns: boolean }
     }
     Enums: {
