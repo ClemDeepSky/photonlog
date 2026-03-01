@@ -98,6 +98,7 @@ const loadAladin = (): Promise<void> => {
 const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const aladinRef = useRef<any>(null);
+  const overlayRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [focalLength, setFocalLength] = useState(450);
   const [sensor, setSensor] = useState("apsc");
@@ -157,9 +158,14 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerPro
   const drawOverlay = useCallback((centerRA: number, centerDEC: number, fovW: number, fovH: number) => {
     if (!aladinRef.current || !window.A) return;
 
+    // Remove previous overlay
+    if (overlayRef.current) {
+      try { overlayRef.current.removeAll(); } catch (_) {}
+    }
+
     const overlay = window.A.graphicOverlay({ color: "#00ff88", lineWidth: 2 });
-    // Remove all existing overlays by adding a new one
     aladinRef.current.addOverlay(overlay);
+    overlayRef.current = overlay;
 
     const drawRect = (cRA: number, cDEC: number, w: number, h: number, angle: number, color: string) => {
       const angleRad = (angle * Math.PI) / 180;
