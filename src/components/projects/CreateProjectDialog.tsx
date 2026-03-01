@@ -6,9 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, Trash2, Plus } from "lucide-react";
+import { Upload, Trash2, Plus, User, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -38,22 +38,22 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [setup, setSetup] = useState("");
+  const [isTeamProject, setIsTeamProject] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [isMosaic, setIsMosaic] = useState(false);
   const [coordMode, setCoordMode] = useState<"manual" | "csv">("manual");
 
-  // Single target coords
   const [ra, setRa] = useState("");
   const [dec, setDec] = useState("");
   const [positionAngle, setPositionAngle] = useState("");
 
-  // Mosaic panes
   const [panes, setPanes] = useState<Pane[]>([]);
 
   const resetForm = () => {
     setName("");
     setDescription("");
     setSetup("");
+    setIsTeamProject(false);
     setSelectedTeamId("");
     setIsMosaic(false);
     setCoordMode("manual");
@@ -65,39 +65,28 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
 
   const parseCsv = (text: string) => {
     const lines = text.split("\n").filter((l) => l.trim());
-    // Skip header line
-    const dataLines = lines.length > 1 && lines[0].toLowerCase().includes("pane") && lines[0].toLowerCase().includes("ra")
-      ? lines.slice(1)
-      : lines;
+    const dataLines =
+      lines.length > 1 && lines[0].toLowerCase().includes("pane") && lines[0].toLowerCase().includes("ra")
+        ? lines.slice(1)
+        : lines;
 
     const parsed: Pane[] = [];
     for (const line of dataLines) {
       if (!line.trim()) continue;
-      // Split by comma but handle values with commas inside quotes
       const parts = line.split(",").map((s) => s.trim());
       if (parts.length < 2) continue;
 
-      // Telescopius CSV format: Pane, RA, DEC, Position Angle (East), Width, Height, Overlap, Row, Column
       const paneNum = parseInt(parts[0].replace(/[^\d]/g, "")) || parsed.length + 1;
-      const raVal = parts[1] || "";
-      const decVal = parts[2] || "";
-      const pa = parseFloat(parts[3]) || null;
-      const width = parseFloat(parts[4]) || null;
-      const height = parseFloat(parts[5]) || null;
-      const overlap = parseFloat(parts[6]?.replace("%", "")) || null;
-      const row = parseInt(parts[7]) || null;
-      const col = parseInt(parts[8]) || null;
-
       parsed.push({
         pane_number: paneNum,
-        ra: raVal,
-        dec: decVal,
-        position_angle: pa,
-        pane_width: width,
-        pane_height: height,
-        overlap,
-        row_index: row,
-        col_index: col,
+        ra: parts[1] || "",
+        dec: parts[2] || "",
+        position_angle: parseFloat(parts[3]) || null,
+        pane_width: parseFloat(parts[4]) || null,
+        pane_height: parseFloat(parts[5]) || null,
+        overlap: parseFloat(parts[6]?.replace("%", "")) || null,
+        row_index: parseInt(parts[7]) || null,
+        col_index: parseInt(parts[8]) || null,
       });
     }
     return parsed;
@@ -114,9 +103,17 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
         toast({ title: "Erreur", description: "Aucune donnée valide trouvée dans le CSV", variant: "destructive" });
         return;
       }
-      setPanes(parsed);
-      setIsMosaic(true);
-      toast({ title: `${parsed.length} panneau(x) importé(s)` });
+      if (parsed.length === 1 && !isMosaic) {
+        // Single image CSV: fill RA/DEC/angle fields
+        setRa(parsed[0].ra);
+        setDec(parsed[0].dec);
+        setPositionAngle(parsed[0].position_angle?.toString() || "");
+        toast({ title: "Coordonnées importées depuis le CSV" });
+      } else {
+        setPanes(parsed);
+        setIsMosaic(true);
+        toast({ title: `${parsed.length} panneau(x) importé(s)` });
+      }
     };
     reader.readAsText(file);
     e.target.value = "";
@@ -125,26 +122,14 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
   const addManualPane = () => {
     setPanes((prev) => [
       ...prev,
-      {
-        pane_number: prev.length + 1,
-        ra: "",
-        dec: "",
-        position_angle: null,
-        pane_width: null,
-        pane_height: null,
-        overlap: null,
-        row_index: null,
-        col_index: null,
-      },
+      { pane_number: prev.length + 1, ra: "", dec: "", position_angle: null, pane_width: null, pane_height: null, overlap: null, row_index: null, col_index: null },
     ]);
   };
 
   const updatePane = (index: number, field: keyof Pane, value: string) => {
     setPanes((prev) =>
       prev.map((p, i) =>
-        i === index
-          ? { ...p, [field]: ["ra", "dec"].includes(field) ? value : (parseFloat(value) || null) }
-          : p
+        i === index ? { ...p, [field]: ["ra", "dec"].includes(field) ? value : (parseFloat(value) || null) } : p
       )
     );
   };
@@ -152,6 +137,8 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
   const removePane = (index: number) => {
     setPanes((prev) => prev.filter((_, i) => i !== index).map((p, i) => ({ ...p, pane_number: i + 1 })));
   };
+
+  const canSubmit = name && (!isTeamProject || selectedTeamId);
 
   const createProject = useMutation({
     mutationFn: async () => {
@@ -162,7 +149,7 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
           description: description || null,
           setup: setup || null,
           target_object: null,
-          team_id: selectedTeamId,
+          team_id: isTeamProject ? selectedTeamId : null,
           created_by: user!.id,
           is_mosaic: isMosaic,
           ra: isMosaic ? null : ra || null,
@@ -173,7 +160,6 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
         .single();
       if (error) throw error;
 
-      // Insert panes for mosaic
       if (isMosaic && panes.length > 0) {
         const { error: panesError } = await supabase.from("project_panes").insert(
           panes.map((p) => ({
@@ -201,26 +187,59 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
   });
 
+  const CsvUploadZone = () => (
+    <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-md p-3 hover:bg-muted/50 transition-colors justify-center">
+      <Upload className="h-4 w-4 text-muted-foreground" />
+      <span className="text-sm text-muted-foreground">Importer un CSV Telescopius</span>
+      <input type="file" accept=".csv,.txt" className="hidden" onChange={handleCsvUpload} />
+    </label>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nouveau projet</DialogTitle>
-          <DialogDescription>Créez un projet d'acquisition lié à une team.</DialogDescription>
+          <DialogDescription>Créez un projet d'acquisition personnel ou de team.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          {/* Team */}
-          <div>
-            <Label>Team</Label>
-            <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
-              <SelectTrigger><SelectValue placeholder="Sélectionner une team" /></SelectTrigger>
-              <SelectContent>
-                {teams?.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Personal / Team toggle */}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={!isTeamProject ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setIsTeamProject(false); setSelectedTeamId(""); }}
+              className="flex-1"
+            >
+              <User className="h-4 w-4 mr-2" /> Personnel
+            </Button>
+            <Button
+              type="button"
+              variant={isTeamProject ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsTeamProject(true)}
+              className="flex-1"
+              disabled={!teams?.length}
+            >
+              <Users className="h-4 w-4 mr-2" /> Team
+            </Button>
           </div>
+
+          {/* Team selector */}
+          {isTeamProject && (
+            <div>
+              <Label>Team</Label>
+              <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                <SelectTrigger><SelectValue placeholder="Sélectionner une team" /></SelectTrigger>
+                <SelectContent>
+                  {teams?.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Name */}
           <div>
@@ -249,28 +268,50 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
 
           {/* Mosaic toggle */}
           <div className="flex items-center gap-3">
-            <Switch checked={isMosaic} onCheckedChange={setIsMosaic} id="mosaic" />
+            <Switch checked={isMosaic} onCheckedChange={(v) => { setIsMosaic(v); if (!v) setPanes([]); }} id="mosaic" />
             <Label htmlFor="mosaic">Projet mosaïque (plusieurs panneaux)</Label>
           </div>
 
-          {/* Coordinates */}
+          {/* Coordinates section */}
           {!isMosaic ? (
             <div className="space-y-3 rounded-md border border-border p-4">
-              <Label className="text-base font-semibold">Coordonnées</Label>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label className="text-xs">RA</Label>
-                  <Input value={ra} onChange={(e) => setRa(e.target.value)} placeholder="00h 42' 44&quot;" />
-                </div>
-                <div>
-                  <Label className="text-xs">DEC</Label>
-                  <Input value={dec} onChange={(e) => setDec(e.target.value)} placeholder="41° 16' 09&quot;" />
-                </div>
-                <div>
-                  <Label className="text-xs">Angle de position</Label>
-                  <Input value={positionAngle} onChange={(e) => setPositionAngle(e.target.value)} placeholder="0" type="number" />
-                </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Coordonnées</Label>
               </div>
+              <Tabs value={coordMode} onValueChange={(v) => setCoordMode(v as "manual" | "csv")}>
+                <TabsList className="h-8 mb-3">
+                  <TabsTrigger value="manual" className="text-xs px-3 h-6">Saisie manuelle</TabsTrigger>
+                  <TabsTrigger value="csv" className="text-xs px-3 h-6">Import CSV</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {coordMode === "manual" ? (
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label className="text-xs">RA</Label>
+                    <Input value={ra} onChange={(e) => setRa(e.target.value)} placeholder="00h 42' 44&quot;" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">DEC</Label>
+                    <Input value={dec} onChange={(e) => setDec(e.target.value)} placeholder="41° 16' 09&quot;" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Angle de position</Label>
+                    <Input value={positionAngle} onChange={(e) => setPositionAngle(e.target.value)} placeholder="0" type="number" />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Importez un CSV Telescopius pour remplir automatiquement les coordonnées.
+                  </p>
+                  <CsvUploadZone />
+                  {ra && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      ✓ Coordonnées chargées : RA {ra} / DEC {dec}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-3 rounded-md border border-border p-4">
@@ -289,11 +330,7 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
                   <p className="text-xs text-muted-foreground">
                     Importez un CSV Telescopius (Pane, RA, DEC, Position Angle, Width, Height, Overlap, Row, Column)
                   </p>
-                  <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-md p-4 hover:bg-muted/50 transition-colors justify-center">
-                    <Upload className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Charger un fichier CSV</span>
-                    <input type="file" accept=".csv,.txt" className="hidden" onChange={handleCsvUpload} />
-                  </label>
+                  <CsvUploadZone />
                 </div>
               ) : (
                 <Button variant="outline" size="sm" onClick={addManualPane}>
@@ -318,29 +355,13 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
                         <TableRow key={idx}>
                           <TableCell className="text-xs font-mono">{pane.pane_number}</TableCell>
                           <TableCell>
-                            <Input
-                              value={pane.ra}
-                              onChange={(e) => updatePane(idx, "ra", e.target.value)}
-                              className="h-7 text-xs"
-                              placeholder="RA"
-                            />
+                            <Input value={pane.ra} onChange={(e) => updatePane(idx, "ra", e.target.value)} className="h-7 text-xs" placeholder="RA" />
                           </TableCell>
                           <TableCell>
-                            <Input
-                              value={pane.dec}
-                              onChange={(e) => updatePane(idx, "dec", e.target.value)}
-                              className="h-7 text-xs"
-                              placeholder="DEC"
-                            />
+                            <Input value={pane.dec} onChange={(e) => updatePane(idx, "dec", e.target.value)} className="h-7 text-xs" placeholder="DEC" />
                           </TableCell>
                           <TableCell>
-                            <Input
-                              value={pane.position_angle?.toString() || ""}
-                              onChange={(e) => updatePane(idx, "position_angle", e.target.value)}
-                              className="h-7 text-xs"
-                              placeholder="°"
-                              type="number"
-                            />
+                            <Input value={pane.position_angle?.toString() || ""} onChange={(e) => updatePane(idx, "position_angle", e.target.value)} className="h-7 text-xs" placeholder="°" type="number" />
                           </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removePane(idx)}>
@@ -358,7 +379,7 @@ const CreateProjectDialog = ({ open, onOpenChange, teams }: CreateProjectDialogP
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-          <Button onClick={() => createProject.mutate()} disabled={!name || !selectedTeamId || createProject.isPending}>
+          <Button onClick={() => createProject.mutate()} disabled={!canSubmit || createProject.isPending}>
             {createProject.isPending ? "Création..." : "Créer"}
           </Button>
         </DialogFooter>
