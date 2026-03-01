@@ -3,28 +3,19 @@ import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, Plus, Telescope, Calendar, Users, Trash2 } from "lucide-react";
+import { FolderOpen, Plus, Telescope, Calendar, Users, Trash2, Grid3X3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 
 const Projects = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [targetObject, setTargetObject] = useState("");
-  const [selectedTeamId, setSelectedTeamId] = useState("");
 
-  // Fetch user's teams
   const { data: teams } = useQuery({
     queryKey: ["my-teams"],
     queryFn: async () => {
@@ -35,7 +26,6 @@ const Projects = () => {
     enabled: !!user,
   });
 
-  // Fetch projects
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
@@ -47,29 +37,6 @@ const Projects = () => {
       return data;
     },
     enabled: !!user,
-  });
-
-  const createProject = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("projects").insert({
-        name,
-        description: description || null,
-        target_object: targetObject || null,
-        team_id: selectedTeamId,
-        created_by: user!.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      setCreateOpen(false);
-      setName("");
-      setDescription("");
-      setTargetObject("");
-      setSelectedTeamId("");
-      toast({ title: "Projet créé avec succès" });
-    },
-    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
   });
 
   const deleteProject = useMutation({
@@ -139,7 +106,12 @@ const Projects = () => {
                         </div>
                       )}
                       <div>
-                        <CardTitle className="text-lg">{project.name}</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {project.name}
+                          {project.is_mosaic && (
+                            <Grid3X3 className="h-3.5 w-3.5 text-muted-foreground" />
+                          )}
+                        </CardTitle>
                         <CardDescription className="text-xs">
                           {(project as any).teams?.name}
                         </CardDescription>
@@ -156,9 +128,9 @@ const Projects = () => {
                   )}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-4">
-                      {project.target_object && (
+                      {project.ra && project.dec && (
                         <span className="flex items-center gap-1">
-                          <Telescope className="h-3 w-3" /> {project.target_object}
+                          <Telescope className="h-3 w-3" /> {project.ra} / {project.dec}
                         </span>
                       )}
                       <span className="flex items-center gap-1">
@@ -192,46 +164,7 @@ const Projects = () => {
         )}
       </motion.div>
 
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nouveau projet</DialogTitle>
-            <DialogDescription>Créez un projet d'acquisition lié à une team.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Team</Label>
-              <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner une team" /></SelectTrigger>
-                <SelectContent>
-                  {teams?.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Nom du projet</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
-            </div>
-            <div>
-              <Label>Objet cible (optionnel)</Label>
-              <Input value={targetObject} onChange={(e) => setTargetObject(e.target.value)} placeholder="Ex: M42, NGC 7000, Jupiter..." />
-            </div>
-            <div>
-              <Label>Description (optionnel)</Label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={3} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Annuler</Button>
-            <Button onClick={() => createProject.mutate()} disabled={!name || !selectedTeamId || createProject.isPending}>
-              {createProject.isPending ? "Création..." : "Créer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} teams={teams} />
     </AppLayout>
   );
 };

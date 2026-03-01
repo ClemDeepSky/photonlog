@@ -41,13 +41,71 @@ export type Database = {
         }
         Relationships: []
       }
+      project_panes: {
+        Row: {
+          col_index: number | null
+          created_at: string
+          dec: string
+          id: string
+          overlap: number | null
+          pane_height: number | null
+          pane_number: number
+          pane_width: number | null
+          position_angle: number | null
+          project_id: string
+          ra: string
+          row_index: number | null
+        }
+        Insert: {
+          col_index?: number | null
+          created_at?: string
+          dec: string
+          id?: string
+          overlap?: number | null
+          pane_height?: number | null
+          pane_number: number
+          pane_width?: number | null
+          position_angle?: number | null
+          project_id: string
+          ra: string
+          row_index?: number | null
+        }
+        Update: {
+          col_index?: number | null
+          created_at?: string
+          dec?: string
+          id?: string
+          overlap?: number | null
+          pane_height?: number | null
+          pane_number?: number
+          pane_width?: number | null
+          position_angle?: number | null
+          project_id?: string
+          ra?: string
+          row_index?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_panes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string
           created_by: string
+          dec: string | null
           description: string | null
           id: string
+          is_mosaic: boolean
           name: string
+          position_angle: number | null
+          ra: string | null
+          setup: string | null
           status: string
           target_object: string | null
           team_id: string
@@ -56,9 +114,14 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          dec?: string | null
           description?: string | null
           id?: string
+          is_mosaic?: boolean
           name: string
+          position_angle?: number | null
+          ra?: string | null
+          setup?: string | null
           status?: string
           target_object?: string | null
           team_id: string
@@ -67,9 +130,14 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          dec?: string | null
           description?: string | null
           id?: string
+          is_mosaic?: boolean
           name?: string
+          position_angle?: number | null
+          ra?: string | null
+          setup?: string | null
           status?: string
           target_object?: string | null
           team_id?: string
