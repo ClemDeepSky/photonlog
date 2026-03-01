@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { Star, Telescope } from "lucide-react";
@@ -14,13 +14,16 @@ import { Star, Telescope } from "lucide-react";
 const Auth = () => {
   const { session, loading } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const redirect = searchParams.get("redirect") || "/dashboard";
+
   if (loading) return null;
-  if (session) return <Navigate to="/dashboard" replace />;
+  if (session) return <Navigate to={redirect} replace />;
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();

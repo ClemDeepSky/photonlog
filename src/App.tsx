@@ -12,6 +12,7 @@ import Teams from "./pages/Teams";
 import Equipment from "./pages/Equipment";
 import Projects from "./pages/Projects";
 import Frames from "./pages/Frames";
+import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/invite/:token" element={<AcceptInvite />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/teams" element={<Teams />} />
