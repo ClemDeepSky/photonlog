@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, Plus, Telescope, Calendar, Users, Trash2, Grid3X3 } from "lucide-react";
+import { FolderOpen, Plus, Telescope, Calendar, Users, Trash2, Grid3X3, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -65,19 +65,13 @@ const Projects = () => {
             <h1 className="text-3xl font-bold">Projets</h1>
             <p className="text-muted-foreground mt-1">Organisez vos projets d'acquisition</p>
           </div>
-          <Button onClick={() => setCreateOpen(true)} disabled={!teams?.length}>
+          <Button onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" /> Nouveau projet
           </Button>
         </div>
 
-        {!teams?.length && (
-          <Card className="border-border/50 border-dashed mb-6">
-            <CardContent className="py-6 text-center text-muted-foreground">
-              <Users className="h-8 w-8 mx-auto mb-2" />
-              Vous devez d'abord créer ou rejoindre une team pour créer un projet.
-            </CardContent>
-          </Card>
-        )}
+
+
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -102,7 +96,7 @@ const Projects = () => {
                         />
                       ) : (
                         <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
-                          <FolderOpen className="h-4 w-4 text-primary" />
+                          {project.team_id ? <FolderOpen className="h-4 w-4 text-primary" /> : <User className="h-4 w-4 text-primary" />}
                         </div>
                       )}
                       <div>
@@ -113,7 +107,7 @@ const Projects = () => {
                           )}
                         </CardTitle>
                         <CardDescription className="text-xs">
-                          {(project as any).teams?.name}
+                          {(project as any).teams?.name || "Personnel"}
                         </CardDescription>
                       </div>
                     </div>

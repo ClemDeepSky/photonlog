@@ -108,7 +108,7 @@ export type Database = {
           setup: string | null
           status: string
           target_object: string | null
-          team_id: string
+          team_id: string | null
           updated_at: string
         }
         Insert: {
@@ -124,7 +124,7 @@ export type Database = {
           setup?: string | null
           status?: string
           target_object?: string | null
-          team_id: string
+          team_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -140,7 +140,7 @@ export type Database = {
           setup?: string | null
           status?: string
           target_object?: string | null
-          team_id?: string
+          team_id?: string | null
           updated_at?: string
         }
         Relationships: [
