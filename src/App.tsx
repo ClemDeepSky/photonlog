@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Teams from "./pages/Teams";
+import TeamDetail from "./pages/TeamDetail";
 import Equipment from "./pages/Equipment";
 import Projects from "./pages/Projects";
 import Frames from "./pages/Frames";
@@ -31,6 +32,7 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/teams" element={<Teams />} />
+              <Route path="/teams/:id" element={<TeamDetail />} />
               <Route path="/equipment" element={<Equipment />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/frames" element={<Frames />} />
