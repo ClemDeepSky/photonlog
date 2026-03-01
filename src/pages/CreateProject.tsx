@@ -379,13 +379,9 @@ const CreateProject = () => {
           {/* Personal / Team toggle */}
           <Card>
             <CardContent className="pt-6 space-y-4">
-              <div className="flex gap-2">
-                <Button type="button" variant={!isTeamProject ? "default" : "outline"} size="sm" onClick={() => { setIsTeamProject(false); setSelectedTeamId(""); }} className="flex-1">
-                  <User className="h-4 w-4 mr-2" /> Personnel
-                </Button>
-                <Button type="button" variant={isTeamProject ? "default" : "outline"} size="sm" onClick={() => setIsTeamProject(true)} className="flex-1" disabled={!teams?.length}>
-                  <Users className="h-4 w-4 mr-2" /> Team
-                </Button>
+              <div className="flex items-center gap-3">
+                <Switch checked={isTeamProject} onCheckedChange={(v) => { setIsTeamProject(v); if (!v) setSelectedTeamId(""); }} id="team-toggle" disabled={!teams?.length} />
+                <Label htmlFor="team-toggle">Projet de team</Label>
               </div>
 
               {isTeamProject && (
