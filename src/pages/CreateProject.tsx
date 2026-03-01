@@ -12,7 +12,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Trash2, Plus, ArrowLeft, Camera } from "lucide-react";
+import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
+import SkyViewer from "@/components/projects/SkyViewer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -421,6 +422,26 @@ const CreateProject = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Sky viewer */}
+          {(ra || dec || (isMosaic && panes.length > 0)) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MapPin className="h-5 w-5" /> Cadrage
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SkyViewer
+                  ra={ra}
+                  dec={dec}
+                  positionAngle={parseFloat(positionAngle) || 0}
+                  panes={isMosaic ? panes.map((p) => ({ ra: p.ra, dec: p.dec, position_angle: p.position_angle })) : undefined}
+                  isMosaic={isMosaic}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Acquisitions — global list */}
           <Card>
