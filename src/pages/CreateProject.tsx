@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Trash2, Plus, User, Users, ArrowLeft, Camera } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Upload, Trash2, Plus, ArrowLeft, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -57,10 +58,13 @@ const CreateProject = () => {
 
   const [panes, setPanes] = useState<Pane[]>([]);
 
-  // Acquisitions: for non-mosaic, key "main"; for mosaic, key = pane index
-  const [acquisitions, setAcquisitions] = useState<Record<string, Acquisition[]>>({
-    main: [{ filter: "L", exposure_duration: 300, quantity: 10, bin: 1 }],
-  });
+  // Single global acquisition list (applies to all panes in mosaic mode)
+  const [acquisitions, setAcquisitions] = useState<Acquisition[]>([
+    { filter: "L", exposure_duration: 300, quantity: 10, bin: 1 },
+  ]);
+
+  // Per-pane disabled acquisitions: paneIndex -> set of acquisition indices that are disabled
+  const [disabledAcquisitions, setDisabledAcquisitions] = useState<Record<number, Set<number>>>({});
 
   const { data: teams } = useQuery({
     queryKey: ["my-teams"],
@@ -78,7 +82,6 @@ const CreateProject = () => {
       lines.length > 1 && lines[0].toLowerCase().includes("pane") && lines[0].toLowerCase().includes("ra")
         ? lines.slice(1)
         : lines;
-
     const parsed: Pane[] = [];
     for (const line of dataLines) {
       if (!line.trim()) continue;
@@ -86,15 +89,10 @@ const CreateProject = () => {
       if (parts.length < 2) continue;
       const paneNum = parseInt(parts[0].replace(/[^\d]/g, "")) || parsed.length + 1;
       parsed.push({
-        pane_number: paneNum,
-        ra: parts[1] || "",
-        dec: parts[2] || "",
-        position_angle: parseFloat(parts[3]) || null,
-        pane_width: parseFloat(parts[4]) || null,
-        pane_height: parseFloat(parts[5]) || null,
-        overlap: parseFloat(parts[6]?.replace("%", "")) || null,
-        row_index: parseInt(parts[7]) || null,
-        col_index: parseInt(parts[8]) || null,
+        pane_number: paneNum, ra: parts[1] || "", dec: parts[2] || "",
+        position_angle: parseFloat(parts[3]) || null, pane_width: parseFloat(parts[4]) || null,
+        pane_height: parseFloat(parts[5]) || null, overlap: parseFloat(parts[6]?.replace("%", "")) || null,
+        row_index: parseInt(parts[7]) || null, col_index: parseInt(parts[8]) || null,
       });
     }
     return parsed;
@@ -112,19 +110,11 @@ const CreateProject = () => {
         return;
       }
       if (parsed.length === 1 && !isMosaic) {
-        setRa(parsed[0].ra);
-        setDec(parsed[0].dec);
+        setRa(parsed[0].ra); setDec(parsed[0].dec);
         setPositionAngle(parsed[0].position_angle?.toString() || "");
         toast({ title: "Coordonnées importées depuis le CSV" });
       } else {
-        setPanes(parsed);
-        setIsMosaic(true);
-        // Initialize acquisitions for each pane
-        const newAcq: Record<string, Acquisition[]> = {};
-        parsed.forEach((_, i) => {
-          newAcq[`pane_${i}`] = [{ filter: "L", exposure_duration: 300, quantity: 10, bin: 1 }];
-        });
-        setAcquisitions(newAcq);
+        setPanes(parsed); setIsMosaic(true); setDisabledAcquisitions({});
         toast({ title: `${parsed.length} panneau(x) importé(s)` });
       }
     };
@@ -133,15 +123,10 @@ const CreateProject = () => {
   };
 
   const addManualPane = () => {
-    const newIndex = panes.length;
     setPanes((prev) => [
       ...prev,
       { pane_number: prev.length + 1, ra: "", dec: "", position_angle: null, pane_width: null, pane_height: null, overlap: null, row_index: null, col_index: null },
     ]);
-    setAcquisitions((prev) => ({
-      ...prev,
-      [`pane_${newIndex}`]: [{ filter: "L", exposure_duration: 300, quantity: 10, bin: 1 }],
-    }));
   };
 
   const updatePane = (index: number, field: keyof Pane, value: string) => {
@@ -154,117 +139,59 @@ const CreateProject = () => {
 
   const removePane = (index: number) => {
     setPanes((prev) => prev.filter((_, i) => i !== index).map((p, i) => ({ ...p, pane_number: i + 1 })));
-    setAcquisitions((prev) => {
-      const newAcq: Record<string, Acquisition[]> = {};
-      const remaining = Object.entries(prev).filter(([k]) => k !== `pane_${index}`);
-      remaining.forEach(([k, v], i) => {
-        if (k === "main") newAcq["main"] = v;
-        else newAcq[`pane_${i}`] = v;
+    setDisabledAcquisitions((prev) => {
+      const next: Record<number, Set<number>> = {};
+      Object.entries(prev).forEach(([k, v]) => {
+        const ki = parseInt(k);
+        if (ki < index) next[ki] = v;
+        else if (ki > index) next[ki - 1] = v;
       });
-      return newAcq;
+      return next;
     });
   };
 
   // Acquisition helpers
-  const getAcqKey = (paneIndex?: number) => (paneIndex !== undefined ? `pane_${paneIndex}` : "main");
-
-  const addAcquisition = (key: string) => {
-    setAcquisitions((prev) => ({
-      ...prev,
-      [key]: [...(prev[key] || []), { filter: "L", exposure_duration: 300, quantity: 10, bin: 1 }],
-    }));
+  const addAcquisition = () => {
+    setAcquisitions((prev) => [...prev, { filter: "L", exposure_duration: 300, quantity: 10, bin: 1 }]);
   };
 
-  const updateAcquisition = (key: string, idx: number, field: keyof Acquisition, value: string) => {
-    setAcquisitions((prev) => ({
-      ...prev,
-      [key]: prev[key].map((a, i) =>
-        i === idx ? { ...a, [field]: field === "filter" ? value : (parseFloat(value) || 0) } : a
-      ),
-    }));
-  };
-
-  const removeAcquisition = (key: string, idx: number) => {
-    setAcquisitions((prev) => ({
-      ...prev,
-      [key]: prev[key].filter((_, i) => i !== idx),
-    }));
-  };
-
-  const AcquisitionTable = ({ acqKey, label }: { acqKey: string; label?: string }) => {
-    const items = acquisitions[acqKey] || [];
-    return (
-      <div className="space-y-2">
-        {label && <p className="text-sm font-medium text-muted-foreground">{label}</p>}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Filtre</TableHead>
-              <TableHead>Exposition (s)</TableHead>
-              <TableHead>Quantité min.</TableHead>
-              <TableHead>Bin</TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((acq, idx) => (
-              <TableRow key={idx}>
-                <TableCell>
-                  <Select value={acq.filter} onValueChange={(v) => updateAcquisition(acqKey, idx, "filter", v)}>
-                    <SelectTrigger className="h-8 w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FILTERS.map((f) => (
-                        <SelectItem key={f} value={f}>{f}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={acq.exposure_duration}
-                    onChange={(e) => updateAcquisition(acqKey, idx, "exposure_duration", e.target.value)}
-                    className="h-8 w-24"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={acq.quantity}
-                    onChange={(e) => updateAcquisition(acqKey, idx, "quantity", e.target.value)}
-                    className="h-8 w-20"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Select value={acq.bin.toString()} onValueChange={(v) => updateAcquisition(acqKey, idx, "bin", v)}>
-                    <SelectTrigger className="h-8 w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4].map((b) => (
-                        <SelectItem key={b} value={b.toString()}>{b}x{b}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  {items.length > 1 && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeAcquisition(acqKey, idx)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <Button variant="outline" size="sm" onClick={() => addAcquisition(acqKey)}>
-          <Plus className="h-3 w-3 mr-1" /> Ajouter un filtre
-        </Button>
-      </div>
+  const updateAcquisition = (idx: number, field: keyof Acquisition, value: string) => {
+    setAcquisitions((prev) =>
+      prev.map((a, i) => (i === idx ? { ...a, [field]: field === "filter" ? value : (parseFloat(value) || 0) } : a))
     );
+  };
+
+  const removeAcquisition = (idx: number) => {
+    setAcquisitions((prev) => prev.filter((_, i) => i !== idx));
+    // Clean up disabled references
+    setDisabledAcquisitions((prev) => {
+      const next: Record<number, Set<number>> = {};
+      Object.entries(prev).forEach(([k, v]) => {
+        const newSet = new Set<number>();
+        v.forEach((ai) => {
+          if (ai < idx) newSet.add(ai);
+          else if (ai > idx) newSet.add(ai - 1);
+        });
+        if (newSet.size > 0) next[parseInt(k)] = newSet;
+      });
+      return next;
+    });
+  };
+
+  const togglePaneAcquisition = (paneIndex: number, acqIndex: number) => {
+    setDisabledAcquisitions((prev) => {
+      const next = { ...prev };
+      const set = new Set(next[paneIndex] || []);
+      if (set.has(acqIndex)) set.delete(acqIndex);
+      else set.add(acqIndex);
+      if (set.size === 0) delete next[paneIndex];
+      else next[paneIndex] = set;
+      return next;
+    });
+  };
+
+  const isPaneAcqEnabled = (paneIndex: number, acqIndex: number) => {
+    return !(disabledAcquisitions[paneIndex]?.has(acqIndex));
   };
 
   const canSubmit = name && (!isTeamProject || selectedTeamId);
@@ -274,19 +201,12 @@ const CreateProject = () => {
       const { data, error } = await supabase
         .from("projects")
         .insert({
-          name,
-          description: description || null,
-          setup: setup || null,
-          target_object: null,
-          team_id: isTeamProject ? selectedTeamId : null,
-          created_by: user!.id,
-          is_mosaic: isMosaic,
-          ra: isMosaic ? null : ra || null,
-          dec: isMosaic ? null : dec || null,
+          name, description: description || null, setup: setup || null, target_object: null,
+          team_id: isTeamProject ? selectedTeamId : null, created_by: user!.id, is_mosaic: isMosaic,
+          ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
           position_angle: isMosaic ? null : (parseFloat(positionAngle) || null),
         })
-        .select("id")
-        .single();
+        .select("id").single();
       if (error) throw error;
 
       const projectId = data.id;
@@ -294,34 +214,24 @@ const CreateProject = () => {
       if (isMosaic && panes.length > 0) {
         const { data: panesData, error: panesError } = await supabase.from("project_panes").insert(
           panes.map((p) => ({
-            project_id: projectId,
-            pane_number: p.pane_number,
-            ra: p.ra,
-            dec: p.dec,
-            position_angle: p.position_angle,
-            pane_width: p.pane_width,
-            pane_height: p.pane_height,
-            overlap: p.overlap,
-            row_index: p.row_index,
-            col_index: p.col_index,
+            project_id: projectId, pane_number: p.pane_number, ra: p.ra, dec: p.dec,
+            position_angle: p.position_angle, pane_width: p.pane_width, pane_height: p.pane_height,
+            overlap: p.overlap, row_index: p.row_index, col_index: p.col_index,
           }))
         ).select("id");
         if (panesError) throw panesError;
 
-        // Insert acquisitions per pane
         const acqInserts: any[] = [];
-        panes.forEach((_, i) => {
-          const key = `pane_${i}`;
-          const paneId = panesData?.[i]?.id;
-          (acquisitions[key] || []).forEach((acq) => {
-            acqInserts.push({
-              project_id: projectId,
-              pane_id: paneId || null,
-              filter: acq.filter,
-              exposure_duration: acq.exposure_duration,
-              quantity: acq.quantity,
-              bin: acq.bin,
-            });
+        panes.forEach((_, paneIdx) => {
+          const paneId = panesData?.[paneIdx]?.id;
+          acquisitions.forEach((acq, acqIdx) => {
+            if (isPaneAcqEnabled(paneIdx, acqIdx)) {
+              acqInserts.push({
+                project_id: projectId, pane_id: paneId || null,
+                filter: acq.filter, exposure_duration: acq.exposure_duration,
+                quantity: acq.quantity, bin: acq.bin,
+              });
+            }
           });
         });
         if (acqInserts.length > 0) {
@@ -329,17 +239,12 @@ const CreateProject = () => {
           if (acqError) throw acqError;
         }
       } else {
-        // Non-mosaic: insert main acquisitions
-        const mainAcq = acquisitions["main"] || [];
-        if (mainAcq.length > 0) {
+        if (acquisitions.length > 0) {
           const { error: acqError } = await supabase.from("project_acquisitions").insert(
-            mainAcq.map((acq) => ({
-              project_id: projectId,
-              pane_id: null,
-              filter: acq.filter,
-              exposure_duration: acq.exposure_duration,
-              quantity: acq.quantity,
-              bin: acq.bin,
+            acquisitions.map((acq) => ({
+              project_id: projectId, pane_id: null,
+              filter: acq.filter, exposure_duration: acq.exposure_duration,
+              quantity: acq.quantity, bin: acq.bin,
             }))
           );
           if (acqError) throw acqError;
@@ -376,7 +281,7 @@ const CreateProject = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Personal / Team toggle */}
+          {/* General info */}
           <Card>
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center gap-3">
@@ -390,9 +295,7 @@ const CreateProject = () => {
                   <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
                     <SelectTrigger><SelectValue placeholder="Sélectionner une team" /></SelectTrigger>
                     <SelectContent>
-                      {teams?.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                      ))}
+                      {teams?.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -402,7 +305,6 @@ const CreateProject = () => {
                 <Label>Nom du projet</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
               </div>
-
               <div>
                 <Label>Setup</Label>
                 <Select value={setup} onValueChange={setSetup}>
@@ -414,7 +316,6 @@ const CreateProject = () => {
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <Label>Description (optionnel)</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2} />
@@ -422,26 +323,20 @@ const CreateProject = () => {
             </CardContent>
           </Card>
 
-          {/* Mosaic toggle */}
+          {/* Coordinates / Mosaic */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-4">
                 <Switch checked={isMosaic} onCheckedChange={(v) => {
                   setIsMosaic(v);
-                  if (!v) {
-                    setPanes([]);
-                    setAcquisitions({ main: acquisitions["main"] || [{ filter: "L", exposure_duration: 300, quantity: 10, bin: 1 }] });
-                  }
+                  if (!v) { setPanes([]); setDisabledAcquisitions({}); }
                 }} id="mosaic" />
                 <Label htmlFor="mosaic">Projet mosaïque (plusieurs panneaux)</Label>
               </div>
 
-              {/* Coordinates section */}
               {!isMosaic ? (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-base font-semibold">Coordonnées</Label>
-                  </div>
+                  <Label className="text-base font-semibold">Coordonnées</Label>
                   <Tabs value={coordMode} onValueChange={(v) => setCoordMode(v as "manual" | "csv")}>
                     <TabsList className="h-8 mb-3">
                       <TabsTrigger value="manual" className="text-xs px-3 h-6">Saisie manuelle</TabsTrigger>
@@ -482,7 +377,6 @@ const CreateProject = () => {
                       </TabsList>
                     </Tabs>
                   </div>
-
                   {coordMode === "csv" ? (
                     <div className="space-y-2">
                       <p className="text-xs text-muted-foreground">Importez un CSV Telescopius (Pane, RA, DEC, Position Angle, Width, Height, Overlap, Row, Column)</p>
@@ -493,7 +387,6 @@ const CreateProject = () => {
                       <Plus className="h-3 w-3 mr-1" /> Ajouter un panneau
                     </Button>
                   )}
-
                   {panes.length > 0 && (
                     <div className="max-h-48 overflow-y-auto">
                       <Table>
@@ -510,15 +403,9 @@ const CreateProject = () => {
                           {panes.map((pane, idx) => (
                             <TableRow key={idx}>
                               <TableCell className="text-xs font-mono">{pane.pane_number}</TableCell>
-                              <TableCell>
-                                <Input value={pane.ra} onChange={(e) => updatePane(idx, "ra", e.target.value)} className="h-7 text-xs" placeholder="RA" />
-                              </TableCell>
-                              <TableCell>
-                                <Input value={pane.dec} onChange={(e) => updatePane(idx, "dec", e.target.value)} className="h-7 text-xs" placeholder="DEC" />
-                              </TableCell>
-                              <TableCell>
-                                <Input value={pane.position_angle?.toString() || ""} onChange={(e) => updatePane(idx, "position_angle", e.target.value)} className="h-7 text-xs" placeholder="°" type="number" />
-                              </TableCell>
+                              <TableCell><Input value={pane.ra} onChange={(e) => updatePane(idx, "ra", e.target.value)} className="h-7 text-xs" placeholder="RA" /></TableCell>
+                              <TableCell><Input value={pane.dec} onChange={(e) => updatePane(idx, "dec", e.target.value)} className="h-7 text-xs" placeholder="DEC" /></TableCell>
+                              <TableCell><Input value={pane.position_angle?.toString() || ""} onChange={(e) => updatePane(idx, "position_angle", e.target.value)} className="h-7 text-xs" placeholder="°" type="number" /></TableCell>
                               <TableCell>
                                 <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removePane(idx)}>
                                   <Trash2 className="h-3 w-3" />
@@ -535,30 +422,108 @@ const CreateProject = () => {
             </CardContent>
           </Card>
 
-          {/* Acquisition settings */}
+          {/* Acquisitions — global list */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Camera className="h-5 w-5" /> Acquisitions
               </CardTitle>
+              {isMosaic && panes.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Les filtres s'appliquent à tous les panneaux par défaut. Vous pouvez les désactiver individuellement par panneau ci-dessous.
+                </p>
+              )}
             </CardHeader>
             <CardContent className="space-y-6">
-              {!isMosaic ? (
-                <AcquisitionTable acqKey="main" />
-              ) : (
-                panes.length > 0 ? (
-                  panes.map((pane, idx) => (
-                    <div key={idx} className="space-y-2 border border-border rounded-md p-4">
-                      <p className="text-sm font-semibold">
-                        Panneau {pane.pane_number}
-                        {pane.ra && <span className="text-muted-foreground font-normal ml-2">— {pane.ra} / {pane.dec}</span>}
-                      </p>
-                      <AcquisitionTable acqKey={getAcqKey(idx)} />
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">Ajoutez des panneaux pour configurer les acquisitions.</p>
-                )
+              {/* Global acquisition table */}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Filtre</TableHead>
+                    <TableHead>Exposition (s)</TableHead>
+                    <TableHead>Quantité min.</TableHead>
+                    <TableHead>Bin</TableHead>
+                    <TableHead className="w-10"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {acquisitions.map((acq, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>
+                        <Select value={acq.filter} onValueChange={(v) => updateAcquisition(idx, "filter", v)}>
+                          <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {FILTERS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input type="number" value={acq.exposure_duration} onChange={(e) => updateAcquisition(idx, "exposure_duration", e.target.value)} className="h-8 w-24" />
+                      </TableCell>
+                      <TableCell>
+                        <Input type="number" value={acq.quantity} onChange={(e) => updateAcquisition(idx, "quantity", e.target.value)} className="h-8 w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <Select value={acq.bin.toString()} onValueChange={(v) => updateAcquisition(idx, "bin", v)}>
+                          <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {[1, 2, 3, 4].map((b) => <SelectItem key={b} value={b.toString()}>{b}x{b}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        {acquisitions.length > 1 && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeAcquisition(idx)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Button variant="outline" size="sm" onClick={addAcquisition}>
+                <Plus className="h-3 w-3 mr-1" /> Ajouter un filtre
+              </Button>
+
+              {/* Per-pane overrides for mosaic */}
+              {isMosaic && panes.length > 0 && acquisitions.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-border">
+                  <Label className="text-sm font-semibold">Filtres par panneau</Label>
+                  <p className="text-xs text-muted-foreground">Décochez un filtre pour le désactiver sur un panneau spécifique.</p>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-24">Panneau</TableHead>
+                          {acquisitions.map((acq, idx) => (
+                            <TableHead key={idx} className="text-center min-w-[60px]">
+                              {acq.filter}
+                              <span className="block text-[10px] font-normal text-muted-foreground">{acq.exposure_duration}s</span>
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {panes.map((pane, paneIdx) => (
+                          <TableRow key={paneIdx}>
+                            <TableCell className="text-xs font-mono">
+                              Pane {pane.pane_number}
+                            </TableCell>
+                            {acquisitions.map((_, acqIdx) => (
+                              <TableCell key={acqIdx} className="text-center">
+                                <Checkbox
+                                  checked={isPaneAcqEnabled(paneIdx, acqIdx)}
+                                  onCheckedChange={() => togglePaneAcquisition(paneIdx, acqIdx)}
+                                />
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
