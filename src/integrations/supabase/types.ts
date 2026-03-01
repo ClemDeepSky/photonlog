@@ -41,6 +41,54 @@ export type Database = {
         }
         Relationships: []
       }
+      project_acquisitions: {
+        Row: {
+          bin: number
+          created_at: string
+          exposure_duration: number
+          filter: string
+          id: string
+          pane_id: string | null
+          project_id: string
+          quantity: number
+        }
+        Insert: {
+          bin?: number
+          created_at?: string
+          exposure_duration?: number
+          filter?: string
+          id?: string
+          pane_id?: string | null
+          project_id: string
+          quantity?: number
+        }
+        Update: {
+          bin?: number
+          created_at?: string
+          exposure_duration?: number
+          filter?: string
+          id?: string
+          pane_id?: string | null
+          project_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_acquisitions_pane_id_fkey"
+            columns: ["pane_id"]
+            isOneToOne: false
+            referencedRelation: "project_panes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_acquisitions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_panes: {
         Row: {
           col_index: number | null

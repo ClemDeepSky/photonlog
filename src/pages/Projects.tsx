@@ -1,30 +1,19 @@
-import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, Plus, Telescope, Calendar, Users, Trash2, Grid3X3, User } from "lucide-react";
+import { FolderOpen, Plus, Telescope, Calendar, Trash2, Grid3X3, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import CreateProjectDialog from "@/components/projects/CreateProjectDialog";
 
 const Projects = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [createOpen, setCreateOpen] = useState(false);
-
-  const { data: teams } = useQuery({
-    queryKey: ["my-teams"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("teams").select("id, name, logo_url");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
+  const navigate = useNavigate();
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
@@ -65,13 +54,10 @@ const Projects = () => {
             <h1 className="text-3xl font-bold">Projets</h1>
             <p className="text-muted-foreground mt-1">Organisez vos projets d'acquisition</p>
           </div>
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button onClick={() => navigate("/projects/new")}>
             <Plus className="h-4 w-4 mr-2" /> Nouveau projet
           </Button>
         </div>
-
-
-
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -89,11 +75,7 @@ const Projects = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       {(project as any).teams?.logo_url ? (
-                        <img
-                          src={(project as any).teams.logo_url}
-                          alt="Team logo"
-                          className="h-8 w-8 rounded-md object-cover"
-                        />
+                        <img src={(project as any).teams.logo_url} alt="Team logo" className="h-8 w-8 rounded-md object-cover" />
                       ) : (
                         <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
                           {project.team_id ? <FolderOpen className="h-4 w-4 text-primary" /> : <User className="h-4 w-4 text-primary" />}
@@ -102,9 +84,7 @@ const Projects = () => {
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2">
                           {project.name}
-                          {project.is_mosaic && (
-                            <Grid3X3 className="h-3.5 w-3.5 text-muted-foreground" />
-                          )}
+                          {project.is_mosaic && <Grid3X3 className="h-3.5 w-3.5 text-muted-foreground" />}
                         </CardTitle>
                         <CardDescription className="text-xs">
                           {(project as any).teams?.name || "Personnel"}
@@ -133,8 +113,7 @@ const Projects = () => {
                       </span>
                     </div>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="ghost" size="icon"
                       className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
                       onClick={() => deleteProject.mutate(project.id)}
                     >
@@ -150,15 +129,16 @@ const Projects = () => {
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <FolderOpen className="h-16 w-16 text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold mb-2">Aucun projet</h2>
-              <p className="text-muted-foreground max-w-md">
+              <p className="text-muted-foreground max-w-md mb-4">
                 Créez votre premier projet d'acquisition pour commencer à organiser vos sessions.
               </p>
+              <Button onClick={() => navigate("/projects/new")}>
+                <Plus className="h-4 w-4 mr-2" /> Créer un projet
+              </Button>
             </CardContent>
           </Card>
         )}
       </motion.div>
-
-      <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} teams={teams} />
     </AppLayout>
   );
 };
