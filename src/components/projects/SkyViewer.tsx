@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,89 +24,100 @@ const SENSORS: Record<string, { width: number; height: number; label: string }> 
   "apsh": { width: 28.7, height: 19, label: "APS-H (28.7×19mm)" },
 };
 
-const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const aladinRef = useRef<any>(null);
-  const overlayRef = useRef<any>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [focalLength, setFocalLength] = useState(450);
-  const [sensor, setSensor] = useState("apsc");
+// Parse RA string to degrees
+const parseRA = (raStr: string): number | null => {
+  if (!raStr) return null;
+  const hms = raStr.match(/(\d+)\s*h[r]?\s*(\d+)[''′]\s*([\d.]+)?/i);
+  if (hms) {
+    const h = parseFloat(hms[1]);
+    const m = parseFloat(hms[2]);
+    const s = parseFloat(hms[3] || "0");
+    return (h + m / 60 + s / 3600) * 15;
+  }
+  const num = parseFloat(raStr);
+  return isNaN(num) ? null : num;
+};
 
-  // Load Aladin Lite script
-  useEffect(() => {
+// Parse DEC string to degrees
+const parseDEC = (decStr: string): number | null => {
+  if (!decStr) return null;
+  const dms = decStr.match(/([+-]?\d+)[°º]\s*(\d+)[''′]\s*([\d.]+)?/i);
+  if (dms) {
+    const d = parseFloat(dms[1]);
+    const m = parseFloat(dms[2]);
+    const s = parseFloat(dms[3] || "0");
+    const sign = d < 0 ? -1 : 1;
+    return sign * (Math.abs(d) + m / 60 + s / 3600);
+  }
+  const num = parseFloat(decStr);
+  return isNaN(num) ? null : num;
+};
+
+const calcFOVDeg = (sensorMm: number, focalMm: number): number => {
+  return 2 * Math.atan(sensorMm / (2 * focalMm)) * (180 / Math.PI);
+};
+
+let aladinScriptLoaded = false;
+let aladinInitPromise: Promise<void> | null = null;
+
+const loadAladin = (): Promise<void> => {
+  if (aladinInitPromise) return aladinInitPromise;
+
+  aladinInitPromise = new Promise<void>((resolve, reject) => {
+    // Add CSS
+    if (!document.querySelector('link[href*="aladin"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.css";
+      document.head.appendChild(link);
+    }
+
     if (window.A) {
-      setLoaded(true);
+      // Already loaded, wait for init
+      window.A.init.then(() => resolve()).catch(reject);
       return;
     }
 
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.min.css";
-    document.head.appendChild(link);
-
     const script = document.createElement("script");
-    script.src = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.min.js";
+    script.src = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js";
     script.charset = "utf-8";
-    script.onload = () => setLoaded(true);
-    document.head.appendChild(script);
-
-    return () => {
-      // Keep scripts loaded
+    script.onload = () => {
+      // A.init is a Promise that resolves when WASM is ready
+      window.A.init.then(() => {
+        aladinScriptLoaded = true;
+        resolve();
+      }).catch(reject);
     };
+    script.onerror = () => { aladinInitPromise = null; reject(new Error("Failed to load Aladin Lite")); };
+    document.head.appendChild(script);
+  });
+
+  return aladinInitPromise;
+};
+
+const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const aladinRef = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+  const [focalLength, setFocalLength] = useState(450);
+  const [sensor, setSensor] = useState("apsc");
+
+  // Load Aladin Lite
+  useEffect(() => {
+    let cancelled = false;
+    loadAladin().then(() => {
+      if (!cancelled) setReady(true);
+    }).catch((err) => console.error("Aladin load error:", err));
+    return () => { cancelled = true; };
   }, []);
 
-  // Parse RA string to degrees
-  const parseRA = (raStr: string): number | null => {
-    if (!raStr) return null;
-    // Try "XXh YY' ZZ"" format
-    const hms = raStr.match(/(\d+)\s*h[r]?\s*(\d+)[''′]\s*([\d.]+)?/i);
-    if (hms) {
-      const h = parseFloat(hms[1]);
-      const m = parseFloat(hms[2]);
-      const s = parseFloat(hms[3] || "0");
-      return (h + m / 60 + s / 3600) * 15; // Convert hours to degrees
-    }
-    // Try decimal
-    const num = parseFloat(raStr);
-    if (!isNaN(num)) return num;
-    return null;
-  };
-
-  // Parse DEC string to degrees
-  const parseDEC = (decStr: string): number | null => {
-    if (!decStr) return null;
-    // Try "XX° YY' ZZ"" format
-    const dms = decStr.match(/([+-]?\d+)[°º]\s*(\d+)[''′]\s*([\d.]+)?/i);
-    if (dms) {
-      const d = parseFloat(dms[1]);
-      const m = parseFloat(dms[2]);
-      const s = parseFloat(dms[3] || "0");
-      const sign = d < 0 ? -1 : 1;
-      return sign * (Math.abs(d) + m / 60 + s / 3600);
-    }
-    const num = parseFloat(decStr);
-    if (!isNaN(num)) return num;
-    return null;
-  };
-
-  // Calculate FOV in degrees
-  const calcFOV = (sensorMm: number, focalMm: number): number => {
-    return (sensorMm / focalMm) * (180 / Math.PI) * (Math.PI / 180) * (180 / Math.PI);
-    // Simplified: 2 * atan(sensor / (2 * focal)) in degrees
-  };
-
-  const calcFOVDeg = (sensorMm: number, focalMm: number): number => {
-    return 2 * Math.atan(sensorMm / (2 * focalMm)) * (180 / Math.PI);
-  };
-
-  // Initialize Aladin
+  // Initialize / update Aladin view
   useEffect(() => {
-    if (!loaded || !containerRef.current) return;
+    if (!ready || !containerRef.current || !window.A) return;
 
     const raDeg = parseRA(ra);
     const decDeg = parseDEC(dec);
-
-    const targetRA = raDeg ?? 10.684; // Default to M31
+    const targetRA = raDeg ?? 10.684;
     const targetDEC = decDeg ?? 41.269;
 
     const sensorInfo = SENSORS[sensor];
@@ -136,26 +147,21 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerPro
         aladinRef.current.setFoV(maxFov);
       }
 
-      // Draw FOV overlay
-      setTimeout(() => drawOverlay(targetRA, targetDEC, fovW, fovH), 500);
+      // Draw FOV overlay after a short delay to let the view settle
+      setTimeout(() => drawOverlay(targetRA, targetDEC, fovW, fovH), 600);
     } catch (e) {
       console.error("Aladin init error:", e);
     }
-  }, [loaded, ra, dec, focalLength, sensor, positionAngle, panes, isMosaic]);
+  }, [ready, ra, dec, focalLength, sensor, positionAngle, panes, isMosaic]);
 
-  const drawOverlay = (centerRA: number, centerDEC: number, fovW: number, fovH: number) => {
+  const drawOverlay = useCallback((centerRA: number, centerDEC: number, fovW: number, fovH: number) => {
     if (!aladinRef.current || !window.A) return;
 
-    // Remove previous overlay
-    if (overlayRef.current) {
-      try { aladinRef.current.removeLayer(overlayRef.current); } catch { }
-    }
-
     const overlay = window.A.graphicOverlay({ color: "#00ff88", lineWidth: 2 });
+    // Remove all existing overlays by adding a new one
     aladinRef.current.addOverlay(overlay);
-    overlayRef.current = overlay;
 
-    const drawRect = (cRA: number, cDEC: number, w: number, h: number, angle: number, color: string, label?: string) => {
+    const drawRect = (cRA: number, cDEC: number, w: number, h: number, angle: number, color: string) => {
       const angleRad = (angle * Math.PI) / 180;
       const cosA = Math.cos(angleRad);
       const sinA = Math.sin(angleRad);
@@ -174,13 +180,14 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerPro
         return [cRA + rotX / cosDec, cDEC + rotY];
       });
 
-      // Close the polygon
-      raDecCorners.push(raDecCorners[0]);
+      raDecCorners.push(raDecCorners[0]); // Close polygon
 
       try {
         const polyline = window.A.polyline(raDecCorners, { color, lineWidth: 2 });
         overlay.add(polyline);
-      } catch { }
+      } catch (e) {
+        console.error("Polyline error:", e);
+      }
     };
 
     if (isMosaic && panes && panes.length > 0) {
@@ -190,13 +197,13 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerPro
         if (pRA !== null && pDEC !== null) {
           const angle = pane.position_angle ?? positionAngle ?? 0;
           const hue = (i * 360) / panes.length;
-          drawRect(pRA, pDEC, fovW, fovH, angle, `hsl(${hue}, 80%, 60%)`, `P${i + 1}`);
+          drawRect(pRA, pDEC, fovW, fovH, angle, `hsl(${hue}, 80%, 60%)`);
         }
       });
     } else {
       drawRect(centerRA, centerDEC, fovW, fovH, positionAngle || 0, "#00ff88");
     }
-  };
+  }, [positionAngle, panes, isMosaic]);
 
   return (
     <div className="space-y-3">
@@ -226,10 +233,15 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerPro
       </div>
       <div
         ref={containerRef}
-        className="w-full rounded-md overflow-hidden border border-border bg-black"
+        className="w-full rounded-md overflow-hidden border border-border"
         style={{ height: 400 }}
       />
-      {(!ra || !dec) && (
+      {!ready && (
+        <p className="text-xs text-muted-foreground text-center animate-pulse">
+          Chargement de la carte du ciel...
+        </p>
+      )}
+      {(!ra || !dec) && ready && (
         <p className="text-xs text-muted-foreground text-center">
           Saisissez des coordonnées RA/DEC pour centrer la vue.
         </p>
