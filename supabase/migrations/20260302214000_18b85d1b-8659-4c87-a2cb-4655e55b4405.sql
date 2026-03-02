@@ -1,0 +1,1 @@
+ALTER TABLE public.project_acquisitions ADD COLUMN acquired integer NOT NULL DEFAULT 0;
