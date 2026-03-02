@@ -180,7 +180,7 @@ const Dashboard = () => {
                         variant="outline"
                         size="sm"
                         className="w-full mt-2 opacity-80 group-hover:opacity-100 transition-opacity"
-                        onClick={() => navigate(`/projects/${project.id}/edit`)}
+                        onClick={() => navigate(`/frames`)}
                       >
                         <Plus className="h-3.5 w-3.5 mr-1.5" />
                         Ajouter des acquisitions
