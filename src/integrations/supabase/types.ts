@@ -151,6 +151,7 @@ export type Database = {
           created_by: string
           dec: string | null
           description: string | null
+          folder_path: string | null
           id: string
           is_mosaic: boolean
           name: string
@@ -167,6 +168,7 @@ export type Database = {
           created_by: string
           dec?: string | null
           description?: string | null
+          folder_path?: string | null
           id?: string
           is_mosaic?: boolean
           name: string
@@ -183,6 +185,7 @@ export type Database = {
           created_by?: string
           dec?: string | null
           description?: string | null
+          folder_path?: string | null
           id?: string
           is_mosaic?: boolean
           name?: string

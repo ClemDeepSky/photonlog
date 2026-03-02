@@ -50,6 +50,7 @@ const EditProject = () => {
   const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
+  const [folderPath, setFolderPath] = useState("");
   const [description, setDescription] = useState("");
   const [setup, setSetup] = useState("");
   const [isTeamProject, setIsTeamProject] = useState(false);
@@ -112,6 +113,7 @@ const EditProject = () => {
     if (!project || loaded) return;
 
     setName(project.name);
+    setFolderPath((project as any).folder_path || "");
     setDescription(project.description || "");
     setSetup(project.setup || "");
     setIsMosaic(project.is_mosaic);
@@ -310,6 +312,7 @@ const EditProject = () => {
         .from("projects")
         .update({
           name, description: description || null, setup: setup || null,
+          folder_path: folderPath || null,
           team_id: isTeamProject ? selectedTeamId : null, is_mosaic: isMosaic,
           ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
           position_angle: isMosaic ? null : (parseFloat(positionAngle) || null),
@@ -425,6 +428,11 @@ const EditProject = () => {
               <div>
                 <Label>Nom du projet</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
+              </div>
+              <div>
+                <Label>Chemin du dossier local</Label>
+                <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" />
+                <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition (utilisé pour le scan automatique)</p>
               </div>
               <div>
                 <Label>Setup</Label>
