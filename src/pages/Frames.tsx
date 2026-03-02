@@ -113,23 +113,8 @@ const Frames = () => {
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
   });
 
-  const batchUpdateAcquired = useMutation({
-    mutationFn: async (updates: { id: string; acquired: number }[]) => {
-      for (const u of updates) {
-        const { error } = await supabase
-          .from("project_acquisitions")
-          .update({ acquired: Math.max(0, u.acquired) })
-          .eq("id", u.id);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", selectedProjectId] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
-      toast({ title: "Acquisitions mises à jour depuis le scan" });
-    },
-    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
-  });
+
+
 
   const selectedProject = projects?.find((p) => p.id === selectedProjectId);
 
