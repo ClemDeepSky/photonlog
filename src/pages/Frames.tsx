@@ -9,7 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 interface Acquisition {
   id: string;
@@ -50,7 +51,8 @@ const filterColors: Record<string, string> = {
 const Frames = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(searchParams.get("project"));
   const [expandedPanes, setExpandedPanes] = useState<Set<string>>(new Set(["global"]));
 
   const { data: projects } = useQuery({
