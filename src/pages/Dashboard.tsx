@@ -92,6 +92,24 @@ const Dashboard = () => {
           <p className="text-muted-foreground mt-1">Votre espace d'astrophotographie</p>
         </div>
 
+        {/* Quick start */}
+        <div className="mb-8">
+          <Card className="border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Star className="h-4 w-4 text-primary" />
+                Démarrage rapide
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-sm space-y-1.5">
+              <p>1. Créez ou rejoignez une <strong className="text-foreground">Team</strong></p>
+              <p>2. Configurez votre <strong className="text-foreground">Matériel</strong></p>
+              <p>3. Créez un <strong className="text-foreground">Projet</strong> d'acquisition</p>
+              <p>4. Ajoutez vos <strong className="text-foreground">Frames</strong> au fur et à mesure</p>
+            </CardContent>
+          </Card>
+        </div>
+
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
@@ -180,7 +198,7 @@ const Dashboard = () => {
                         variant="outline"
                         size="sm"
                         className="w-full mt-2 opacity-80 group-hover:opacity-100 transition-opacity"
-                        onClick={() => navigate(`/frames`)}
+                        onClick={() => navigate(`/frames?project=${project.id}`)}
                       >
                         <Plus className="h-3.5 w-3.5 mr-1.5" />
                         Ajouter des acquisitions
@@ -205,24 +223,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         )}
-
-        {/* Quick start */}
-        <div className="mt-8">
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Star className="h-4 w-4 text-primary" />
-                Démarrage rapide
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground text-sm space-y-1.5">
-              <p>1. Créez ou rejoignez une <strong className="text-foreground">Team</strong></p>
-              <p>2. Configurez votre <strong className="text-foreground">Matériel</strong></p>
-              <p>3. Créez un <strong className="text-foreground">Projet</strong> d'acquisition</p>
-              <p>4. Ajoutez vos <strong className="text-foreground">Frames</strong> au fur et à mesure</p>
-            </CardContent>
-          </Card>
-        </div>
       </motion.div>
     </AppLayout>
   );
