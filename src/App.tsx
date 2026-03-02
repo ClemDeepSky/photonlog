@@ -13,6 +13,7 @@ import TeamDetail from "./pages/TeamDetail";
 import Equipment from "./pages/Equipment";
 import Projects from "./pages/Projects";
 import CreateProject from "./pages/CreateProject";
+import EditProject from "./pages/EditProject";
 import Frames from "./pages/Frames";
 import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/equipment" element={<Equipment />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/new" element={<CreateProject />} />
+              <Route path="/projects/:id/edit" element={<EditProject />} />
               <Route path="/frames" element={<Frames />} />
             </Route>
             <Route path="*" element={<NotFound />} />
