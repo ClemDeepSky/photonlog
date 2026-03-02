@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
-import FolderScanner from "@/components/frames/FolderScanner";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -248,11 +248,6 @@ const Frames = () => {
                   <p className="text-xs text-muted-foreground">{selectedProject?.teams?.name || "Personnel"}</p>
                 </div>
               </div>
-              <FolderScanner
-                acquisitions={acquisitions || []}
-                onApplyResults={(updates) => batchUpdateAcquired.mutate(updates)}
-                isPending={batchUpdateAcquired.isPending}
-              />
             </div>
 
             {/* Global stats */}

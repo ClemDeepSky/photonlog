@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
+import FolderScanner from "@/components/frames/FolderScanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -430,9 +431,30 @@ const EditProject = () => {
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
               </div>
               <div>
-                <Label>Chemin du dossier local</Label>
-                <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" />
-                <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition (utilisé pour le scan automatique)</p>
+                <Label>Dossier local</Label>
+                <div className="flex items-center gap-2">
+                  <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
+                  <FolderScanner
+                    acquisitions={(projectAcquisitions || []).map(a => ({ id: a.id, filter: a.filter, quantity: a.quantity, acquired: a.acquired }))}
+                    onApplyResults={(updates) => {
+                      const doUpdate = async () => {
+                        for (const u of updates) {
+                          const { error } = await supabase
+                            .from("project_acquisitions")
+                            .update({ acquired: Math.max(0, u.acquired) })
+                            .eq("id", u.id);
+                          if (error) throw error;
+                        }
+                        queryClient.invalidateQueries({ queryKey: ["project-acquisitions", id] });
+                        queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", id] });
+                        queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
+                        toast({ title: "Acquisitions mises à jour depuis le scan" });
+                      };
+                      doUpdate().catch((e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }));
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Chemin de référence. Utilisez le bouton pour scanner et compter les fichiers par filtre.</p>
               </div>
               <div>
                 <Label>Setup</Label>
