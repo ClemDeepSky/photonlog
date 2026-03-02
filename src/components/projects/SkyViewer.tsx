@@ -183,7 +183,9 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerPro
       const raDecCorners = corners.map(([dx, dy]) => {
         const rotX = dx * cosA - dy * sinA;
         const rotY = dx * sinA + dy * cosA;
-        return [cRA + rotX / cosDec, cDEC + rotY];
+        const cornerDec = cDEC + rotY;
+        const cosCornerDec = Math.cos((cornerDec * Math.PI) / 180);
+        return [cRA + rotX / cosCornerDec, cornerDec];
       });
 
       raDecCorners.push(raDecCorners[0]); // Close polygon
