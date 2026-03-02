@@ -43,6 +43,7 @@ export type Database = {
       }
       project_acquisitions: {
         Row: {
+          acquired: number
           bin: number
           created_at: string
           exposure_duration: number
@@ -53,6 +54,7 @@ export type Database = {
           quantity: number
         }
         Insert: {
+          acquired?: number
           bin?: number
           created_at?: string
           exposure_duration?: number
@@ -63,6 +65,7 @@ export type Database = {
           quantity?: number
         }
         Update: {
+          acquired?: number
           bin?: number
           created_at?: string
           exposure_duration?: number
