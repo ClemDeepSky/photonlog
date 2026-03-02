@@ -74,7 +74,9 @@ const Frames = () => {
       const { data, error } = await supabase
         .from("project_acquisitions")
         .select("*")
-        .eq("project_id", selectedProjectId!);
+        .eq("project_id", selectedProjectId!)
+        .order("filter", { ascending: true })
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data as Acquisition[];
     },
