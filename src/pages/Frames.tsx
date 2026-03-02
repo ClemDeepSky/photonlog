@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
-import FolderScanner from "@/components/frames/FolderScanner";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -113,23 +113,8 @@ const Frames = () => {
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
   });
 
-  const batchUpdateAcquired = useMutation({
-    mutationFn: async (updates: { id: string; acquired: number }[]) => {
-      for (const u of updates) {
-        const { error } = await supabase
-          .from("project_acquisitions")
-          .update({ acquired: Math.max(0, u.acquired) })
-          .eq("id", u.id);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", selectedProjectId] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
-      toast({ title: "Acquisitions mises à jour depuis le scan" });
-    },
-    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
-  });
+
+
 
   const selectedProject = projects?.find((p) => p.id === selectedProjectId);
 
@@ -248,11 +233,6 @@ const Frames = () => {
                   <p className="text-xs text-muted-foreground">{selectedProject?.teams?.name || "Personnel"}</p>
                 </div>
               </div>
-              <FolderScanner
-                acquisitions={acquisitions || []}
-                onApplyResults={(updates) => batchUpdateAcquired.mutate(updates)}
-                isPending={batchUpdateAcquired.isPending}
-              />
             </div>
 
             {/* Global stats */}
