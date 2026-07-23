@@ -1,15 +1,14 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Telescope, Star, Users, ImagePlus } from "lucide-react";
 
 const Index = () => {
-  const { session, loading } = useAuth();
+  return <Navigate to="/dashboard" replace />;
 
-  if (loading) return null;
-  if (session) return <Navigate to="/dashboard" replace />;
+  // eslint-disable-next-line no-unreachable
+  // Legacy landing preserved below (unused):
 
   return (
     <div className="min-h-screen bg-cosmic relative overflow-hidden">
