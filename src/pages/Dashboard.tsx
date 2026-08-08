@@ -181,6 +181,9 @@ const Dashboard = () => {
                           <span className="text-2xl font-bold text-gradient">{globalPercent}%</span>
                         </div>
                         <Progress value={globalPercent} className="h-2.5" />
+                        <p className="text-[11px] text-muted-foreground mt-1.5">
+                          {formatDuration(acquiredSecondsOf(project.project_acquisitions))} acquises
+                        </p>
                       </div>
 
                       {/* Per-filter progress */}
