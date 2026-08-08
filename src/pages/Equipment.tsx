@@ -14,6 +14,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Wrench, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CAMERA_CATALOG, findCamera } from "@/data/cameras";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -47,6 +55,7 @@ const emptyForm = {
 
 const num = (v: string) => (v.trim() === "" ? null : Number(v));
 const int = (v: string) => (v.trim() === "" ? null : parseInt(v, 10));
+const OTHER = "__other__";
 
 const Equipment = () => {
   const { user } = useAuth();
@@ -56,6 +65,7 @@ const Equipment = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+  const [cameraChoice, setCameraChoice] = useState<string>(OTHER);
 
   const load = async () => {
     setLoading(true);
@@ -78,11 +88,13 @@ const Equipment = () => {
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...emptyForm });
+    setCameraChoice(OTHER);
     setOpen(true);
   };
 
   const openEdit = (item: EquipmentProfile) => {
     setEditingId(item.id);
+    setCameraChoice(findCamera(item.imager_name) ? (item.imager_name as string) : OTHER);
     setForm({
       name: item.name ?? "",
       diameter: item.diameter?.toString() ?? "",
@@ -96,6 +108,23 @@ const Equipment = () => {
       filters: (item.filters ?? []).join(", "),
     });
     setOpen(true);
+  };
+
+  const handleCameraChange = (value: string) => {
+    setCameraChoice(value);
+    if (value === OTHER) {
+      setForm((f) => ({ ...f, imager_name: "", pixel_size: "", sensor_width_px: "", sensor_height_px: "" }));
+      return;
+    }
+    const cam = findCamera(value);
+    if (!cam) return;
+    setForm((f) => ({
+      ...f,
+      imager_name: cam.name,
+      pixel_size: String(cam.pixelSize),
+      sensor_width_px: String(cam.widthPx),
+      sensor_height_px: String(cam.heightPx),
+    }));
   };
 
   const handleSave = async () => {
@@ -272,8 +301,27 @@ const Equipment = () => {
                 <p className="text-sm font-medium">Imageur</p>
                 <div className="space-y-2">
                   <Label htmlFor="eq-imager">Modèle</Label>
-                  <Input id="eq-imager" maxLength={100} value={form.imager_name} onChange={(e) => setForm({ ...form, imager_name: e.target.value })} placeholder="ASI2600MM Pro" />
+                  <Select value={cameraChoice} onValueChange={handleCameraChange}>
+                    <SelectTrigger id="eq-imager">
+                      <SelectValue placeholder="Choisir une caméra" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {CAMERA_CATALOG.map((c) => (
+                        <SelectItem key={c.name} value={c.name}>
+                          {c.name} — {c.pixelSize} µm · {c.widthPx}×{c.heightPx}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={OTHER}>Autre…</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+                {cameraChoice === OTHER && (
+                <div className="space-y-2">
+                  <Label htmlFor="eq-imager-custom">Nom de l'imageur</Label>
+                  <Input id="eq-imager-custom" maxLength={100} value={form.imager_name} onChange={(e) => setForm({ ...form, imager_name: e.target.value })} placeholder="ASI2600MM Pro" />
+                </div>
+                )}
+                {cameraChoice === OTHER ? (
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="eq-px">Pixels (µm)</Label>
@@ -288,6 +336,11 @@ const Equipment = () => {
                     <Input id="eq-h" type="number" value={form.sensor_height_px} onChange={(e) => setForm({ ...form, sensor_height_px: e.target.value })} />
                   </div>
                 </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {form.pixel_size} µm · {form.sensor_width_px}×{form.sensor_height_px} px
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
