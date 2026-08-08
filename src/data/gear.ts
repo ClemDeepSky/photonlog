@@ -89,10 +89,6 @@ export const FILTER_CATALOG: string[] = [
   "Solar Continuum",
 ];
 
-export const ROTATOR_CATALOG: string[] = [
-  "Aucun",
-];
-
 // Couleur indicative de la bande passante de chaque filtre
 export const FILTER_COLORS: Record<string, string> = {
   L: "#e8e8e8",
@@ -129,7 +125,7 @@ export const FILTER_COLORS: Record<string, string> = {
 
 export const filterColor = (name: string) => FILTER_COLORS[name] ?? "#94a3b8";
 
-const _ROTATOR_CATALOG_UNUSED: string[] = [
+export const ROTATOR_CATALOG: string[] = [
   "Aucun",
   "ZWO CAA (Camera Angle Adjuster)",
   "PrimaLuceLab ARCO 2\"",
