@@ -412,17 +412,61 @@ const Equipment = () => {
                 )}
               </div>
 
+              <CatalogPicker
+                key={`mount-${editingId ?? "new"}`}
+                id="eq-mount"
+                label="Monture"
+                options={MOUNT_CATALOG}
+                value={form.mount}
+                onChange={(v) => setForm((f) => ({ ...f, mount: v }))}
+                placeholder="Choisir une monture"
+              />
+              <CatalogPicker
+                key={`guide-${editingId ?? "new"}`}
+                id="eq-guide"
+                label="Caméra de guidage"
+                options={GUIDE_CAMERA_CATALOG}
+                value={form.guide_camera}
+                onChange={(v) => setForm((f) => ({ ...f, guide_camera: v }))}
+                placeholder="Choisir une caméra de guidage"
+              />
+              <CatalogPicker
+                key={`rot-${editingId ?? "new"}`}
+                id="eq-rotator"
+                label="Rotateur"
+                options={ROTATOR_CATALOG}
+                value={form.rotator}
+                onChange={(v) => setForm((f) => ({ ...f, rotator: v }))}
+                placeholder="Choisir un rotateur"
+              />
               <div className="space-y-2">
-                <Label htmlFor="eq-mount">Monture</Label>
-                <Input id="eq-mount" maxLength={100} value={form.mount} onChange={(e) => setForm({ ...form, mount: e.target.value })} placeholder="EQ6-R Pro" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eq-guide">Caméra de guidage</Label>
-                <Input id="eq-guide" maxLength={100} value={form.guide_camera} onChange={(e) => setForm({ ...form, guide_camera: e.target.value })} placeholder="ASI120MM Mini" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eq-filters">Filtres (séparés par des virgules)</Label>
-                <Input id="eq-filters" maxLength={200} value={form.filters} onChange={(e) => setForm({ ...form, filters: e.target.value })} placeholder="L, R, G, B, Ha, OIII, SII" />
+                <Label>Filtres</Label>
+                <div className="flex flex-wrap gap-1.5 rounded-lg border border-border/50 p-3 max-h-48 overflow-y-auto">
+                  {FILTER_CATALOG.map((f) => {
+                    const active = selectedFilters.includes(f);
+                    return (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => toggleFilter(f)}
+                        className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border/60 text-muted-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Input
+                  id="eq-filters"
+                  maxLength={200}
+                  value={form.filters}
+                  onChange={(e) => setForm({ ...form, filters: e.target.value })}
+                  placeholder="Autres filtres, séparés par des virgules"
+                />
               </div>
             </div>
             <DialogFooter>
