@@ -147,8 +147,6 @@ const CreateProject = () => {
   };
 
   const addManualPane = () => {
-    return;
-  };
     setPanes((prev) => [
       ...prev,
       { pane_number: prev.length + 1, ra: "", dec: "", position_angle: null, pane_width: null, pane_height: null, overlap: null, row_index: null, col_index: null },
