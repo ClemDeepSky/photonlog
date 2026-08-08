@@ -14,6 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
+import AstroBinImportDialog from "@/components/projects/AstroBinImportDialog";
+import type { AstroBinImport } from "@/lib/astrobin";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -36,6 +38,7 @@ interface Acquisition {
   exposure_duration: number;
   quantity: number;
   bin: number;
+  acquired?: number;
 }
 
 const FILTERS = ["L", "R", "G", "B", "Ha", "OIII", "SII", "UV", "IR"];
@@ -144,6 +147,8 @@ const CreateProject = () => {
   };
 
   const addManualPane = () => {
+    return;
+  };
     setPanes((prev) => [
       ...prev,
       { pane_number: prev.length + 1, ra: "", dec: "", position_angle: null, pane_width: null, pane_height: null, overlap: null, row_index: null, col_index: null },
