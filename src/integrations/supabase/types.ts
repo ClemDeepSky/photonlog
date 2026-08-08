@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      equipment_profiles: {
+        Row: {
+          created_at: string
+          diameter: number | null
+          filters: string[]
+          focal_length: number | null
+          guide_camera: string | null
+          id: string
+          imager_name: string | null
+          mount: string | null
+          name: string
+          pixel_size: number | null
+          sensor_height_px: number | null
+          sensor_width_px: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          diameter?: number | null
+          filters?: string[]
+          focal_length?: number | null
+          guide_camera?: string | null
+          id?: string
+          imager_name?: string | null
+          mount?: string | null
+          name: string
+          pixel_size?: number | null
+          sensor_height_px?: number | null
+          sensor_width_px?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          diameter?: number | null
+          filters?: string[]
+          focal_length?: number | null
+          guide_camera?: string | null
+          id?: string
+          imager_name?: string | null
+          mount?: string | null
+          name?: string
+          pixel_size?: number | null
+          sensor_height_px?: number | null
+          sensor_width_px?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
