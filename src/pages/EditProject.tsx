@@ -623,6 +623,13 @@ const EditProject = () => {
                   setupSensorWidthMm={setupSensorWidthMm}
                   setupSensorHeightMm={setupSensorHeightMm}
                   setupName={selectedSetup?.name}
+                  setups={(equipment || []).map((e) => ({
+                    name: e.name,
+                    focal_length: e.focal_length ? Number(e.focal_length) : null,
+                    sensorWidthMm: e.pixel_size && e.sensor_width_px ? (Number(e.pixel_size) * e.sensor_width_px) / 1000 : null,
+                    sensorHeightMm: e.pixel_size && e.sensor_height_px ? (Number(e.pixel_size) * e.sensor_height_px) / 1000 : null,
+                  }))}
+                  onSetupChange={setSetup}
                 />
               </CardContent>
             </Card>
