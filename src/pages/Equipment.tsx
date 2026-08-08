@@ -125,8 +125,8 @@ const Equipment = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
-  const [cameraChoice, setCameraChoice] = useState<string>(OTHER);
-  const [scopeChoice, setScopeChoice] = useState<string>(OTHER);
+  const [cameraChoice, setCameraChoice] = useState<string>("");
+  const [scopeChoice, setScopeChoice] = useState<string>("");
 
   const load = async () => {
     setLoading(true);
@@ -149,15 +149,19 @@ const Equipment = () => {
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...emptyForm });
-    setCameraChoice(OTHER);
-    setScopeChoice(OTHER);
+    setCameraChoice("");
+    setScopeChoice("");
     setOpen(true);
   };
 
   const openEdit = (item: EquipmentProfile) => {
     setEditingId(item.id);
-    setCameraChoice(findCamera(item.imager_name) ? (item.imager_name as string) : OTHER);
-    setScopeChoice(findTelescope(item.telescope) ? (item.telescope as string) : OTHER);
+    setCameraChoice(
+      findCamera(item.imager_name) ? (item.imager_name as string) : item.imager_name ? OTHER : ""
+    );
+    setScopeChoice(
+      findTelescope(item.telescope) ? (item.telescope as string) : item.telescope ? OTHER : ""
+    );
     setForm({
       name: item.name ?? "",
       telescope: item.telescope ?? "",
