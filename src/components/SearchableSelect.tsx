@@ -26,6 +26,8 @@ type Props = {
   placeholder?: string;
   searchPlaceholder?: string;
   emptyText?: string;
+  /** Option values always visible, even while filtering (e.g. "Autre…") */
+  alwaysShowValues?: string[];
 };
 
 const SearchableSelect = ({
@@ -36,9 +38,12 @@ const SearchableSelect = ({
   placeholder = "Choisir…",
   searchPlaceholder = "Rechercher…",
   emptyText = "Aucun résultat",
+  alwaysShowValues = ["__other__"],
 }: Props) => {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
+  const pinned = options.filter((o) => alwaysShowValues.includes(o.value));
+  const regular = options.filter((o) => !alwaysShowValues.includes(o.value));
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -70,7 +75,7 @@ const SearchableSelect = ({
           <CommandList className="max-h-72">
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
-              {options.map((o) => (
+              {regular.map((o) => (
                 <CommandItem
                   key={o.value}
                   value={`${o.label} ${o.hint ?? ""}`}
@@ -94,6 +99,29 @@ const SearchableSelect = ({
                 </CommandItem>
               ))}
             </CommandGroup>
+            {pinned.length > 0 && (
+              <CommandGroup forceMount className="border-t">
+                {pinned.map((o) => (
+                  <CommandItem
+                    key={o.value}
+                    value={o.value}
+                    forceMount
+                    onSelect={() => {
+                      onChange(o.value);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4 shrink-0",
+                        value === o.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <span className="truncate">{o.label}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
