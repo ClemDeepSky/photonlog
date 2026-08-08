@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
 import { parseAstroBin, type AstroBinImport } from "@/lib/astrobin";
 import { toast } from "@/hooks/use-toast";
