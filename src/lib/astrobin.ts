@@ -11,6 +11,7 @@ export interface AstroBinImport {
   published: string | null;
   totalIntegration: string | null;
   url: string | null;
+  imageUrl: string | null;
   filters: AstroBinFilterRow[];
 }
 
@@ -50,6 +51,13 @@ export const parseAstroBin = (text: string): AstroBinImport => {
   const totalIntegration = find(/^(?:intégration totale|total integration)\s*:\s*(.+)$/i);
   const url = find(/(https?:\/\/\S*astrobin\S*)/i);
 
+  // Image URL: direct image link (AstroBin CDN or any image url) pasted in the text
+  const allUrls = (text.match(/https?:\/\/\S+/gi) ?? []).map((u) => u.replace(/[),.;]+$/, ""));
+  const imageUrl =
+    allUrls.find((u) => /\.(jpe?g|png|webp|gif)(\?|$)/i.test(u)) ??
+    allUrls.find((u) => /cdn\.astrobin\.com|astrob\.in\/.+\/\d+/i.test(u)) ??
+    null;
+
   // Filter lines: "- Hα: 13h 5m (157 × 300")"
   const filters: AstroBinFilterRow[] = [];
   const lineRe = /^[-•*]?\s*([^:]{1,40}?)\s*:\s*[^()]*\(\s*(\d+)\s*[x×X]\s*([\d.,]+)\s*(?:"|s|sec|secondes?)?\s*\)/;
@@ -63,5 +71,5 @@ export const parseAstroBin = (text: string): AstroBinImport => {
     filters.push({ raw: m[1].trim(), filter: normalizeFilter(m[1]), count, exposure });
   }
 
-  return { title, author, published, totalIntegration, url, filters };
+  return { title, author, published, totalIntegration, url, imageUrl, filters };
 };
