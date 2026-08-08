@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 declare global {
@@ -241,15 +240,6 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
   return (
     <div className="space-y-3">
       <div className="flex gap-3 items-end flex-wrap">
-        <div className="flex-1 min-w-[140px]">
-          <Label className="text-xs">Focale (mm)</Label>
-          <Input
-            type="number"
-            value={focalLength}
-            onChange={(e) => setFocalLength(parseFloat(e.target.value) || 450)}
-            className="h-8"
-          />
-        </div>
         <div className="flex-1 min-w-[180px]">
           <Label className="text-xs">Setup</Label>
           {setups && setups.length > 0 ? (
