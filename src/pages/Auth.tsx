@@ -42,7 +42,13 @@ const Auth = () => {
     });
     setIsLoading(false);
     if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: error.message.includes("already registered")
+          ? "Un compte existe déjà avec cet email. Connectez-vous."
+          : error.message,
+        variant: "destructive",
+      });
     } else {
       toast({ title: "Compte créé !", description: "Vérifiez votre email pour confirmer votre inscription." });
     }
@@ -54,8 +60,53 @@ const Auth = () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setIsLoading(false);
     if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      const msg = error.message.toLowerCase();
+      toast({
+        title: "Connexion impossible",
+        description: msg.includes("invalid login")
+          ? "Email ou mot de passe incorrect."
+          : msg.includes("not confirmed")
+          ? "Email non confirmé. Utilisez « Renvoyer l'email de confirmation »."
+          : error.message,
+        variant: "destructive",
+      });
     }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({ title: "Email requis", description: "Saisissez votre email d'abord.", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setIsLoading(false);
+    toast(
+      error
+        ? { title: "Erreur", description: error.message, variant: "destructive" }
+        : { title: "Email envoyé", description: "Consultez votre boîte mail pour réinitialiser le mot de passe." }
+    );
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast({ title: "Email requis", description: "Saisissez votre email d'abord.", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    setIsLoading(false);
+    toast(
+      error
+        ? { title: "Erreur", description: error.message, variant: "destructive" }
+        : { title: "Email de confirmation renvoyé" }
+    );
   };
 
   return (
@@ -112,6 +163,14 @@ const Auth = () => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Connexion..." : "Se connecter"}
                   </Button>
+                  <div className="flex flex-col gap-1 pt-1">
+                    <Button type="button" variant="link" className="h-auto p-0 text-xs justify-start" onClick={handleForgotPassword}>
+                      Mot de passe oublié ?
+                    </Button>
+                    <Button type="button" variant="link" className="h-auto p-0 text-xs justify-start" onClick={handleResendConfirmation}>
+                      Renvoyer l'email de confirmation
+                    </Button>
+                  </div>
                 </CardContent>
               </form>
             </TabsContent>
