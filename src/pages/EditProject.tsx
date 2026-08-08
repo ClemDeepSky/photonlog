@@ -102,6 +102,12 @@ const EditProject = () => {
     enabled: !!id && !!user,
   });
 
+  const selectedSetup = equipment?.find((e) => e.name === setup);
+  const setupSensorWidthMm = selectedSetup?.pixel_size && selectedSetup?.sensor_width_px
+    ? (Number(selectedSetup.pixel_size) * selectedSetup.sensor_width_px) / 1000 : null;
+  const setupSensorHeightMm = selectedSetup?.pixel_size && selectedSetup?.sensor_height_px
+    ? (Number(selectedSetup.pixel_size) * selectedSetup.sensor_height_px) / 1000 : null;
+
   const { data: projectPanes } = useQuery({
     queryKey: ["project-panes", id],
     queryFn: async () => {
