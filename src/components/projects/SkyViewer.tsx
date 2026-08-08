@@ -137,6 +137,8 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
   }, []);
 
   // Initialize / update Aladin view
+  const hasCoordinates = !!(ra && dec);
+
   useEffect(() => {
     if (!ready || !containerRef.current || !window.A) return;
 
@@ -172,12 +174,14 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
         aladinRef.current.setFoV(maxFov);
       }
 
-      // Draw FOV overlay after a short delay to let the view settle
-      setTimeout(() => drawOverlay(targetRA, targetDEC, fovW, fovH), 600);
+      // Draw FOV overlay only when coordinates are provided
+      if (hasCoordinates) {
+        setTimeout(() => drawOverlay(targetRA, targetDEC, fovW, fovH), 600);
+      }
     } catch (e) {
       console.error("Aladin init error:", e);
     }
-  }, [ready, ra, dec, focalLength, sensor, positionAngle, panes, isMosaic]);
+  }, [ready, ra, dec, focalLength, sensor, positionAngle, panes, isMosaic, hasCoordinates]);
 
   const drawOverlay = useCallback((centerRA: number, centerDEC: number, fovW: number, fovH: number) => {
     if (!aladinRef.current || !window.A) return;
@@ -290,7 +294,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
       )}
       {(!ra || !dec) && ready && (
         <p className="text-xs text-muted-foreground text-center">
-          Saisissez des coordonnées RA/DEC pour centrer la vue.
+          Vue initiale (M31). Saisissez des coordonnées RA/DEC pour centrer le cadre sur votre cible.
         </p>
       )}
     </div>
