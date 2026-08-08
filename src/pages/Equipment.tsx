@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CAMERA_CATALOG, findCamera } from "@/data/cameras";
+import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG } from "@/data/gear";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -37,6 +38,7 @@ type EquipmentProfile = {
   sensor_height_px: number | null;
   mount: string | null;
   guide_camera: string | null;
+  rotator: string | null;
   filters: string[];
 };
 
@@ -50,12 +52,65 @@ const emptyForm = {
   sensor_height_px: "",
   mount: "",
   guide_camera: "",
+  rotator: "",
   filters: "",
 };
 
 const num = (v: string) => (v.trim() === "" ? null : Number(v));
 const int = (v: string) => (v.trim() === "" ? null : parseInt(v, 10));
 const OTHER = "__other__";
+
+type PickerProps = {
+  id: string;
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+};
+
+const CatalogPicker = ({ id, label, options, value, onChange, placeholder }: PickerProps) => {
+  const isKnown = value !== "" && options.includes(value);
+  const [custom, setCustom] = useState(!isKnown && value !== "");
+  const selectValue = custom ? OTHER : isKnown ? value : "";
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Select
+        value={selectValue}
+        onValueChange={(v) => {
+          if (v === OTHER) {
+            setCustom(true);
+            onChange("");
+          } else {
+            setCustom(false);
+            onChange(v);
+          }
+        }}
+      >
+        <SelectTrigger id={id}>
+          <SelectValue placeholder={placeholder ?? "Choisir…"} />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          {options.map((o) => (
+            <SelectItem key={o} value={o}>
+              {o}
+            </SelectItem>
+          ))}
+          <SelectItem value={OTHER}>Autre…</SelectItem>
+        </SelectContent>
+      </Select>
+      {custom && (
+        <Input
+          maxLength={100}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Saisir le modèle"
+        />
+      )}
+    </div>
+  );
+};
 
 const Equipment = () => {
   const { user } = useAuth();
@@ -105,9 +160,22 @@ const Equipment = () => {
       sensor_height_px: item.sensor_height_px?.toString() ?? "",
       mount: item.mount ?? "",
       guide_camera: item.guide_camera ?? "",
+      rotator: item.rotator ?? "",
       filters: (item.filters ?? []).join(", "),
     });
     setOpen(true);
+  };
+
+  const selectedFilters = form.filters
+    .split(",")
+    .map((f) => f.trim())
+    .filter(Boolean);
+
+  const toggleFilter = (f: string) => {
+    const next = selectedFilters.includes(f)
+      ? selectedFilters.filter((x) => x !== f)
+      : [...selectedFilters, f];
+    setForm((prev) => ({ ...prev, filters: next.join(", ") }));
   };
 
   const handleCameraChange = (value: string) => {
@@ -148,6 +216,7 @@ const Equipment = () => {
       sensor_height_px: int(form.sensor_height_px),
       mount: form.mount.trim().slice(0, 100) || null,
       guide_camera: form.guide_camera.trim().slice(0, 100) || null,
+      rotator: form.rotator.trim().slice(0, 100) || null,
       filters: form.filters
         .split(",")
         .map((f) => f.trim())
