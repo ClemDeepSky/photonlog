@@ -257,7 +257,7 @@ const Equipment = () => {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.1 }}>
         <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold" style={{ fontFamily: "'Comix', 'Comic Sans MS', 'Chalkboard SE', cursive" }}>Matériel</h1>
+            <h1 className="text-3xl font-bold">Matériel</h1>
             <p className="text-muted-foreground mt-1">Gérez vos profils de matériel d'astrophotographie</p>
           </div>
           <Button onClick={openCreate}>
