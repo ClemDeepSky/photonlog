@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CAMERA_CATALOG, findCamera } from "@/data/cameras";
-import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG } from "@/data/gear";
+import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG, filterColor } from "@/data/gear";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -335,7 +336,12 @@ const Equipment = () => {
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {(item.filters ?? []).length > 0 ? (
                       item.filters.map((f) => (
-                        <Badge key={f} variant="secondary">
+                        <Badge key={f} variant="secondary" className="gap-1.5">
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: filterColor(f) }}
+                            aria-hidden
+                          />
                           {f}
                         </Badge>
                       ))
@@ -445,22 +451,27 @@ const Equipment = () => {
               />
               <div className="space-y-2">
                 <Label>Filtres</Label>
-                <div className="flex flex-wrap gap-1.5 rounded-lg border border-border/50 p-3 max-h-48 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-border/50 p-3 max-h-56 overflow-y-auto">
                   {FILTER_CATALOG.map((f) => {
                     const active = selectedFilters.includes(f);
+                    const color = filterColor(f);
+                    const cbId = `filter-${f.replace(/[^a-zA-Z0-9]/g, "-")}`;
                     return (
-                      <button
-                        key={f}
-                        type="button"
-                        onClick={() => toggleFilter(f)}
-                        className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
-                          active
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border/60 text-muted-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        {f}
-                      </button>
+                      <div key={f} className="flex items-center gap-2">
+                        <Checkbox id={cbId} checked={active} onCheckedChange={() => toggleFilter(f)} />
+                        <label
+                          htmlFor={cbId}
+                          className="flex items-center gap-1.5 text-xs cursor-pointer select-none"
+                          style={{ color: active ? color : undefined }}
+                        >
+                          <span
+                            className="h-2.5 w-2.5 rounded-full border border-border/60 shrink-0"
+                            style={{ backgroundColor: color }}
+                            aria-hidden
+                          />
+                          <span className={active ? "font-medium" : "text-muted-foreground"}>{f}</span>
+                        </label>
+                      </div>
                     );
                   })}
                 </div>

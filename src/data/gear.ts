@@ -89,6 +89,42 @@ export const FILTER_CATALOG: string[] = [
   "Solar Continuum",
 ];
 
+// Couleur indicative de la bande passante de chaque filtre
+export const FILTER_COLORS: Record<string, string> = {
+  L: "#e8e8e8",
+  R: "#e04a4a",
+  G: "#3fb950",
+  B: "#4a7fe0",
+  "Ha 3nm": "#c1121f",
+  "Ha 6nm": "#c1121f",
+  "Ha 7nm": "#c1121f",
+  "OIII 3nm": "#14b8a6",
+  "OIII 6nm": "#14b8a6",
+  "OIII 7nm": "#14b8a6",
+  "SII 3nm": "#8b1a1a",
+  "SII 6nm": "#8b1a1a",
+  "SII 7nm": "#8b1a1a",
+  "UV/IR Cut": "#9ca3af",
+  CLS: "#a78bfa",
+  "Optolong L-eNhance": "#2dd4bf",
+  "Optolong L-eXtreme": "#22d3ee",
+  "Optolong L-Ultimate": "#38bdf8",
+  "Optolong L-Pro": "#cbd5e1",
+  "Antlia ALP-T (Dual Band)": "#f472b6",
+  "Antlia Triband RGB": "#fb923c",
+  "IDAS LPS-D2": "#a3e635",
+  "IDAS NBZ": "#34d399",
+  "Baader UHC-S": "#60a5fa",
+  "Baader Moon & Skyglow": "#fbbf24",
+  "Astronomik CLS-CCD": "#c084fc",
+  "Astronomik UHC": "#818cf8",
+  "IR Pass 685nm": "#7f1d1d",
+  "IR Pass 850nm": "#581c1c",
+  "Solar Continuum": "#facc15",
+};
+
+export const filterColor = (name: string) => FILTER_COLORS[name] ?? "#94a3b8";
+
 export const ROTATOR_CATALOG: string[] = [
   "Aucun",
   "ZWO CAA (Camera Angle Adjuster)",
