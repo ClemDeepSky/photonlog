@@ -294,7 +294,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
       )}
       {(!ra || !dec) && ready && (
         <p className="text-xs text-muted-foreground text-center">
-          Saisissez des coordonnées RA/DEC pour centrer la vue.
+          Vue initiale (M31). Saisissez des coordonnées RA/DEC pour centrer le cadre sur votre cible.
         </p>
       )}
     </div>
