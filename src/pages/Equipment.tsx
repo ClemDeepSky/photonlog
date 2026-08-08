@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { CAMERA_CATALOG, findCamera } from "@/data/cameras";
 import { TELESCOPE_CATALOG, findTelescope } from "@/data/telescopes";
+import SearchableSelect from "@/components/SearchableSelect";
 import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG, CORRECTOR_CATALOG, OS_CATALOG, ACQUISITION_SOFTWARE_CATALOG, filterColor } from "@/data/gear";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
