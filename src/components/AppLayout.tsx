@@ -34,7 +34,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <aside className="hidden md:flex flex-col w-64 border-r border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="flex items-center gap-2 p-6 border-b border-border/50">
           <Telescope className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold text-gradient">AstroTracker</span>
+          <span className="text-xl font-bold text-gradient">Photonlog</span>
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => (
@@ -66,7 +66,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-sm border-b border-border/50 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Telescope className="h-5 w-5 text-primary" />
-          <span className="font-bold text-gradient">AstroTracker</span>
+          <span className="font-bold text-gradient">Photonlog</span>
+
         </div>
         <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

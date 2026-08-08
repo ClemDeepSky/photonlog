@@ -18,7 +18,7 @@ const corsHeaders = {
 
 const EMAIL_SUBJECTS: Record<string, string> = {
   signup: 'Confirmez votre email',
-  invite: 'Vous êtes invité à rejoindre AstroTracker',
+  invite: 'Vous êtes invité à rejoindre Photonlog',
   magiclink: 'Votre lien de connexion',
   recovery: 'Réinitialisez votre mot de passe',
   email_change: 'Confirmez votre nouvel email',
@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "astro-quest-keeper"
+const SITE_NAME = "Photonlog"
 const SENDER_DOMAIN = "notify.photonlog.app"
 const ROOT_DOMAIN = "photonlog.app"
 const FROM_DOMAIN = "notify.photonlog.app" // Domain shown in From address (may be root or sender subdomain)
@@ -46,7 +46,7 @@ const FROM_DOMAIN = "notify.photonlog.app" // Domain shown in From address (may 
 // The sample email uses a fixed placeholder (RFC 6761 .test TLD) so the Go backend
 // can always find-and-replace it with the actual recipient when sending test emails,
 // even if the project's domain has changed since the template was scaffolded.
-const SAMPLE_PROJECT_URL = "https://astro-quest-keeper.lovable.app"
+const SAMPLE_PROJECT_URL = "https://photonlog.app"
 const SAMPLE_EMAIL = "user@example.test"
 const SAMPLE_DATA: Record<string, object> = {
   signup: {
