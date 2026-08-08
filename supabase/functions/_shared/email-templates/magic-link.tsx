@@ -27,7 +27,7 @@ export const MagicLinkEmail = ({
     <Preview>Votre lien de connexion pour {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={brand}>AstroTracker</Text>
+        <Text style={brand}>Photonlog</Text>
         <Heading style={h1}>Votre lien de connexion</Heading>
         <Text style={text}>
           Cliquez sur le bouton ci-dessous pour vous connecter à {siteName}. Ce lien

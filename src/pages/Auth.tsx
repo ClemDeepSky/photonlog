@@ -135,7 +135,7 @@ const Auth = () => {
       >
         <div className="flex items-center justify-center gap-3 mb-8">
           <Telescope className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold text-gradient">AstroTracker</h1>
+          <h1 className="text-3xl font-bold text-gradient">Photonlog</h1>
         </div>
 
         <Card className="border-border/50 shadow-glow">

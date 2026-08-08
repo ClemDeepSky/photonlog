@@ -30,7 +30,7 @@ export const InviteEmail = ({
     <Preview>Vous êtes invité à rejoindre {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={brand}>AstroTracker</Text>
+        <Text style={brand}>Photonlog</Text>
         <Heading style={h1}>Vous êtes invité</Heading>
         <Text style={text}>
           Vous êtes invité à rejoindre{' '}

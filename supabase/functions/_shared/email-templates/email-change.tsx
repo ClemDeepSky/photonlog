@@ -37,7 +37,7 @@ export const EmailChangeEmail = ({
     <Preview>Confirmez le changement d'email pour {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={brand}>AstroTracker</Text>
+        <Text style={brand}>Photonlog</Text>
         <Heading style={h1}>Changement d'adresse email</Heading>
         <Text style={text}>
           Vous avez demandé à changer votre adresse email sur {siteName}, de{' '}
