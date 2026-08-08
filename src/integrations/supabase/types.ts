@@ -119,6 +119,7 @@ export type Database = {
           rotator: string | null
           sensor_height_px: number | null
           sensor_width_px: number | null
+          telescope: string | null
           updated_at: string
           user_id: string
         }
@@ -139,6 +140,7 @@ export type Database = {
           rotator?: string | null
           sensor_height_px?: number | null
           sensor_width_px?: number | null
+          telescope?: string | null
           updated_at?: string
           user_id: string
         }
@@ -159,6 +161,7 @@ export type Database = {
           rotator?: string | null
           sensor_height_px?: number | null
           sensor_width_px?: number | null
+          telescope?: string | null
           updated_at?: string
           user_id?: string
         }

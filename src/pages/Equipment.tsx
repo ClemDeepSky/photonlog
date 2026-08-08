@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CAMERA_CATALOG, findCamera } from "@/data/cameras";
+import { TELESCOPE_CATALOG, findTelescope } from "@/data/telescopes";
 import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG, CORRECTOR_CATALOG, OS_CATALOG, ACQUISITION_SOFTWARE_CATALOG, filterColor } from "@/data/gear";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,7 @@ import { toast } from "@/hooks/use-toast";
 type EquipmentProfile = {
   id: string;
   name: string;
+  telescope: string | null;
   diameter: number | null;
   focal_length: number | null;
   imager_name: string | null;
@@ -48,6 +50,7 @@ type EquipmentProfile = {
 
 const emptyForm = {
   name: "",
+  telescope: "",
   diameter: "",
   focal_length: "",
   imager_name: "",
@@ -128,6 +131,7 @@ const Equipment = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [cameraChoice, setCameraChoice] = useState<string>(OTHER);
+  const [scopeChoice, setScopeChoice] = useState<string>(OTHER);
 
   const load = async () => {
     setLoading(true);
@@ -151,14 +155,17 @@ const Equipment = () => {
     setEditingId(null);
     setForm({ ...emptyForm });
     setCameraChoice(OTHER);
+    setScopeChoice(OTHER);
     setOpen(true);
   };
 
   const openEdit = (item: EquipmentProfile) => {
     setEditingId(item.id);
     setCameraChoice(findCamera(item.imager_name) ? (item.imager_name as string) : OTHER);
+    setScopeChoice(findTelescope(item.telescope) ? (item.telescope as string) : OTHER);
     setForm({
       name: item.name ?? "",
+      telescope: item.telescope ?? "",
       diameter: item.diameter?.toString() ?? "",
       focal_length: item.focal_length?.toString() ?? "",
       imager_name: item.imager_name ?? "",
@@ -205,6 +212,22 @@ const Equipment = () => {
     }));
   };
 
+  const handleTelescopeChange = (value: string) => {
+    setScopeChoice(value);
+    if (value === OTHER) {
+      setForm((f) => ({ ...f, telescope: "" }));
+      return;
+    }
+    const scope = findTelescope(value);
+    if (!scope) return;
+    setForm((f) => ({
+      ...f,
+      telescope: scope.name,
+      diameter: String(scope.aperture),
+      focal_length: String(scope.focal),
+    }));
+  };
+
   const handleSave = async () => {
     if (!user) {
       toast({ title: "Connexion requise", description: "Connectez-vous pour gérer votre matériel.", variant: "destructive" });
@@ -218,6 +241,7 @@ const Equipment = () => {
     const payload = {
       user_id: user.id,
       name: form.name.trim().slice(0, 100),
+      telescope: form.telescope.trim().slice(0, 100) || null,
       diameter: num(form.diameter),
       focal_length: num(form.focal_length),
       imager_name: form.imager_name.trim().slice(0, 100) || null,
@@ -305,6 +329,7 @@ const Equipment = () => {
                     <CardTitle className="text-lg">{item.name}</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
                       {[
+                        item.telescope,
                         item.diameter ? `Ø ${item.diameter} mm` : null,
                         item.focal_length ? `${item.focal_length} mm` : null,
                         ratio(item),
@@ -388,6 +413,30 @@ const Equipment = () => {
               <div className="space-y-2">
                 <Label htmlFor="eq-name">Nom du setup *</Label>
                 <Input id="eq-name" maxLength={100} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Newton 200/800 + ASI2600" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eq-scope">Optique</Label>
+                <Select value={scopeChoice} onValueChange={handleTelescopeChange}>
+                  <SelectTrigger id="eq-scope">
+                    <SelectValue placeholder="Choisir une optique" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {TELESCOPE_CATALOG.map((t) => (
+                      <SelectItem key={t.name} value={t.name}>
+                        {t.name} — {t.aperture}/{t.focal} mm (f/{(t.focal / t.aperture).toFixed(1)})
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={OTHER}>Autre…</SelectItem>
+                  </SelectContent>
+                </Select>
+                {scopeChoice === OTHER && (
+                  <Input
+                    maxLength={100}
+                    value={form.telescope}
+                    onChange={(e) => setForm({ ...form, telescope: e.target.value })}
+                    placeholder="Saisir le modèle d'optique"
+                  />
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
