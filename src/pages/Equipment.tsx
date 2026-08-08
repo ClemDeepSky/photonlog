@@ -125,8 +125,8 @@ const Equipment = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
-  const [cameraChoice, setCameraChoice] = useState<string>(OTHER);
-  const [scopeChoice, setScopeChoice] = useState<string>(OTHER);
+  const [cameraChoice, setCameraChoice] = useState<string>("");
+  const [scopeChoice, setScopeChoice] = useState<string>("");
 
   const load = async () => {
     setLoading(true);
@@ -149,15 +149,19 @@ const Equipment = () => {
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...emptyForm });
-    setCameraChoice(OTHER);
-    setScopeChoice(OTHER);
+    setCameraChoice("");
+    setScopeChoice("");
     setOpen(true);
   };
 
   const openEdit = (item: EquipmentProfile) => {
     setEditingId(item.id);
-    setCameraChoice(findCamera(item.imager_name) ? (item.imager_name as string) : OTHER);
-    setScopeChoice(findTelescope(item.telescope) ? (item.telescope as string) : OTHER);
+    setCameraChoice(
+      findCamera(item.imager_name) ? (item.imager_name as string) : item.imager_name ? OTHER : ""
+    );
+    setScopeChoice(
+      findTelescope(item.telescope) ? (item.telescope as string) : item.telescope ? OTHER : ""
+    );
     setForm({
       name: item.name ?? "",
       telescope: item.telescope ?? "",
@@ -470,7 +474,11 @@ const Equipment = () => {
                   <Input id="eq-imager-custom" maxLength={100} value={form.imager_name} onChange={(e) => setForm({ ...form, imager_name: e.target.value })} placeholder="ASI2600MM Pro" />
                 </div>
                 )}
-                {cameraChoice === OTHER ? (
+                {cameraChoice !== "" && cameraChoice !== OTHER ? (
+                  <p className="text-sm text-muted-foreground">
+                    {form.pixel_size} µm · {form.sensor_width_px}×{form.sensor_height_px} px
+                  </p>
+                ) : (
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="eq-px">Pixels (µm)</Label>
@@ -485,10 +493,6 @@ const Equipment = () => {
                     <Input id="eq-h" type="number" value={form.sensor_height_px} onChange={(e) => setForm({ ...form, sensor_height_px: e.target.value })} />
                   </div>
                 </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    {form.pixel_size} µm · {form.sensor_width_px}×{form.sensor_height_px} px
-                  </p>
                 )}
               </div>
 
