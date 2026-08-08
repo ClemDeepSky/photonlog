@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CAMERA_CATALOG, findCamera } from "@/data/cameras";
-import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG, filterColor } from "@/data/gear";
+import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG, CORRECTOR_CATALOG, OS_CATALOG, ACQUISITION_SOFTWARE_CATALOG, filterColor } from "@/data/gear";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +40,9 @@ type EquipmentProfile = {
   mount: string | null;
   guide_camera: string | null;
   rotator: string | null;
+  corrector: string | null;
+  operating_system: string | null;
+  acquisition_software: string | null;
   filters: string[];
 };
 
@@ -54,6 +57,9 @@ const emptyForm = {
   mount: "",
   guide_camera: "",
   rotator: "",
+  corrector: "",
+  operating_system: "",
+  acquisition_software: "",
   filters: "",
 };
 
@@ -162,6 +168,9 @@ const Equipment = () => {
       mount: item.mount ?? "",
       guide_camera: item.guide_camera ?? "",
       rotator: item.rotator ?? "",
+      corrector: item.corrector ?? "",
+      operating_system: item.operating_system ?? "",
+      acquisition_software: item.acquisition_software ?? "",
       filters: (item.filters ?? []).join(", "),
     });
     setOpen(true);
@@ -218,6 +227,9 @@ const Equipment = () => {
       mount: form.mount.trim().slice(0, 100) || null,
       guide_camera: form.guide_camera.trim().slice(0, 100) || null,
       rotator: form.rotator.trim().slice(0, 100) || null,
+      corrector: form.corrector.trim().slice(0, 100) || null,
+      operating_system: form.operating_system.trim().slice(0, 100) || null,
+      acquisition_software: form.acquisition_software.trim().slice(0, 100) || null,
       filters: form.filters
         .split(",")
         .map((f) => f.trim())
@@ -332,6 +344,18 @@ const Equipment = () => {
                   <div className="flex justify-between gap-4">
                     <span className="text-muted-foreground">Rotateur</span>
                     <span className="text-right">{item.rotator || "—"}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Correcteur</span>
+                    <span className="text-right">{item.corrector || "—"}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Système</span>
+                    <span className="text-right">{item.operating_system || "—"}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Logiciel d'acquisition</span>
+                    <span className="text-right">{item.acquisition_software || "—"}</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {(item.filters ?? []).length > 0 ? (
@@ -448,6 +472,33 @@ const Equipment = () => {
                 value={form.rotator}
                 onChange={(v) => setForm((f) => ({ ...f, rotator: v }))}
                 placeholder="Choisir un rotateur"
+              />
+              <CatalogPicker
+                key={`corr-${editingId ?? "new"}`}
+                id="eq-corrector"
+                label="Correcteur / réducteur"
+                options={CORRECTOR_CATALOG}
+                value={form.corrector}
+                onChange={(v) => setForm((f) => ({ ...f, corrector: v }))}
+                placeholder="Choisir un correcteur"
+              />
+              <CatalogPicker
+                key={`os-${editingId ?? "new"}`}
+                id="eq-os"
+                label="Système d'exploitation"
+                options={OS_CATALOG}
+                value={form.operating_system}
+                onChange={(v) => setForm((f) => ({ ...f, operating_system: v }))}
+                placeholder="Choisir un système"
+              />
+              <CatalogPicker
+                key={`soft-${editingId ?? "new"}`}
+                id="eq-software"
+                label="Logiciel d'acquisition"
+                options={ACQUISITION_SOFTWARE_CATALOG}
+                value={form.acquisition_software}
+                onChange={(v) => setForm((f) => ({ ...f, acquisition_software: v }))}
+                placeholder="Choisir un logiciel"
               />
               <div className="space-y-2">
                 <Label>Filtres</Label>
