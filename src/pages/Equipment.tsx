@@ -131,6 +131,7 @@ const Equipment = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [cameraChoice, setCameraChoice] = useState<string>(OTHER);
+  const [scopeChoice, setScopeChoice] = useState<string>(OTHER);
 
   const load = async () => {
     setLoading(true);
@@ -154,14 +155,17 @@ const Equipment = () => {
     setEditingId(null);
     setForm({ ...emptyForm });
     setCameraChoice(OTHER);
+    setScopeChoice(OTHER);
     setOpen(true);
   };
 
   const openEdit = (item: EquipmentProfile) => {
     setEditingId(item.id);
     setCameraChoice(findCamera(item.imager_name) ? (item.imager_name as string) : OTHER);
+    setScopeChoice(findTelescope(item.telescope) ? (item.telescope as string) : OTHER);
     setForm({
       name: item.name ?? "",
+      telescope: item.telescope ?? "",
       diameter: item.diameter?.toString() ?? "",
       focal_length: item.focal_length?.toString() ?? "",
       imager_name: item.imager_name ?? "",
@@ -208,6 +212,22 @@ const Equipment = () => {
     }));
   };
 
+  const handleTelescopeChange = (value: string) => {
+    setScopeChoice(value);
+    if (value === OTHER) {
+      setForm((f) => ({ ...f, telescope: "" }));
+      return;
+    }
+    const scope = findTelescope(value);
+    if (!scope) return;
+    setForm((f) => ({
+      ...f,
+      telescope: scope.name,
+      diameter: String(scope.aperture),
+      focal_length: String(scope.focal),
+    }));
+  };
+
   const handleSave = async () => {
     if (!user) {
       toast({ title: "Connexion requise", description: "Connectez-vous pour gérer votre matériel.", variant: "destructive" });
@@ -221,6 +241,7 @@ const Equipment = () => {
     const payload = {
       user_id: user.id,
       name: form.name.trim().slice(0, 100),
+      telescope: form.telescope.trim().slice(0, 100) || null,
       diameter: num(form.diameter),
       focal_length: num(form.focal_length),
       imager_name: form.imager_name.trim().slice(0, 100) || null,
