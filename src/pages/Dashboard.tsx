@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Users, User, Plus, Star, FolderOpen } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import StatsOverview from "@/components/dashboard/StatsOverview";
+import { formatDuration } from "@/lib/duration";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +16,7 @@ interface Acquisition {
   filter: string;
   quantity: number;
   acquired: number;
+  exposure_duration: number;
 }
 
 interface ProjectWithAcquisitions {
@@ -45,7 +48,7 @@ const Dashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, team_id, status, teams(name), project_acquisitions(filter, quantity, acquired)")
+        .select("id, name, team_id, status, teams(name), project_acquisitions(filter, quantity, acquired, exposure_duration)")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as ProjectWithAcquisitions[];
@@ -82,6 +85,12 @@ const Dashboard = () => {
     paused: "En pause",
   };
 
+  const allAcquisitions = projects?.flatMap((p) => p.project_acquisitions || []) ?? [];
+  const activeCount = projects?.filter((p) => p.status === "active").length ?? 0;
+
+  const acquiredSecondsOf = (acqs: Acquisition[]) =>
+    acqs.reduce((s, a) => s + a.acquired * Number(a.exposure_duration || 0), 0);
+
   return (
     <AppLayout>
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -109,6 +118,15 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {!isLoading && projects?.length ? (
+          <StatsOverview
+            acquisitions={allAcquisitions}
+            projectCount={projects.length}
+            activeCount={activeCount}
+            filterColors={filterColors}
+          />
+        ) : null}
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -163,6 +181,9 @@ const Dashboard = () => {
                           <span className="text-2xl font-bold text-gradient">{globalPercent}%</span>
                         </div>
                         <Progress value={globalPercent} className="h-2.5" />
+                        <p className="text-[11px] text-muted-foreground mt-1.5">
+                          {formatDuration(acquiredSecondsOf(project.project_acquisitions))} acquises
+                        </p>
                       </div>
 
                       {/* Per-filter progress */}
