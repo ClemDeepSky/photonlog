@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
 
@@ -55,6 +56,7 @@ const Frames = () => {
   const [searchParams] = useSearchParams();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(searchParams.get("project"));
   const [expandedPanes, setExpandedPanes] = useState<Set<string>>(new Set(["global"]));
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const { data: projects } = useQuery({
     queryKey: ["frames-projects"],
@@ -305,6 +307,7 @@ const Frames = () => {
                       <div className="space-y-2">
                         {acqs.map((acq) => {
                           const percent = acq.quantity > 0 ? Math.min(100, Math.round((acq.acquired / acq.quantity) * 100)) : 0;
+                          const surplus = Math.max(0, acq.acquired - acq.quantity);
                           return (
                             <div
                               key={acq.id}
@@ -331,6 +334,9 @@ const Frames = () => {
                                   <span className="text-xs text-muted-foreground w-12 text-right">
                                     {percent}%
                                   </span>
+                                  {surplus > 0 && (
+                                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] shrink-0">+{surplus}</Badge>
+                                  )}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {acq.exposure_duration}s · Bin {acq.bin}
@@ -347,9 +353,25 @@ const Frames = () => {
                                 >
                                   <Minus className="h-3 w-3" />
                                 </Button>
-                                <span className="w-14 text-center text-sm font-semibold tabular-nums">
-                                  {acq.acquired}/{acq.quantity}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    className="h-7 w-16 text-center text-sm tabular-nums"
+                                    value={drafts[acq.id] ?? String(acq.acquired)}
+                                    onChange={(e) => setDrafts((d) => ({ ...d, [acq.id]: e.target.value }))}
+                                    onBlur={() => {
+                                      const raw = drafts[acq.id];
+                                      setDrafts((d) => { const n = { ...d }; delete n[acq.id]; return n; });
+                                      if (raw === undefined) return;
+                                      const v = parseInt(raw);
+                                      const next = isNaN(v) ? 0 : Math.max(0, v);
+                                      if (next !== acq.acquired) updateAcquired.mutate({ id: acq.id, acquired: next });
+                                    }}
+                                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                  />
+                                  <span className="text-xs text-muted-foreground">/ {acq.quantity}</span>
+                                </div>
                                 <Button
                                   variant="outline"
                                   size="icon"
