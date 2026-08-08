@@ -20,6 +20,8 @@ interface SkyViewerProps {
   setupName?: string | null;
   setups?: { name: string; focal_length: number | null; sensorWidthMm: number | null; sensorHeightMm: number | null }[];
   onSetupChange?: (name: string) => void;
+  onRaDecChange?: (ra: string, dec: string) => void;
+  onRotationChange?: (angleDeg: number) => void;
 }
 
 const SENSORS: Record<string, { width: number; height: number; label: string }> = {
@@ -57,6 +59,26 @@ const parseDEC = (decStr: string): number | null => {
 
 const calcFOVDeg = (sensorMm: number, focalMm: number): number => {
   return 2 * Math.atan(sensorMm / (2 * focalMm)) * (180 / Math.PI);
+};
+
+const formatRaDeg = (deg: number): string => {
+  let d = ((deg % 360) + 360) % 360;
+  const hours = d / 15;
+  const h = Math.floor(hours);
+  const mFloat = (hours - h) * 60;
+  const m = Math.floor(mFloat);
+  const s = Math.round((mFloat - m) * 60 * 10) / 10;
+  return `${h}h ${m}m ${s}s`;
+};
+
+const formatDecDeg = (deg: number): string => {
+  const sign = deg < 0 ? "-" : "";
+  const a = Math.abs(deg);
+  const d = Math.floor(a);
+  const mFloat = (a - d) * 60;
+  const m = Math.floor(mFloat);
+  const s = Math.round((mFloat - m) * 60 * 10) / 10;
+  return `${sign}${d}d ${m}m ${s}s`;
 };
 
 let aladinScriptLoaded = false;
