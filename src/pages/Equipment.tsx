@@ -411,19 +411,20 @@ const Equipment = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="eq-scope">Optique</Label>
-                <Select value={scopeChoice} onValueChange={handleTelescopeChange}>
-                  <SelectTrigger id="eq-scope">
-                    <SelectValue placeholder="Choisir une optique" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {TELESCOPE_CATALOG.map((t) => (
-                      <SelectItem key={t.name} value={t.name}>
-                        {t.name} — {t.aperture}/{t.focal} mm (f/{(t.focal / t.aperture).toFixed(1)})
-                      </SelectItem>
-                    ))}
-                    <SelectItem value={OTHER}>Autre…</SelectItem>
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  id="eq-scope"
+                  value={scopeChoice}
+                  onChange={handleTelescopeChange}
+                  placeholder="Choisir une optique"
+                  options={[
+                    ...TELESCOPE_CATALOG.map((t) => ({
+                      value: t.name,
+                      label: t.name,
+                      hint: `${t.aperture}/${t.focal} mm (f/${(t.focal / t.aperture).toFixed(1)})`,
+                    })),
+                    { value: OTHER, label: "Autre…" },
+                  ]}
+                />
                 {scopeChoice === OTHER && (
                   <Input
                     maxLength={100}
@@ -448,19 +449,20 @@ const Equipment = () => {
                 <p className="text-sm font-medium">Imageur</p>
                 <div className="space-y-2">
                   <Label htmlFor="eq-imager">Modèle</Label>
-                  <Select value={cameraChoice} onValueChange={handleCameraChange}>
-                    <SelectTrigger id="eq-imager">
-                      <SelectValue placeholder="Choisir une caméra" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      {CAMERA_CATALOG.map((c) => (
-                        <SelectItem key={c.name} value={c.name}>
-                          {c.name} — {c.pixelSize} µm · {c.widthPx}×{c.heightPx}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value={OTHER}>Autre…</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    id="eq-imager"
+                    value={cameraChoice}
+                    onChange={handleCameraChange}
+                    placeholder="Choisir une caméra"
+                    options={[
+                      ...CAMERA_CATALOG.map((c) => ({
+                        value: c.name,
+                        label: c.name,
+                        hint: `${c.pixelSize} µm · ${c.widthPx}×${c.heightPx}`,
+                      })),
+                      { value: OTHER, label: "Autre…" },
+                    ]}
+                  />
                 </div>
                 {cameraChoice === OTHER && (
                 <div className="space-y-2">
