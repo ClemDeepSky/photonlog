@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import AstroBinImportDialog from "@/components/projects/AstroBinImportDialog";
+import ProjectImageField from "@/components/projects/ProjectImageField";
 import type { AstroBinImport } from "@/lib/astrobin";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,6 +52,7 @@ const CreateProject = () => {
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
   const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [setup, setSetup] = useState("");
   const [isTeamProject, setIsTeamProject] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState("");
@@ -229,6 +231,7 @@ const CreateProject = () => {
       result.url ? `AstroBin : ${result.url}` : null,
     ].filter(Boolean).join("\n");
     if (notes) setDescription((prev) => (prev ? `${prev}\n${notes}` : notes));
+    if (result.imageUrl) setImageUrl(result.imageUrl);
 
     setAcquisitions(
       result.filters.map((f) => ({
@@ -249,6 +252,7 @@ const CreateProject = () => {
         .from("projects")
         .insert({
           name, description: description || null, setup: setup || null, target_object: null,
+          image_url: imageUrl,
           folder_path: folderPath || null,
           team_id: isTeamProject ? selectedTeamId : null, created_by: user!.id, is_mosaic: isMosaic,
           ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
@@ -382,6 +386,7 @@ const CreateProject = () => {
                 <Label>Description (optionnel)</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2} />
               </div>
+              <ProjectImageField value={imageUrl} onChange={setImageUrl} />
             </CardContent>
           </Card>
 

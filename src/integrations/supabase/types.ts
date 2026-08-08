@@ -216,6 +216,7 @@ export type Database = {
           description: string | null
           folder_path: string | null
           id: string
+          image_url: string | null
           is_mosaic: boolean
           name: string
           position_angle: number | null
@@ -233,6 +234,7 @@ export type Database = {
           description?: string | null
           folder_path?: string | null
           id?: string
+          image_url?: string | null
           is_mosaic?: boolean
           name: string
           position_angle?: number | null
@@ -250,6 +252,7 @@ export type Database = {
           description?: string | null
           folder_path?: string | null
           id?: string
+          image_url?: string | null
           is_mosaic?: boolean
           name?: string
           position_angle?: number | null
