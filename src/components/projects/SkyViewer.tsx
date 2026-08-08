@@ -119,13 +119,15 @@ const loadAladin = (): Promise<void> => {
   return aladinInitPromise;
 };
 
-const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLength, setupSensorWidthMm, setupSensorHeightMm, setupName, setups, onSetupChange }: SkyViewerProps) => {
+const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLength, setupSensorWidthMm, setupSensorHeightMm, setupName, setups, onSetupChange, onRaDecChange, onRotationChange }: SkyViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const aladinRef = useRef<any>(null);
-  const overlayRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [focalLength, setFocalLength] = useState(450);
   const [sensor, setSensor] = useState("apsc");
+  const [shapes, setShapes] = useState<{ pts: [number, number][]; color: string; interactive: boolean; handle?: [number, number]; center?: [number, number] }[]>([]);
+  const dragRef = useRef<any>(null);
+  const selfEditRef = useRef<{ ra: string; dec: string } | null>(null);
 
   const hasSetupSensor = !!(setupSensorWidthMm && setupSensorHeightMm);
   const sensorOptions: Record<string, { width: number; height: number; label: string }> = hasSetupSensor
@@ -158,9 +160,12 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
     return () => { cancelled = true; };
   }, []);
 
-  // Initialize / update Aladin view
   const hasCoordinates = !!(ra && dec);
+  const sensorInfo = sensorOptions[sensor] || SENSORS.apsc;
+  const fovW = calcFOVDeg(sensorInfo.width, focalLength);
+  const fovH = calcFOVDeg(sensorInfo.height, focalLength);
 
+  // Initialize / recenter Aladin view
   useEffect(() => {
     if (!ready || !containerRef.current || !window.A) return;
 
@@ -168,10 +173,6 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
     const decDeg = parseDEC(dec);
     const targetRA = raDeg ?? 10.684;
     const targetDEC = decDeg ?? 41.269;
-
-    const sensorInfo = sensorOptions[sensor] || SENSORS.apsc;
-    const fovW = calcFOVDeg(sensorInfo.width, focalLength);
-    const fovH = calcFOVDeg(sensorInfo.height, focalLength);
     const maxFov = Math.max(fovW, fovH) * 2.5;
 
     try {
@@ -191,77 +192,133 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
           showZoomControl: true,
           showProjectionControl: false,
         });
-      } else {
+      } else if (!selfEditRef.current || selfEditRef.current.ra !== ra || selfEditRef.current.dec !== dec) {
+        // Only recenter when the change did not come from dragging the frame
         aladinRef.current.gotoRaDec(targetRA, targetDEC);
-        aladinRef.current.setFoV(maxFov);
-      }
-
-      // Draw FOV overlay only when coordinates are provided
-      if (hasCoordinates) {
-        setTimeout(() => drawOverlay(targetRA, targetDEC, fovW, fovH), 600);
       }
     } catch (e) {
       console.error("Aladin init error:", e);
     }
-  }, [ready, ra, dec, focalLength, sensor, positionAngle, panes, isMosaic, hasCoordinates]);
+  }, [ready, ra, dec, fovW, fovH]);
 
-  const drawOverlay = useCallback((centerRA: number, centerDEC: number, fovW: number, fovH: number) => {
-    if (!aladinRef.current || !window.A) return;
+  // Compute the FOV frame(s) in screen space, refreshed every frame
+  useEffect(() => {
+    if (!ready) return;
+    let raf = 0;
 
-    // Remove previous overlay
-    if (overlayRef.current) {
-      try { overlayRef.current.removeAll(); } catch (_) {}
-    }
-
-    const overlay = window.A.graphicOverlay({ color: "#00ff88", lineWidth: 2 });
-    aladinRef.current.addOverlay(overlay);
-    overlayRef.current = overlay;
-
-    const drawRect = (cRA: number, cDEC: number, w: number, h: number, angle: number, color: string) => {
-      const angleRad = (angle * Math.PI) / 180;
-      const cosA = Math.cos(angleRad);
-      const sinA = Math.sin(angleRad);
-      const cosDec = Math.cos((cDEC * Math.PI) / 180);
-
-      const hw = w / 2;
-      const hh = h / 2;
-
-      const corners = [
-        [-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh],
-      ];
-
-      const raDecCorners = corners.map(([dx, dy]) => {
+    const cornersFor = (cRA: number, cDEC: number, angle: number): [number, number][] | null => {
+      const a = (angle * Math.PI) / 180;
+      const cosA = Math.cos(a);
+      const sinA = Math.sin(a);
+      const hw = fovW / 2;
+      const hh = fovH / 2;
+      const local: [number, number][] = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
+      const pts: [number, number][] = [];
+      for (const [dx, dy] of local) {
         const rotX = dx * cosA - dy * sinA;
         const rotY = dx * sinA + dy * cosA;
         const cornerDec = cDEC + rotY;
-        const cosCornerDec = Math.cos((cornerDec * Math.PI) / 180);
-        return [cRA + rotX / cosCornerDec, cornerDec];
-      });
-
-      raDecCorners.push(raDecCorners[0]); // Close polygon
-
-      try {
-        const polyline = window.A.polyline(raDecCorners, { color, lineWidth: 2 });
-        overlay.add(polyline);
-      } catch (e) {
-        console.error("Polyline error:", e);
+        const cornerRA = cRA + rotX / Math.cos((cornerDec * Math.PI) / 180);
+        const p = aladinRef.current?.world2pix(cornerRA, cornerDec);
+        if (!p) return null;
+        pts.push([p[0], p[1]]);
       }
+      return pts;
     };
 
-    if (isMosaic && panes && panes.length > 0) {
-      panes.forEach((pane, i) => {
-        const pRA = parseRA(pane.ra);
-        const pDEC = parseDEC(pane.dec);
-        if (pRA !== null && pDEC !== null) {
-          const angle = pane.position_angle ?? positionAngle ?? 0;
-          const hue = (i * 360) / panes.length;
-          drawRect(pRA, pDEC, fovW, fovH, angle, `hsl(${hue}, 80%, 60%)`);
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      if (!aladinRef.current) return;
+      const next: typeof shapes = [];
+
+      if (isMosaic && panes && panes.length > 0) {
+        panes.forEach((pane, i) => {
+          const pRA = parseRA(pane.ra);
+          const pDEC = parseDEC(pane.dec);
+          if (pRA === null || pDEC === null) return;
+          const pts = cornersFor(pRA, pDEC, pane.position_angle ?? positionAngle ?? 0);
+          if (pts) next.push({ pts, color: `hsl(${(i * 360) / panes.length}, 80%, 60%)`, interactive: false });
+        });
+      } else if (hasCoordinates) {
+        const cRA = parseRA(ra);
+        const cDEC = parseDEC(dec);
+        if (cRA !== null && cDEC !== null) {
+          const pts = cornersFor(cRA, cDEC, positionAngle || 0);
+          const c = aladinRef.current.world2pix(cRA, cDEC);
+          if (pts && c) {
+            // rotation handle: above the frame (north side, rotated)
+            const top: [number, number] = [(pts[2][0] + pts[3][0]) / 2, (pts[2][1] + pts[3][1]) / 2];
+            const handle: [number, number] = [top[0] + (top[0] - c[0]) * 0.35, top[1] + (top[1] - c[1]) * 0.35];
+            next.push({ pts, color: "#00ff88", interactive: true, handle, center: [c[0], c[1]] });
+          }
         }
-      });
+      }
+      setShapes(next);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [ready, ra, dec, positionAngle, panes, isMosaic, hasCoordinates, fovW, fovH]);
+
+  const localPoint = (e: React.PointerEvent | PointerEvent) => {
+    const rect = containerRef.current!.getBoundingClientRect();
+    return [(e as any).clientX - rect.left, (e as any).clientY - rect.top] as [number, number];
+  };
+
+  const startDrag = (mode: "move" | "rotate") => (e: React.PointerEvent) => {
+    if (!aladinRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    const [x, y] = localPoint(e);
+    const w = aladinRef.current.pix2world(x, y);
+    dragRef.current = {
+      mode,
+      startWorld: w,
+      startRA: parseRA(ra) ?? 0,
+      startDEC: parseDEC(dec) ?? 0,
+      startPA: positionAngle || 0,
+    };
+  };
+
+  const onDragMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d || !aladinRef.current) return;
+    e.preventDefault();
+    const [x, y] = localPoint(e);
+    const w = aladinRef.current.pix2world(x, y);
+    if (!w) return;
+
+    if (d.mode === "move") {
+      let dRA = w[0] - d.startWorld[0];
+      if (dRA > 180) dRA -= 360;
+      if (dRA < -180) dRA += 360;
+      const newRA = d.startRA + dRA;
+      const newDEC = Math.max(-89.9, Math.min(89.9, d.startDEC + (w[1] - d.startWorld[1])));
+      const raStr = formatRaDeg(newRA);
+      const decStr = formatDecDeg(newDEC);
+      selfEditRef.current = { ra: raStr, dec: decStr };
+      onRaDecChange?.(raStr, decStr);
     } else {
-      drawRect(centerRA, centerDEC, fovW, fovH, positionAngle || 0, "#00ff88");
+      const cRA = parseRA(ra) ?? 0;
+      const cDEC = parseDEC(dec) ?? 0;
+      let dRA = w[0] - cRA;
+      if (dRA > 180) dRA -= 360;
+      if (dRA < -180) dRA += 360;
+      const east = dRA * Math.cos((cDEC * Math.PI) / 180);
+      const north = w[1] - cDEC;
+      let pa = -Math.atan2(east, north) * (180 / Math.PI);
+      pa = Math.round(((pa % 360) + 360) % 360 * 10) / 10;
+      onRotationChange?.(pa);
     }
-  }, [positionAngle, panes, isMosaic]);
+  };
+
+  const endDrag = () => {
+    dragRef.current = null;
+    setTimeout(() => { selfEditRef.current = null; }, 300);
+  };
+
+  const interactive = !isMosaic && hasCoordinates && (!!onRaDecChange || !!onRotationChange);
 
   return (
     <div className="space-y-3">
@@ -304,11 +361,52 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
           RA {ra || "—"} · Dec {dec || "—"} · Rotation {positionAngle || 0}°
         </p>
       )}
-      <div
-        ref={containerRef}
-        className="w-full rounded-md overflow-hidden border border-border"
-        style={{ height: 400 }}
-      />
+      <div className="relative w-full rounded-md overflow-hidden border border-border" style={{ height: 400 }}>
+        <div ref={containerRef} className="absolute inset-0" />
+        <svg
+          className="absolute inset-0 h-full w-full"
+          style={{ pointerEvents: "none" }}
+          onPointerMove={onDragMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
+          {shapes.map((s, i) => (
+            <g key={i}>
+              <polygon
+                points={s.pts.map((p) => p.join(",")).join(" ")}
+                fill={s.interactive ? "rgba(0,255,136,0.08)" : "none"}
+                stroke={s.color}
+                strokeWidth={2}
+                style={{ pointerEvents: s.interactive && interactive ? "auto" : "none", cursor: "move" }}
+                onPointerDown={s.interactive && interactive ? startDrag("move") : undefined}
+              />
+              {s.handle && s.center && interactive && (
+                <>
+                  <line
+                    x1={(s.pts[2][0] + s.pts[3][0]) / 2}
+                    y1={(s.pts[2][1] + s.pts[3][1]) / 2}
+                    x2={s.handle[0]}
+                    y2={s.handle[1]}
+                    stroke={s.color}
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                  />
+                  <circle
+                    cx={s.handle[0]}
+                    cy={s.handle[1]}
+                    r={8}
+                    fill="#0b1020"
+                    stroke={s.color}
+                    strokeWidth={2}
+                    style={{ pointerEvents: "auto", cursor: "grab" }}
+                    onPointerDown={startDrag("rotate")}
+                  />
+                </>
+              )}
+            </g>
+          ))}
+        </svg>
+      </div>
       {!ready && (
         <p className="text-xs text-muted-foreground text-center animate-pulse">
           Chargement de la carte du ciel...
@@ -317,6 +415,11 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
       {(!ra || !dec) && ready && (
         <p className="text-xs text-muted-foreground text-center">
           Vue initiale (M31). Saisissez des coordonnées RA/DEC pour centrer le cadre sur votre cible.
+        </p>
+      )}
+      {interactive && (
+        <p className="text-xs text-muted-foreground text-center">
+          Glissez le cadre pour déplacer la cible, la poignée ronde pour ajuster la rotation.
         </p>
       )}
     </div>
