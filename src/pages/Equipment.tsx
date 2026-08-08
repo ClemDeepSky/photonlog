@@ -86,9 +86,15 @@ const CatalogPicker = ({ id, label, options, value, onChange, placeholder }: Pic
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <Select
+      <SearchableSelect
+        id={id}
         value={selectValue}
-        onValueChange={(v) => {
+        placeholder={placeholder ?? "Choisir…"}
+        options={[
+          ...options.map((o) => ({ value: o, label: o })),
+          { value: OTHER, label: "Autre…" },
+        ]}
+        onChange={(v) => {
           if (v === OTHER) {
             setCustom(true);
             onChange("");
@@ -97,19 +103,7 @@ const CatalogPicker = ({ id, label, options, value, onChange, placeholder }: Pic
             onChange(v);
           }
         }}
-      >
-        <SelectTrigger id={id}>
-          <SelectValue placeholder={placeholder ?? "Choisir…"} />
-        </SelectTrigger>
-        <SelectContent className="max-h-72">
-          {options.map((o) => (
-            <SelectItem key={o} value={o}>
-              {o}
-            </SelectItem>
-          ))}
-          <SelectItem value={OTHER}>Autre…</SelectItem>
-        </SelectContent>
-      </Select>
+      />
       {custom && (
         <Input
           maxLength={100}
