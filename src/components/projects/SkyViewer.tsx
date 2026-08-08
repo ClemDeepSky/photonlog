@@ -19,6 +19,8 @@ interface SkyViewerProps {
   setupSensorWidthMm?: number | null;
   setupSensorHeightMm?: number | null;
   setupName?: string | null;
+  setups?: { name: string; focal_length: number | null; sensorWidthMm: number | null; sensorHeightMm: number | null }[];
+  onSetupChange?: (name: string) => void;
 }
 
 const SENSORS: Record<string, { width: number; height: number; label: string }> = {
@@ -28,33 +30,30 @@ const SENSORS: Record<string, { width: number; height: number; label: string }> 
   "apsh": { width: 28.7, height: 19, label: "APS-H (28.7×19mm)" },
 };
 
+// Generic sexagesimal parser: handles "20h 4m 23.5s", "20 04 23.5", "00h 42' 44\"", "34d 49m 33.3s"
+const parseSexagesimal = (str: string): { value: number; parts: number } | null => {
+  if (!str) return null;
+  const nums = str.match(/[+-]?\d+(?:[.,]\d+)?/g);
+  if (!nums || nums.length === 0) return null;
+  const [a, b, c] = nums.map((n) => parseFloat(n.replace(",", ".")));
+  const sign = /^\s*-/.test(str) || a < 0 ? -1 : 1;
+  const value = Math.abs(a) + (b || 0) / 60 + (c || 0) / 3600;
+  return { value: sign * value, parts: nums.length };
+};
+
 // Parse RA string to degrees
 const parseRA = (raStr: string): number | null => {
-  if (!raStr) return null;
-  const hms = raStr.match(/(\d+)\s*h[r]?\s*(\d+)[''′]\s*([\d.]+)?/i);
-  if (hms) {
-    const h = parseFloat(hms[1]);
-    const m = parseFloat(hms[2]);
-    const s = parseFloat(hms[3] || "0");
-    return (h + m / 60 + s / 3600) * 15;
-  }
-  const num = parseFloat(raStr);
-  return isNaN(num) ? null : num;
+  const p = parseSexagesimal(raStr);
+  if (!p) return null;
+  // Hours if sexagesimal or explicit "h", otherwise already degrees
+  const isHours = p.parts > 1 || /h/i.test(raStr);
+  return isHours ? p.value * 15 : p.value;
 };
 
 // Parse DEC string to degrees
 const parseDEC = (decStr: string): number | null => {
-  if (!decStr) return null;
-  const dms = decStr.match(/([+-]?\d+)[°º]\s*(\d+)[''′]\s*([\d.]+)?/i);
-  if (dms) {
-    const d = parseFloat(dms[1]);
-    const m = parseFloat(dms[2]);
-    const s = parseFloat(dms[3] || "0");
-    const sign = d < 0 ? -1 : 1;
-    return sign * (Math.abs(d) + m / 60 + s / 3600);
-  }
-  const num = parseFloat(decStr);
-  return isNaN(num) ? null : num;
+  const p = parseSexagesimal(decStr);
+  return p ? p.value : null;
 };
 
 const calcFOVDeg = (sensorMm: number, focalMm: number): number => {
@@ -99,7 +98,7 @@ const loadAladin = (): Promise<void> => {
   return aladinInitPromise;
 };
 
-const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLength, setupSensorWidthMm, setupSensorHeightMm, setupName }: SkyViewerProps) => {
+const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLength, setupSensorWidthMm, setupSensorHeightMm, setupName, setups, onSetupChange }: SkyViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const aladinRef = useRef<any>(null);
   const overlayRef = useRef<any>(null);
