@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       equipment_profiles: {
         Row: {
+          acquisition_software: string | null
+          corrector: string | null
           created_at: string
           diameter: number | null
           filters: string[]
@@ -25,6 +27,7 @@ export type Database = {
           imager_name: string | null
           mount: string | null
           name: string
+          operating_system: string | null
           pixel_size: number | null
           rotator: string | null
           sensor_height_px: number | null
@@ -33,6 +36,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          acquisition_software?: string | null
+          corrector?: string | null
           created_at?: string
           diameter?: number | null
           filters?: string[]
@@ -42,6 +47,7 @@ export type Database = {
           imager_name?: string | null
           mount?: string | null
           name: string
+          operating_system?: string | null
           pixel_size?: number | null
           rotator?: string | null
           sensor_height_px?: number | null
@@ -50,6 +56,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          acquisition_software?: string | null
+          corrector?: string | null
           created_at?: string
           diameter?: number | null
           filters?: string[]
@@ -59,6 +67,7 @@ export type Database = {
           imager_name?: string | null
           mount?: string | null
           name?: string
+          operating_system?: string | null
           pixel_size?: number | null
           rotator?: string | null
           sensor_height_px?: number | null
