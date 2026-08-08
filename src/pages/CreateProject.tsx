@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import AstroBinImportDialog from "@/components/projects/AstroBinImportDialog";
+import ProjectImageField from "@/components/projects/ProjectImageField";
 import type { AstroBinImport } from "@/lib/astrobin";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
