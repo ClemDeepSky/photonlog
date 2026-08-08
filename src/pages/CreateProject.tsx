@@ -1,3 +1,4 @@
+import CoordinateInputs from "@/components/CoordinateInputs";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
