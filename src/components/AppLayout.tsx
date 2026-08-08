@@ -31,8 +31,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen bg-cosmic flex">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border/50 bg-card/50 backdrop-blur-sm">
-        <div className="flex items-center gap-2 p-6 border-b border-border/50">
+      <aside className="hidden md:flex flex-col w-64 border-r border-border/20 bg-card/30">
+        <div className="flex items-center gap-2 p-6 border-b border-border/20">
           <Telescope className="h-6 w-6 text-primary" />
           <span className="text-xl font-bold text-gradient">Photonlog</span>
         </div>
@@ -44,7 +44,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                 location.pathname === item.to
-                  ? "bg-primary/10 text-primary shadow-glow"
+                  ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
@@ -53,7 +53,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t border-border/50">
+        <div className="p-4 border-t border-border/20">
           <p className="text-xs text-muted-foreground mb-3 truncate">{user?.email}</p>
           <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" />
@@ -63,11 +63,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       </aside>
 
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-sm border-b border-border/50 px-4 py-3 flex items-center justify-between">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-sm border-b border-border/20 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Telescope className="h-5 w-5 text-primary" />
           <span className="font-bold text-gradient">Photonlog</span>
-
         </div>
         <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -104,7 +103,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Main content */}
       <main className="flex-1 md:pt-0 pt-14 overflow-auto">
-        <div className="p-6 md:p-8 max-w-6xl mx-auto">{children}</div>
+        <div className="p-6 md:p-8 w-full">{children}</div>
       </main>
     </div>
   );
