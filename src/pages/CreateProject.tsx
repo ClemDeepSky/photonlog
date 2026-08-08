@@ -220,6 +220,29 @@ const CreateProject = () => {
 
   const canSubmit = name && (!isTeamProject || selectedTeamId);
 
+  const handleAstroBinImport = (result: AstroBinImport) => {
+    if (result.title && !name) setName(result.title);
+    const notes = [
+      result.author ? `Auteur : ${result.author}` : null,
+      result.published ? `Publié : ${result.published}` : null,
+      result.totalIntegration ? `Intégration totale : ${result.totalIntegration}` : null,
+      result.url ? `AstroBin : ${result.url}` : null,
+    ].filter(Boolean).join("\n");
+    if (notes) setDescription((prev) => (prev ? `${prev}\n${notes}` : notes));
+
+    setAcquisitions(
+      result.filters.map((f) => ({
+        filter: f.filter,
+        exposure_duration: f.exposure,
+        quantity: f.count,
+        bin: 1,
+        acquired: f.count,
+      }))
+    );
+    setDisabledAcquisitions({});
+    toast({ title: `${result.filters.length} filtre(s) importé(s) depuis AstroBin` });
+  };
+
   const createProject = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase
@@ -254,7 +277,7 @@ const CreateProject = () => {
               acqInserts.push({
                 project_id: projectId, pane_id: paneId || null,
                 filter: acq.filter, exposure_duration: acq.exposure_duration,
-                quantity: acq.quantity, bin: acq.bin,
+                quantity: acq.quantity, bin: acq.bin, acquired: acq.acquired ?? 0,
               });
             }
           });
@@ -269,7 +292,7 @@ const CreateProject = () => {
             acquisitions.map((acq) => ({
               project_id: projectId, pane_id: null,
               filter: acq.filter, exposure_duration: acq.exposure_duration,
-              quantity: acq.quantity, bin: acq.bin,
+              quantity: acq.quantity, bin: acq.bin, acquired: acq.acquired ?? 0,
             }))
           );
           if (acqError) throw acqError;
@@ -548,6 +571,7 @@ const CreateProject = () => {
               <Button variant="outline" size="sm" onClick={addAcquisition}>
                 <Plus className="h-3 w-3 mr-1" /> Ajouter un filtre
               </Button>
+              <AstroBinImportDialog onImport={handleAstroBinImport} />
 
               {/* Per-pane overrides for mosaic */}
               {isMosaic && panes.length > 0 && acquisitions.length > 0 && (
