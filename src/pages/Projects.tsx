@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import placeholder from "@/assets/project-placeholder.jpg";
 
 const Projects = () => {
   const { user } = useAuth();
@@ -71,6 +72,14 @@ const Projects = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((project) => (
               <Card key={project.id} className="group hover:border-primary/50 transition-colors">
+                <div className="relative h-32 w-full overflow-hidden rounded-t-lg">
+                  <img
+                    src={(project as any).image_url || placeholder}
+                    alt={`Vignette du projet ${project.name}`}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
