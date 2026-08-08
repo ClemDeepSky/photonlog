@@ -79,6 +79,19 @@ const EditProject = () => {
   });
 
   // Load project data
+  const { data: equipment } = useQuery({
+    queryKey: ["equipment-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("equipment_profiles")
+        .select("id, name, focal_length, diameter, pixel_size, sensor_width_px, sensor_height_px, filters")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const { data: project, isLoading } = useQuery({
     queryKey: ["project-edit", id],
     queryFn: async () => {
@@ -88,6 +101,12 @@ const EditProject = () => {
     },
     enabled: !!id && !!user,
   });
+
+  const selectedSetup = equipment?.find((e) => e.name === setup);
+  const setupSensorWidthMm = selectedSetup?.pixel_size && selectedSetup?.sensor_width_px
+    ? (Number(selectedSetup.pixel_size) * selectedSetup.sensor_width_px) / 1000 : null;
+  const setupSensorHeightMm = selectedSetup?.pixel_size && selectedSetup?.sensor_height_px
+    ? (Number(selectedSetup.pixel_size) * selectedSetup.sensor_height_px) / 1000 : null;
 
   const { data: projectPanes } = useQuery({
     queryKey: ["project-panes", id],
@@ -459,13 +478,25 @@ const EditProject = () => {
               <div>
                 <Label>Setup</Label>
                 <Select value={setup} onValueChange={setSetup}>
-                  <SelectTrigger><SelectValue placeholder="Sélectionner un setup" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={equipment?.length ? "Sélectionner un setup" : "Aucun setup — créez-en un dans Matériel"} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="setup_1">Setup 1</SelectItem>
-                    <SelectItem value="setup_2">Setup 2</SelectItem>
-                    <SelectItem value="setup_3">Setup 3</SelectItem>
+                    {equipment?.map((e) => (
+                      <SelectItem key={e.id} value={e.name}>
+                        {e.name}{e.focal_length ? ` — ${e.focal_length}mm` : ""}
+                      </SelectItem>
+                    ))}
+                    {setup && !equipment?.some((e) => e.name === setup) && (
+                      <SelectItem value={setup}>{setup}</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+                {selectedSetup && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedSetup.diameter ? `Ø${selectedSetup.diameter}mm · ` : ""}
+                    {selectedSetup.focal_length ? `${selectedSetup.focal_length}mm · ` : ""}
+                    {setupSensorWidthMm ? `capteur ${setupSensorWidthMm.toFixed(1)}×${setupSensorHeightMm!.toFixed(1)}mm` : ""}
+                  </p>
+                )}
               </div>
               <div>
                 <Label>Description (optionnel)</Label>
@@ -588,6 +619,10 @@ const EditProject = () => {
                   positionAngle={parseFloat(positionAngle) || 0}
                   panes={isMosaic ? panes.map((p) => ({ ra: p.ra, dec: p.dec, position_angle: p.position_angle })) : undefined}
                   isMosaic={isMosaic}
+                  setupFocalLength={selectedSetup?.focal_length ? Number(selectedSetup.focal_length) : null}
+                  setupSensorWidthMm={setupSensorWidthMm}
+                  setupSensorHeightMm={setupSensorHeightMm}
+                  setupName={selectedSetup?.name}
                 />
               </CardContent>
             </Card>
