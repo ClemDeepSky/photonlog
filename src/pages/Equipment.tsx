@@ -329,6 +329,7 @@ const Equipment = () => {
                     <CardTitle className="text-lg">{item.name}</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
                       {[
+                        item.telescope,
                         item.diameter ? `Ø ${item.diameter} mm` : null,
                         item.focal_length ? `${item.focal_length} mm` : null,
                         ratio(item),
@@ -412,6 +413,30 @@ const Equipment = () => {
               <div className="space-y-2">
                 <Label htmlFor="eq-name">Nom du setup *</Label>
                 <Input id="eq-name" maxLength={100} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Newton 200/800 + ASI2600" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eq-scope">Optique</Label>
+                <Select value={scopeChoice} onValueChange={handleTelescopeChange}>
+                  <SelectTrigger id="eq-scope">
+                    <SelectValue placeholder="Choisir une optique" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {TELESCOPE_CATALOG.map((t) => (
+                      <SelectItem key={t.name} value={t.name}>
+                        {t.name} — {t.aperture}/{t.focal} mm (f/{(t.focal / t.aperture).toFixed(1)})
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={OTHER}>Autre…</SelectItem>
+                  </SelectContent>
+                </Select>
+                {scopeChoice === OTHER && (
+                  <Input
+                    maxLength={100}
+                    value={form.telescope}
+                    onChange={(e) => setForm({ ...form, telescope: e.target.value })}
+                    placeholder="Saisir le modèle d'optique"
+                  />
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
