@@ -352,19 +352,22 @@ const Frames = () => {
                                 >
                                   <Minus className="h-3 w-3" />
                                 </Button>
-                                <span className="w-14 text-center text-sm font-semibold tabular-nums">
-                                  {acq.acquired}/{acq.quantity}
-                                </span>
                                 <div className="flex items-center gap-1">
                                   <Input
                                     type="number"
                                     min={0}
                                     className="h-7 w-16 text-center text-sm tabular-nums"
-                                    value={acq.acquired}
-                                    onChange={(e) => {
-                                      const v = parseInt(e.target.value);
-                                      updateAcquired.mutate({ id: acq.id, acquired: isNaN(v) ? 0 : Math.max(0, v) });
+                                    value={drafts[acq.id] ?? String(acq.acquired)}
+                                    onChange={(e) => setDrafts((d) => ({ ...d, [acq.id]: e.target.value }))}
+                                    onBlur={() => {
+                                      const raw = drafts[acq.id];
+                                      setDrafts((d) => { const n = { ...d }; delete n[acq.id]; return n; });
+                                      if (raw === undefined) return;
+                                      const v = parseInt(raw);
+                                      const next = isNaN(v) ? 0 : Math.max(0, v);
+                                      if (next !== acq.acquired) updateAcquired.mutate({ id: acq.id, acquired: next });
                                     }}
+                                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                                   />
                                   <span className="text-xs text-muted-foreground">/ {acq.quantity}</span>
                                 </div>
