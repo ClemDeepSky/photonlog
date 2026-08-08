@@ -328,6 +328,10 @@ const Equipment = () => {
                     <span className="text-muted-foreground">Caméra de guidage</span>
                     <span className="text-right">{item.guide_camera || "—"}</span>
                   </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Rotateur</span>
+                    <span className="text-right">{item.rotator || "—"}</span>
+                  </div>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {(item.filters ?? []).length > 0 ? (
                       item.filters.map((f) => (
