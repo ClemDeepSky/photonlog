@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import FolderScanner from "@/components/frames/FolderScanner";
+import ProjectImageField from "@/components/projects/ProjectImageField";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -53,6 +54,7 @@ const EditProject = () => {
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
   const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [setup, setSetup] = useState("");
   const [isTeamProject, setIsTeamProject] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState("");
@@ -135,6 +137,7 @@ const EditProject = () => {
     setName(project.name);
     setFolderPath((project as any).folder_path || "");
     setDescription(project.description || "");
+    setImageUrl((project as any).image_url || null);
     setSetup(project.setup || "");
     setIsMosaic(project.is_mosaic);
     setRa(project.ra || "");
@@ -332,6 +335,7 @@ const EditProject = () => {
         .from("projects")
         .update({
           name, description: description || null, setup: setup || null,
+          image_url: imageUrl,
           folder_path: folderPath || null,
           team_id: isTeamProject ? selectedTeamId : null, is_mosaic: isMosaic,
           ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
@@ -502,6 +506,7 @@ const EditProject = () => {
                 <Label>Description (optionnel)</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2} />
               </div>
+              <ProjectImageField value={imageUrl} onChange={setImageUrl} />
             </CardContent>
           </Card>
 
