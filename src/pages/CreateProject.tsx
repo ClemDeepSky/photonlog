@@ -14,6 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
+import AstroBinImportDialog from "@/components/projects/AstroBinImportDialog";
+import type { AstroBinImport } from "@/lib/astrobin";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -36,6 +38,7 @@ interface Acquisition {
   exposure_duration: number;
   quantity: number;
   bin: number;
+  acquired?: number;
 }
 
 const FILTERS = ["L", "R", "G", "B", "Ha", "OIII", "SII", "UV", "IR"];
@@ -217,6 +220,29 @@ const CreateProject = () => {
 
   const canSubmit = name && (!isTeamProject || selectedTeamId);
 
+  const handleAstroBinImport = (result: AstroBinImport) => {
+    if (result.title && !name) setName(result.title);
+    const notes = [
+      result.author ? `Auteur : ${result.author}` : null,
+      result.published ? `Publié : ${result.published}` : null,
+      result.totalIntegration ? `Intégration totale : ${result.totalIntegration}` : null,
+      result.url ? `AstroBin : ${result.url}` : null,
+    ].filter(Boolean).join("\n");
+    if (notes) setDescription((prev) => (prev ? `${prev}\n${notes}` : notes));
+
+    setAcquisitions(
+      result.filters.map((f) => ({
+        filter: f.filter,
+        exposure_duration: f.exposure,
+        quantity: f.count,
+        bin: 1,
+        acquired: f.count,
+      }))
+    );
+    setDisabledAcquisitions({});
+    toast({ title: `${result.filters.length} filtre(s) importé(s) depuis AstroBin` });
+  };
+
   const createProject = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase
@@ -251,7 +277,7 @@ const CreateProject = () => {
               acqInserts.push({
                 project_id: projectId, pane_id: paneId || null,
                 filter: acq.filter, exposure_duration: acq.exposure_duration,
-                quantity: acq.quantity, bin: acq.bin,
+                quantity: acq.quantity, bin: acq.bin, acquired: acq.acquired ?? 0,
               });
             }
           });
@@ -266,7 +292,7 @@ const CreateProject = () => {
             acquisitions.map((acq) => ({
               project_id: projectId, pane_id: null,
               filter: acq.filter, exposure_duration: acq.exposure_duration,
-              quantity: acq.quantity, bin: acq.bin,
+              quantity: acq.quantity, bin: acq.bin, acquired: acq.acquired ?? 0,
             }))
           );
           if (acqError) throw acqError;
@@ -513,7 +539,9 @@ const CreateProject = () => {
                         <Select value={acq.filter} onValueChange={(v) => updateAcquisition(idx, "filter", v)}>
                           <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {FILTERS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                            {Array.from(new Set([...FILTERS, acq.filter].filter(Boolean))).map((f) => (
+                              <SelectItem key={f} value={f}>{f}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </TableCell>
@@ -542,9 +570,12 @@ const CreateProject = () => {
                   ))}
                 </TableBody>
               </Table>
-              <Button variant="outline" size="sm" onClick={addAcquisition}>
-                <Plus className="h-3 w-3 mr-1" /> Ajouter un filtre
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={addAcquisition}>
+                  <Plus className="h-3 w-3 mr-1" /> Ajouter un filtre
+                </Button>
+                <AstroBinImportDialog onImport={handleAstroBinImport} />
+              </div>
 
               {/* Per-pane overrides for mosaic */}
               {isMosaic && panes.length > 0 && acquisitions.length > 0 && (
