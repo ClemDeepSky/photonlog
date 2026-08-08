@@ -496,6 +496,8 @@ const CreateProject = () => {
                 <SkyViewer
                   ra={ra}
                   dec={dec}
+                  onRaDecChange={(r, d) => { setRa(r); setDec(d); }}
+                  onRotationChange={(a) => setPositionAngle(String(a))}
                   positionAngle={parseFloat(positionAngle) || 0}
                   panes={isMosaic ? panes.map((p) => ({ ra: p.ra, dec: p.dec, position_angle: p.position_angle })) : undefined}
                   isMosaic={isMosaic}
