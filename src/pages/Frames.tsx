@@ -56,6 +56,7 @@ const Frames = () => {
   const [searchParams] = useSearchParams();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(searchParams.get("project"));
   const [expandedPanes, setExpandedPanes] = useState<Set<string>>(new Set(["global"]));
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const { data: projects } = useQuery({
     queryKey: ["frames-projects"],
