@@ -539,7 +539,9 @@ const CreateProject = () => {
                         <Select value={acq.filter} onValueChange={(v) => updateAcquisition(idx, "filter", v)}>
                           <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {FILTERS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                            {Array.from(new Set([...FILTERS, acq.filter].filter(Boolean))).map((f) => (
+                              <SelectItem key={f} value={f}>{f}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </TableCell>
@@ -568,10 +570,12 @@ const CreateProject = () => {
                   ))}
                 </TableBody>
               </Table>
-              <Button variant="outline" size="sm" onClick={addAcquisition}>
-                <Plus className="h-3 w-3 mr-1" /> Ajouter un filtre
-              </Button>
-              <AstroBinImportDialog onImport={handleAstroBinImport} />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={addAcquisition}>
+                  <Plus className="h-3 w-3 mr-1" /> Ajouter un filtre
+                </Button>
+                <AstroBinImportDialog onImport={handleAstroBinImport} />
+              </div>
 
               {/* Per-pane overrides for mosaic */}
               {isMosaic && panes.length > 0 && acquisitions.length > 0 && (
