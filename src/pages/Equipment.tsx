@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CAMERA_CATALOG, findCamera } from "@/data/cameras";
+import { TELESCOPE_CATALOG, findTelescope } from "@/data/telescopes";
 import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG, CORRECTOR_CATALOG, OS_CATALOG, ACQUISITION_SOFTWARE_CATALOG, filterColor } from "@/data/gear";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,7 @@ import { toast } from "@/hooks/use-toast";
 type EquipmentProfile = {
   id: string;
   name: string;
+  telescope: string | null;
   diameter: number | null;
   focal_length: number | null;
   imager_name: string | null;
@@ -48,6 +50,7 @@ type EquipmentProfile = {
 
 const emptyForm = {
   name: "",
+  telescope: "",
   diameter: "",
   focal_length: "",
   imager_name: "",
