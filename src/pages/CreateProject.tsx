@@ -410,22 +410,16 @@ const CreateProject = () => {
                       <TabsTrigger value="csv" className="text-xs px-3 h-6">Import CSV</TabsTrigger>
                     </TabsList>
                   </Tabs>
-                  {coordMode === "manual" ? (
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <Label className="text-xs">RA</Label>
-                        <Input value={ra} onChange={(e) => setRa(e.target.value)} placeholder="00h 42' 44&quot;" />
-                      </div>
-                      <div>
-                        <Label className="text-xs">DEC</Label>
-                        <Input value={dec} onChange={(e) => setDec(e.target.value)} placeholder="41° 16' 09&quot;" />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Angle de position</Label>
-                        <Input value={positionAngle} onChange={(e) => setPositionAngle(e.target.value)} placeholder="0" type="number" />
-                      </div>
-                    </div>
-                  ) : (
+                   {coordMode === "manual" ? (
+                     <CoordinateInputs
+                       ra={ra}
+                       dec={dec}
+                       rotation={positionAngle}
+                       onRaChange={setRa}
+                       onDecChange={setDec}
+                       onRotationChange={setPositionAngle}
+                     />
+                   ) : (
                     <div className="space-y-2">
                       <p className="text-xs text-muted-foreground">Importez un CSV Telescopius pour remplir automatiquement les coordonnées.</p>
                       <CsvUploadZone />
