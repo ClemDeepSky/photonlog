@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CAMERA_CATALOG, findCamera } from "@/data/cameras";
+import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG } from "@/data/gear";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -37,6 +38,7 @@ type EquipmentProfile = {
   sensor_height_px: number | null;
   mount: string | null;
   guide_camera: string | null;
+  rotator: string | null;
   filters: string[];
 };
 
@@ -50,12 +52,65 @@ const emptyForm = {
   sensor_height_px: "",
   mount: "",
   guide_camera: "",
+  rotator: "",
   filters: "",
 };
 
 const num = (v: string) => (v.trim() === "" ? null : Number(v));
 const int = (v: string) => (v.trim() === "" ? null : parseInt(v, 10));
 const OTHER = "__other__";
+
+type PickerProps = {
+  id: string;
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+};
+
+const CatalogPicker = ({ id, label, options, value, onChange, placeholder }: PickerProps) => {
+  const isKnown = value !== "" && options.includes(value);
+  const [custom, setCustom] = useState(!isKnown && value !== "");
+  const selectValue = custom ? OTHER : isKnown ? value : "";
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Select
+        value={selectValue}
+        onValueChange={(v) => {
+          if (v === OTHER) {
+            setCustom(true);
+            onChange("");
+          } else {
+            setCustom(false);
+            onChange(v);
+          }
+        }}
+      >
+        <SelectTrigger id={id}>
+          <SelectValue placeholder={placeholder ?? "Choisir…"} />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          {options.map((o) => (
+            <SelectItem key={o} value={o}>
+              {o}
+            </SelectItem>
+          ))}
+          <SelectItem value={OTHER}>Autre…</SelectItem>
+        </SelectContent>
+      </Select>
+      {custom && (
+        <Input
+          maxLength={100}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Saisir le modèle"
+        />
+      )}
+    </div>
+  );
+};
 
 const Equipment = () => {
   const { user } = useAuth();
@@ -105,9 +160,22 @@ const Equipment = () => {
       sensor_height_px: item.sensor_height_px?.toString() ?? "",
       mount: item.mount ?? "",
       guide_camera: item.guide_camera ?? "",
+      rotator: item.rotator ?? "",
       filters: (item.filters ?? []).join(", "),
     });
     setOpen(true);
+  };
+
+  const selectedFilters = form.filters
+    .split(",")
+    .map((f) => f.trim())
+    .filter(Boolean);
+
+  const toggleFilter = (f: string) => {
+    const next = selectedFilters.includes(f)
+      ? selectedFilters.filter((x) => x !== f)
+      : [...selectedFilters, f];
+    setForm((prev) => ({ ...prev, filters: next.join(", ") }));
   };
 
   const handleCameraChange = (value: string) => {
@@ -148,6 +216,7 @@ const Equipment = () => {
       sensor_height_px: int(form.sensor_height_px),
       mount: form.mount.trim().slice(0, 100) || null,
       guide_camera: form.guide_camera.trim().slice(0, 100) || null,
+      rotator: form.rotator.trim().slice(0, 100) || null,
       filters: form.filters
         .split(",")
         .map((f) => f.trim())
@@ -259,6 +328,10 @@ const Equipment = () => {
                     <span className="text-muted-foreground">Caméra de guidage</span>
                     <span className="text-right">{item.guide_camera || "—"}</span>
                   </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Rotateur</span>
+                    <span className="text-right">{item.rotator || "—"}</span>
+                  </div>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {(item.filters ?? []).length > 0 ? (
                       item.filters.map((f) => (
@@ -343,17 +416,61 @@ const Equipment = () => {
                 )}
               </div>
 
+              <CatalogPicker
+                key={`mount-${editingId ?? "new"}`}
+                id="eq-mount"
+                label="Monture"
+                options={MOUNT_CATALOG}
+                value={form.mount}
+                onChange={(v) => setForm((f) => ({ ...f, mount: v }))}
+                placeholder="Choisir une monture"
+              />
+              <CatalogPicker
+                key={`guide-${editingId ?? "new"}`}
+                id="eq-guide"
+                label="Caméra de guidage"
+                options={GUIDE_CAMERA_CATALOG}
+                value={form.guide_camera}
+                onChange={(v) => setForm((f) => ({ ...f, guide_camera: v }))}
+                placeholder="Choisir une caméra de guidage"
+              />
+              <CatalogPicker
+                key={`rot-${editingId ?? "new"}`}
+                id="eq-rotator"
+                label="Rotateur"
+                options={ROTATOR_CATALOG}
+                value={form.rotator}
+                onChange={(v) => setForm((f) => ({ ...f, rotator: v }))}
+                placeholder="Choisir un rotateur"
+              />
               <div className="space-y-2">
-                <Label htmlFor="eq-mount">Monture</Label>
-                <Input id="eq-mount" maxLength={100} value={form.mount} onChange={(e) => setForm({ ...form, mount: e.target.value })} placeholder="EQ6-R Pro" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eq-guide">Caméra de guidage</Label>
-                <Input id="eq-guide" maxLength={100} value={form.guide_camera} onChange={(e) => setForm({ ...form, guide_camera: e.target.value })} placeholder="ASI120MM Mini" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eq-filters">Filtres (séparés par des virgules)</Label>
-                <Input id="eq-filters" maxLength={200} value={form.filters} onChange={(e) => setForm({ ...form, filters: e.target.value })} placeholder="L, R, G, B, Ha, OIII, SII" />
+                <Label>Filtres</Label>
+                <div className="flex flex-wrap gap-1.5 rounded-lg border border-border/50 p-3 max-h-48 overflow-y-auto">
+                  {FILTER_CATALOG.map((f) => {
+                    const active = selectedFilters.includes(f);
+                    return (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => toggleFilter(f)}
+                        className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border/60 text-muted-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Input
+                  id="eq-filters"
+                  maxLength={200}
+                  value={form.filters}
+                  onChange={(e) => setForm({ ...form, filters: e.target.value })}
+                  placeholder="Autres filtres, séparés par des virgules"
+                />
               </div>
             </div>
             <DialogFooter>
