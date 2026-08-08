@@ -26,6 +26,7 @@ export type Database = {
           mount: string | null
           name: string
           pixel_size: number | null
+          rotator: string | null
           sensor_height_px: number | null
           sensor_width_px: number | null
           updated_at: string
@@ -42,6 +43,7 @@ export type Database = {
           mount?: string | null
           name: string
           pixel_size?: number | null
+          rotator?: string | null
           sensor_height_px?: number | null
           sensor_width_px?: number | null
           updated_at?: string
@@ -58,6 +60,7 @@ export type Database = {
           mount?: string | null
           name?: string
           pixel_size?: number | null
+          rotator?: string | null
           sensor_height_px?: number | null
           sensor_width_px?: number | null
           updated_at?: string

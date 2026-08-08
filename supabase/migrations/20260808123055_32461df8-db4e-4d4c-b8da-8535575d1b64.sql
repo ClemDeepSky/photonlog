@@ -1,0 +1,1 @@
+ALTER TABLE public.equipment_profiles ADD COLUMN IF NOT EXISTS rotator text;
