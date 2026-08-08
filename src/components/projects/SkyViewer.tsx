@@ -15,6 +15,10 @@ interface SkyViewerProps {
   positionAngle?: number;
   panes?: { ra: string; dec: string; position_angle: number | null }[];
   isMosaic?: boolean;
+  setupFocalLength?: number | null;
+  setupSensorWidthMm?: number | null;
+  setupSensorHeightMm?: number | null;
+  setupName?: string | null;
 }
 
 const SENSORS: Record<string, { width: number; height: number; label: string }> = {
@@ -95,13 +99,35 @@ const loadAladin = (): Promise<void> => {
   return aladinInitPromise;
 };
 
-const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerProps) => {
+const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLength, setupSensorWidthMm, setupSensorHeightMm, setupName }: SkyViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const aladinRef = useRef<any>(null);
   const overlayRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [focalLength, setFocalLength] = useState(450);
   const [sensor, setSensor] = useState("apsc");
+
+  const hasSetupSensor = !!(setupSensorWidthMm && setupSensorHeightMm);
+  const sensorOptions: Record<string, { width: number; height: number; label: string }> = hasSetupSensor
+    ? {
+        setup: {
+          width: setupSensorWidthMm as number,
+          height: setupSensorHeightMm as number,
+          label: `${setupName || "Setup"} (${(setupSensorWidthMm as number).toFixed(1)}×${(setupSensorHeightMm as number).toFixed(1)}mm)`,
+        },
+        ...SENSORS,
+      }
+    : SENSORS;
+
+  // Sync with the selected equipment setup
+  useEffect(() => {
+    if (setupFocalLength) setFocalLength(setupFocalLength);
+  }, [setupFocalLength]);
+
+  useEffect(() => {
+    if (hasSetupSensor) setSensor("setup");
+    else setSensor((s) => (s === "setup" ? "apsc" : s));
+  }, [hasSetupSensor, setupSensorWidthMm, setupSensorHeightMm]);
 
   // Load Aladin Lite
   useEffect(() => {
@@ -121,7 +147,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerPro
     const targetRA = raDeg ?? 10.684;
     const targetDEC = decDeg ?? 41.269;
 
-    const sensorInfo = SENSORS[sensor];
+    const sensorInfo = sensorOptions[sensor] || SENSORS.apsc;
     const fovW = calcFOVDeg(sensorInfo.width, focalLength);
     const fovH = calcFOVDeg(sensorInfo.height, focalLength);
     const maxFov = Math.max(fovW, fovH) * 2.5;
@@ -232,7 +258,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic }: SkyViewerPro
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(SENSORS).map(([k, v]) => (
+              {Object.entries(sensorOptions).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v.label}</SelectItem>
               ))}
             </SelectContent>
