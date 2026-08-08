@@ -32,7 +32,7 @@ export const SignupEmail = ({
     <Preview>Confirmez votre email pour {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={brand}>AstroTracker</Text>
+        <Text style={brand}>Photonlog</Text>
         <Heading style={h1}>Confirmez votre email</Heading>
         <Text style={text}>
           Merci de votre inscription sur{' '}

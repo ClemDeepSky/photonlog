@@ -27,7 +27,7 @@ export const RecoveryEmail = ({
     <Preview>Réinitialisez votre mot de passe pour {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={brand}>AstroTracker</Text>
+        <Text style={brand}>Photonlog</Text>
         <Heading style={h1}>Réinitialisation du mot de passe</Heading>
         <Text style={text}>
           Nous avons reçu une demande de réinitialisation de votre mot de passe sur
