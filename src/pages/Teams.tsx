@@ -46,7 +46,16 @@ const Teams = () => {
 
   const createTeam = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTeamName.trim() || !user) return;
+    if (!newTeamName.trim()) return;
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Vous devez être connecté pour créer une team.",
+        variant: "destructive",
+      });
+      navigate("/auth?redirect=/teams");
+      return;
+    }
     const { data, error } = await supabase.from("teams").insert({
       name: newTeamName.trim(),
       owner_id: user.id,
