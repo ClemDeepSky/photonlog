@@ -306,6 +306,7 @@ const Frames = () => {
                       <div className="space-y-2">
                         {acqs.map((acq) => {
                           const percent = acq.quantity > 0 ? Math.min(100, Math.round((acq.acquired / acq.quantity) * 100)) : 0;
+                          const surplus = Math.max(0, acq.acquired - acq.quantity);
                           return (
                             <div
                               key={acq.id}
@@ -332,6 +333,9 @@ const Frames = () => {
                                   <span className="text-xs text-muted-foreground w-12 text-right">
                                     {percent}%
                                   </span>
+                                  {surplus > 0 && (
+                                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] shrink-0">+{surplus}</Badge>
+                                  )}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {acq.exposure_duration}s · Bin {acq.bin}
@@ -351,6 +355,19 @@ const Frames = () => {
                                 <span className="w-14 text-center text-sm font-semibold tabular-nums">
                                   {acq.acquired}/{acq.quantity}
                                 </span>
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    className="h-7 w-16 text-center text-sm tabular-nums"
+                                    value={acq.acquired}
+                                    onChange={(e) => {
+                                      const v = parseInt(e.target.value);
+                                      updateAcquired.mutate({ id: acq.id, acquired: isNaN(v) ? 0 : Math.max(0, v) });
+                                    }}
+                                  />
+                                  <span className="text-xs text-muted-foreground">/ {acq.quantity}</span>
+                                </div>
                                 <Button
                                   variant="outline"
                                   size="icon"
