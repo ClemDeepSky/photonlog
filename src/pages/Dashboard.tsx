@@ -66,18 +66,25 @@ const Dashboard = () => {
   };
 
   const getFilterProgress = (acqs: Acquisition[]) => {
-    const map: Record<string, { acquired: number; kept: number; quantity: number }> = {};
+    const map: Record<string, { acquired: number; kept: number; quantity: number; acquiredSeconds: number; keptSeconds: number; plannedSeconds: number }> = {};
     for (const a of acqs) {
-      if (!map[a.filter]) map[a.filter] = { acquired: 0, kept: 0, quantity: 0 };
+      const dur = Number(a.exposure_duration || 0);
+      if (!map[a.filter]) map[a.filter] = { acquired: 0, kept: 0, quantity: 0, acquiredSeconds: 0, keptSeconds: 0, plannedSeconds: 0 };
       map[a.filter].acquired += a.acquired;
       map[a.filter].kept += a.kept;
       map[a.filter].quantity += a.quantity;
+      map[a.filter].acquiredSeconds += a.acquired * dur;
+      map[a.filter].keptSeconds += a.kept * dur;
+      map[a.filter].plannedSeconds += a.quantity * dur;
     }
-    return Object.entries(map).map(([filter, { acquired, kept, quantity }]) => ({
+    return Object.entries(map).map(([filter, { acquired, kept, quantity, acquiredSeconds, keptSeconds, plannedSeconds }]) => ({
       filter,
       acquired,
       kept,
       quantity,
+      acquiredSeconds,
+      keptSeconds,
+      plannedSeconds,
       percent: quantity > 0 ? Math.min(100, Math.round((kept / quantity) * 100)) : 0,
     }));
   };
