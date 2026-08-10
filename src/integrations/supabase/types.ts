@@ -202,6 +202,7 @@ export type Database = {
           exposure_duration: number
           filter: string
           id: string
+          kept: number
           pane_id: string | null
           project_id: string
           quantity: number
@@ -213,6 +214,7 @@ export type Database = {
           exposure_duration?: number
           filter?: string
           id?: string
+          kept?: number
           pane_id?: string | null
           project_id: string
           quantity?: number
@@ -224,6 +226,7 @@ export type Database = {
           exposure_duration?: number
           filter?: string
           id?: string
+          kept?: number
           pane_id?: string | null
           project_id?: string
           quantity?: number
