@@ -16,6 +16,7 @@ interface Acquisition {
   filter: string;
   quantity: number;
   acquired: number;
+  kept: number;
   exposure_duration: number;
 }
 
@@ -48,7 +49,7 @@ const Dashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, team_id, status, teams(name), project_acquisitions(filter, quantity, acquired, exposure_duration)")
+        .select("id, name, team_id, status, teams(name), project_acquisitions(filter, quantity, acquired, kept, exposure_duration)")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as ProjectWithAcquisitions[];
@@ -60,22 +61,24 @@ const Dashboard = () => {
     if (!acqs.length) return 0;
     const totalTarget = acqs.reduce((s, a) => s + a.quantity, 0);
     if (totalTarget === 0) return 0;
-    const totalAcquired = acqs.reduce((s, a) => s + a.acquired, 0);
-    return Math.min(100, Math.round((totalAcquired / totalTarget) * 100));
+    const totalKept = acqs.reduce((s, a) => s + a.kept, 0);
+    return Math.min(100, Math.round((totalKept / totalTarget) * 100));
   };
 
   const getFilterProgress = (acqs: Acquisition[]) => {
-    const map: Record<string, { acquired: number; quantity: number }> = {};
+    const map: Record<string, { acquired: number; kept: number; quantity: number }> = {};
     for (const a of acqs) {
-      if (!map[a.filter]) map[a.filter] = { acquired: 0, quantity: 0 };
+      if (!map[a.filter]) map[a.filter] = { acquired: 0, kept: 0, quantity: 0 };
       map[a.filter].acquired += a.acquired;
+      map[a.filter].kept += a.kept;
       map[a.filter].quantity += a.quantity;
     }
-    return Object.entries(map).map(([filter, { acquired, quantity }]) => ({
+    return Object.entries(map).map(([filter, { acquired, kept, quantity }]) => ({
       filter,
       acquired,
+      kept,
       quantity,
-      percent: quantity > 0 ? Math.min(100, Math.round((acquired / quantity) * 100)) : 0,
+      percent: quantity > 0 ? Math.min(100, Math.round((kept / quantity) * 100)) : 0,
     }));
   };
 
@@ -90,6 +93,9 @@ const Dashboard = () => {
 
   const acquiredSecondsOf = (acqs: Acquisition[]) =>
     acqs.reduce((s, a) => s + a.acquired * Number(a.exposure_duration || 0), 0);
+
+  const keptSecondsOf = (acqs: Acquisition[]) =>
+    acqs.reduce((s, a) => s + a.kept * Number(a.exposure_duration || 0), 0);
 
   return (
     <AppLayout>
@@ -189,7 +195,7 @@ const Dashboard = () => {
                       {/* Per-filter progress */}
                       {filters.length > 0 && (
                         <div className="space-y-1.5">
-                          {filters.map(({ filter, acquired, quantity, percent }) => (
+                          {filters.map(({ filter, kept, quantity, percent }) => (
                             <div key={filter} className="flex items-center gap-2 text-xs">
                               <span
                                 className="w-8 font-semibold text-right shrink-0"
@@ -206,19 +212,24 @@ const Dashboard = () => {
                                   }}
                                 />
                               </div>
-                              <span className="text-muted-foreground w-16 text-right shrink-0">
-                                {acquired}/{quantity}
+                              <span className="text-muted-foreground w-20 text-right shrink-0">
+                                {kept}/{quantity}
                               </span>
                             </div>
                           ))}
                         </div>
                       )}
 
+                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+                        <span>{formatDuration(keptSecondsOf(project.project_acquisitions))} conservées</span>
+                        <span>{formatDuration(acquiredSecondsOf(project.project_acquisitions))} acquises</span>
+                      </div>
+
                       {/* Add acquisitions button */}
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full mt-2 opacity-80 group-hover:opacity-100 transition-opacity"
+                        className="w-full opacity-80 group-hover:opacity-100 transition-opacity"
                         onClick={() => navigate(`/frames?project=${project.id}`)}
                       >
                         <Plus className="h-3.5 w-3.5 mr-1.5" />
