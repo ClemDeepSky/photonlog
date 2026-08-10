@@ -109,6 +109,39 @@ const Projects = () => {
                   {project.description && (
                     <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{project.description}</p>
                   )}
+
+                  {/* Acquisition summary */}
+                  {(() => {
+                    const acqs = (project as any).project_acquisitions || [];
+                    const acquired = acqs.reduce((s: number, a: any) => s + (a.acquired || 0), 0);
+                    const kept = acqs.reduce((s: number, a: any) => s + (a.kept || 0), 0);
+                    const quantity = acqs.reduce((s: number, a: any) => s + (a.quantity || 0), 0);
+                    const seconds = acqs.reduce((s: number, a: any) => s + (a.kept || 0) * (a.exposure_duration || 0), 0);
+                    const percent = quantity > 0 ? Math.min(100, Math.round((kept / quantity) * 100)) : 0;
+                    if (quantity === 0) return null;
+                    return (
+                      <div className="mb-3 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {kept} / {quantity} conservées
+                          </span>
+                          <span className="text-muted-foreground">{percent}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-3">
+                          <span className="flex items-center gap-1"><Camera className="h-3 w-3" />{acquired} acquises</span>
+                          <span>{Math.round(seconds / 60)} min d'intégration</span>
+                        </p>
+                      </div>
+                    );
+                  })()}
+
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-4">
                       {project.ra && project.dec && (
