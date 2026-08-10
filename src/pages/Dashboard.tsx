@@ -66,18 +66,25 @@ const Dashboard = () => {
   };
 
   const getFilterProgress = (acqs: Acquisition[]) => {
-    const map: Record<string, { acquired: number; kept: number; quantity: number }> = {};
+    const map: Record<string, { acquired: number; kept: number; quantity: number; acquiredSeconds: number; keptSeconds: number; plannedSeconds: number }> = {};
     for (const a of acqs) {
-      if (!map[a.filter]) map[a.filter] = { acquired: 0, kept: 0, quantity: 0 };
+      const dur = Number(a.exposure_duration || 0);
+      if (!map[a.filter]) map[a.filter] = { acquired: 0, kept: 0, quantity: 0, acquiredSeconds: 0, keptSeconds: 0, plannedSeconds: 0 };
       map[a.filter].acquired += a.acquired;
       map[a.filter].kept += a.kept;
       map[a.filter].quantity += a.quantity;
+      map[a.filter].acquiredSeconds += a.acquired * dur;
+      map[a.filter].keptSeconds += a.kept * dur;
+      map[a.filter].plannedSeconds += a.quantity * dur;
     }
-    return Object.entries(map).map(([filter, { acquired, kept, quantity }]) => ({
+    return Object.entries(map).map(([filter, { acquired, kept, quantity, acquiredSeconds, keptSeconds, plannedSeconds }]) => ({
       filter,
       acquired,
       kept,
       quantity,
+      acquiredSeconds,
+      keptSeconds,
+      plannedSeconds,
       percent: quantity > 0 ? Math.min(100, Math.round((kept / quantity) * 100)) : 0,
     }));
   };
@@ -187,43 +194,58 @@ const Dashboard = () => {
                           <span className="text-2xl font-bold text-gradient">{globalPercent}%</span>
                         </div>
                         <Progress value={globalPercent} className="h-2.5" />
-                        <p className="text-[11px] text-muted-foreground mt-1.5">
-                          {formatDuration(acquiredSecondsOf(project.project_acquisitions))} acquises
-                        </p>
+                      </div>
+
+                      {/* Prominent acquired / kept times */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg bg-secondary/50 px-3 py-2">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Acquis</p>
+                          <p className="text-lg font-bold text-foreground">
+                            {formatDuration(acquiredSecondsOf(project.project_acquisitions))}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-secondary/50 px-3 py-2">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Conservé</p>
+                          <p className="text-base font-semibold text-foreground">
+                            {formatDuration(keptSecondsOf(project.project_acquisitions))}
+                          </p>
+                        </div>
                       </div>
 
                       {/* Per-filter progress */}
                       {filters.length > 0 && (
-                        <div className="space-y-1.5">
-                          {filters.map(({ filter, kept, quantity, percent }) => (
-                            <div key={filter} className="flex items-center gap-2 text-xs">
-                              <span
-                                className="w-8 font-semibold text-right shrink-0"
-                                style={{ color: filterColors[filter] || "hsl(var(--muted-foreground))" }}
-                              >
-                                {filter}
-                              </span>
-                              <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all"
-                                  style={{
-                                    width: `${percent}%`,
-                                    backgroundColor: filterColors[filter] || "hsl(var(--primary))",
-                                  }}
-                                />
+                        <div className="space-y-2">
+                          {filters.map(({ filter, kept, quantity, percent, acquiredSeconds, keptSeconds, plannedSeconds }) => (
+                            <div key={filter} className="space-y-1">
+                              <div className="flex items-center gap-2 text-xs">
+                                <span
+                                  className="w-8 font-semibold text-right shrink-0"
+                                  style={{ color: filterColors[filter] || "hsl(var(--muted-foreground))" }}
+                                >
+                                  {filter}
+                                </span>
+                                <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all"
+                                    style={{
+                                      width: `${percent}%`,
+                                      backgroundColor: filterColors[filter] || "hsl(var(--primary))",
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-muted-foreground w-20 text-right shrink-0">
+                                  {kept}/{quantity}
+                                </span>
                               </div>
-                              <span className="text-muted-foreground w-20 text-right shrink-0">
-                                {kept}/{quantity}
-                              </span>
+                              <div className="flex items-center justify-between text-[10px] text-muted-foreground pl-10 pr-24">
+                                <span>{formatDuration(plannedSeconds)} visé</span>
+                                <span>{formatDuration(acquiredSeconds)} acq.</span>
+                                <span>{formatDuration(keptSeconds)} conservé</span>
+                              </div>
                             </div>
                           ))}
                         </div>
                       )}
-
-                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-                        <span>{formatDuration(keptSecondsOf(project.project_acquisitions))} conservées</span>
-                        <span>{formatDuration(acquiredSecondsOf(project.project_acquisitions))} acquises</span>
-                      </div>
 
                       {/* Add acquisitions button */}
                       <Button
