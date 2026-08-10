@@ -266,31 +266,51 @@ const Frames = () => {
             </div>
 
             {/* Global stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Progression globale</p>
+                  <p className="text-xs text-muted-foreground mb-1">Progression conservée</p>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-gradient">{globalProgress}%</span>
                   </div>
                   <Progress value={globalProgress} className="h-2 mt-2" />
+                  <p className="text-[11px] text-muted-foreground mt-1.5">{globalAcquiredProgress}% acquis bruts</p>
                 </CardContent>
               </Card>
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Frames acquises</p>
+                  <p className="text-xs text-muted-foreground mb-1">Frames conservées</p>
                   <span className="text-3xl font-bold">
-                    {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0}
+                    {acquisitions?.reduce((s, a) => s + a.kept, 0) || 0}
                     <span className="text-base font-normal text-muted-foreground">
                       /{acquisitions?.reduce((s, a) => s + a.quantity, 0) || 0}
                     </span>
                   </span>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0} acquises
+                  </p>
                 </CardContent>
               </Card>
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Temps d'exposition total</p>
+                  <p className="text-xs text-muted-foreground mb-1">Temps d'exposition conservé</p>
                   <span className="text-3xl font-bold">{formatExposure(totalExposure)}</span>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">{formatExposure(totalAcquiredExposure)} acquis</p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-xs text-muted-foreground mb-1">Taux de conservation</p>
+                  <span className="text-3xl font-bold">
+                    {(acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0) > 0
+                      ? Math.round(
+                          ((acquisitions?.reduce((s, a) => s + a.kept, 0) || 0) /
+                            (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 1)) *
+                            100
+                        )
+                      : 0}
+                    %
+                  </span>
                 </CardContent>
               </Card>
             </div>
