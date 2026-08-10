@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+
 import { AlertTriangle, Clock, Layers, Target, Timer, Hourglass, Camera, CheckCircle2 } from "lucide-react";
 import { formatDuration } from "@/lib/duration";
 
@@ -34,19 +34,28 @@ const StatsOverview = ({ acquisitions, projectCount, activeCount, filterColors }
   const globalKeptPercent = plannedSeconds > 0 ? Math.min(100, Math.round((keptSeconds / plannedSeconds) * 100)) : 0;
 
   const byFilter = Object.entries(
-    acquisitions.reduce<Record<string, { acquired: number; kept: number; planned: number }>>((acc, a) => {
+    acquisitions.reduce<Record<string, { acquired: number; kept: number; planned: number; durationCount: number; durationSum: number }>>((acc, a) => {
       const dur = Number(a.exposure_duration || 0);
-      acc[a.filter] = acc[a.filter] || { acquired: 0, kept: 0, planned: 0 };
+      acc[a.filter] = acc[a.filter] || { acquired: 0, kept: 0, planned: 0, durationCount: 0, durationSum: 0 };
       acc[a.filter].acquired += a.acquired * dur;
       acc[a.filter].kept += a.kept * dur;
       acc[a.filter].planned += a.quantity * dur;
+      acc[a.filter].durationCount += a.quantity;
+      acc[a.filter].durationSum += a.quantity * dur;
       return acc;
     }, {})
   )
-    .map(([filter, v]) => ({ filter, ...v }))
+    .map(([filter, v]) => ({
+      filter,
+      acquired: v.acquired,
+      kept: v.kept,
+      planned: v.planned,
+      exposureDuration: v.durationCount > 0 ? Math.round(v.durationSum / v.durationCount) : 0,
+      acquiredPercent: v.planned > 0 ? Math.min(100, Math.round((v.acquired / v.planned) * 100)) : 0,
+      keptPercent: v.planned > 0 ? Math.min(100, Math.round((v.kept / v.planned) * 100)) : 0,
+    }))
     .sort((a, b) => b.kept - a.kept || b.acquired - a.acquired);
 
-  const maxFilter = byFilter[0]?.kept || byFilter[0]?.acquired || 0;
   const keptOverAcquired = keptFrames > acquiredFrames;
 
   const tiles = [
@@ -83,13 +92,22 @@ const StatsOverview = ({ acquisitions, projectCount, activeCount, filterColors }
         <CardContent className="space-y-4">
           <div>
             <div className="flex items-baseline justify-between mb-1.5 text-xs text-muted-foreground">
-              <span>Avancement global (frames conservées / visée)</span>
-              <span className="text-foreground font-semibold">{globalKeptPercent}%</span>
+              <span>Avancement global (conservé / acquis / visée)</span>
+              <div className="flex items-center gap-2">
+                <span className="text-foreground font-semibold">{globalKeptPercent}% conservé</span>
+                <span className="text-muted-foreground">({globalAcquiredPercent}% acquis)</span>
+              </div>
             </div>
-            <Progress value={globalKeptPercent} className="h-2.5" />
-            <p className="text-xs text-muted-foreground mt-1">
-              {globalAcquiredPercent}% acquis bruts
-            </p>
+            <div className="h-2.5 rounded-full bg-secondary overflow-hidden relative">
+              <div
+                className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
+                style={{ width: `${globalAcquiredPercent}%`, backgroundColor: "hsl(var(--primary))" }}
+              />
+              <div
+                className="h-full rounded-full transition-all absolute left-0 top-0"
+                style={{ width: `${globalKeptPercent}%`, backgroundColor: "hsl(var(--primary))" }}
+              />
+            </div>
           </div>
 
           {keptOverAcquired && (
@@ -101,33 +119,40 @@ const StatsOverview = ({ acquisitions, projectCount, activeCount, filterColors }
 
           {byFilter.length > 0 ? (
             <div className="space-y-2">
-              {byFilter.map(({ filter, acquired, kept, planned }) => (
-                <div key={filter} className="flex items-center gap-2 text-xs">
-                  <span
-                    className="w-10 font-semibold text-right shrink-0"
-                    style={{ color: filterColors[filter] || "hsl(var(--muted-foreground))" }}
-                  >
-                    {filter}
-                  </span>
-                  <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden relative">
-                    <div
-                      className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
-                      style={{
-                        width: `${maxFilter > 0 ? (acquired / maxFilter) * 100 : 0}%`,
-                        backgroundColor: filterColors[filter] || "hsl(var(--primary))",
-                      }}
-                    />
-                    <div
-                      className="h-full rounded-full transition-all absolute left-0 top-0"
-                      style={{
-                        width: `${maxFilter > 0 ? (kept / maxFilter) * 100 : 0}%`,
-                        backgroundColor: filterColors[filter] || "hsl(var(--primary))",
-                      }}
-                    />
+              {byFilter.map(({ filter, acquired, kept, planned, exposureDuration, acquiredPercent, keptPercent }) => (
+                <div key={filter} className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span
+                      className="w-10 font-semibold text-right shrink-0"
+                      style={{ color: filterColors[filter] || "hsl(var(--muted-foreground))" }}
+                    >
+                      {filter}
+                    </span>
+                    <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden relative">
+                      <div
+                        className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
+                        style={{
+                          width: `${acquiredPercent}%`,
+                          backgroundColor: filterColors[filter] || "hsl(var(--primary))",
+                        }}
+                      />
+                      <div
+                        className="h-full rounded-full transition-all absolute left-0 top-0"
+                        style={{
+                          width: `${keptPercent}%`,
+                          backgroundColor: filterColors[filter] || "hsl(var(--primary))",
+                        }}
+                      />
+                    </div>
+                    <span className="w-40 text-right shrink-0 text-muted-foreground">
+                      {formatDuration(kept)} / {formatDuration(planned)}
+                    </span>
                   </div>
-                  <span className="w-40 text-right shrink-0 text-muted-foreground">
-                    {formatDuration(kept)} / {formatDuration(planned)} ({formatDuration(acquired)} acq.)
-                  </span>
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground pl-12 pr-40">
+                    <span>{formatDuration(acquired)} acquis</span>
+                    <span>{exposureDuration > 0 ? `${exposureDuration}s/pose` : "—"}</span>
+                    <span>{keptPercent}% conservé</span>
+                  </div>
                 </div>
               ))}
             </div>
