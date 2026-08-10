@@ -199,9 +199,21 @@ const Dashboard = () => {
                       <div>
                         <div className="flex items-baseline justify-between mb-1.5">
                           <span className="text-xs text-muted-foreground">Progression globale</span>
-                          <span className="text-2xl font-bold text-gradient">{globalPercent}%</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold text-gradient">{globalPercent.kept}%</span>
+                            <span className="text-xs text-muted-foreground">({globalPercent.acquired}% acquis)</span>
+                          </div>
                         </div>
-                        <Progress value={globalPercent} className="h-2.5" />
+                        <div className="h-2.5 rounded-full bg-secondary overflow-hidden relative">
+                          <div
+                            className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
+                            style={{ width: `${globalPercent.acquired}%`, backgroundColor: "hsl(var(--primary))" }}
+                          />
+                          <div
+                            className="h-full rounded-full transition-all absolute left-0 top-0"
+                            style={{ width: `${globalPercent.kept}%`, backgroundColor: "hsl(var(--primary))" }}
+                          />
+                        </div>
                       </div>
 
                       {/* Prominent acquired / kept times */}
@@ -223,7 +235,7 @@ const Dashboard = () => {
                       {/* Per-filter progress */}
                       {filters.length > 0 && (
                         <div className="space-y-2">
-                          {filters.map(({ filter, kept, quantity, percent, acquiredSeconds, keptSeconds, plannedSeconds }) => (
+                          {filters.map(({ filter, kept, quantity, percent, acquiredPercent, exposureDuration, acquiredSeconds, keptSeconds, plannedSeconds }) => (
                             <div key={filter} className="space-y-1">
                               <div className="flex items-center gap-2 text-xs">
                                 <span
@@ -232,9 +244,16 @@ const Dashboard = () => {
                                 >
                                   {filter}
                                 </span>
-                                <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+                                <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden relative">
                                   <div
-                                    className="h-full rounded-full transition-all"
+                                    className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
+                                    style={{
+                                      width: `${acquiredPercent}%`,
+                                      backgroundColor: filterColors[filter] || "hsl(var(--primary))",
+                                    }}
+                                  />
+                                  <div
+                                    className="h-full rounded-full transition-all absolute left-0 top-0"
                                     style={{
                                       width: `${percent}%`,
                                       backgroundColor: filterColors[filter] || "hsl(var(--primary))",
@@ -247,7 +266,7 @@ const Dashboard = () => {
                               </div>
                               <div className="flex items-center justify-between text-[10px] text-muted-foreground pl-10 pr-24">
                                 <span>{formatDuration(plannedSeconds)} visé</span>
-                                <span>{formatDuration(acquiredSeconds)} acq.</span>
+                                <span>{exposureDuration > 0 ? `${exposureDuration}s/pose` : "—"}</span>
                                 <span>{formatDuration(keptSeconds)} conservé</span>
                               </div>
                             </div>
