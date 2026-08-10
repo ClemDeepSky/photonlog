@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+
 import { AlertTriangle, Clock, Layers, Target, Timer, Hourglass, Camera, CheckCircle2 } from "lucide-react";
 import { formatDuration } from "@/lib/duration";
 
