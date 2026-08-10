@@ -21,7 +21,7 @@ const Projects = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*, teams(name, logo_url)")
+        .select("*, teams(name, logo_url), project_acquisitions(acquired, kept, quantity, exposure_duration)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
