@@ -355,82 +355,150 @@ const Frames = () => {
                     <CardContent className="pt-0">
                       <div className="space-y-2">
                         {acqs.map((acq) => {
-                          const percent = acq.quantity > 0 ? Math.min(100, Math.round((acq.acquired / acq.quantity) * 100)) : 0;
-                          const surplus = Math.max(0, acq.acquired - acq.quantity);
+                          const acquiredPercent = acq.quantity > 0 ? Math.min(100, Math.round((acq.acquired / acq.quantity) * 100)) : 0;
+                          const keptPercent = acq.quantity > 0 ? Math.min(100, Math.round((acq.kept / acq.quantity) * 100)) : 0;
+                          const acquiredSurplus = Math.max(0, acq.acquired - acq.quantity);
+                          const keptOverAcquired = acq.kept > acq.acquired;
                           return (
                             <div
                               key={acq.id}
-                              className="flex items-center gap-3 p-2 rounded-md bg-secondary/30"
+                              className="flex flex-col gap-2 p-2 rounded-md bg-secondary/30"
                             >
-                              <span
-                                className="w-10 font-semibold text-sm text-center shrink-0"
-                                style={{ color: filterColors[acq.filter] || "hsl(var(--muted-foreground))" }}
-                              >
-                                {acq.filter}
-                              </span>
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="w-10 font-semibold text-sm text-center shrink-0"
+                                  style={{ color: filterColors[acq.filter] || "hsl(var(--muted-foreground))" }}
+                                >
+                                  {acq.filter}
+                                </span>
 
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full transition-all"
-                                      style={{
-                                        width: `${percent}%`,
-                                        backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
-                                      }}
-                                    />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden relative">
+                                      <div
+                                        className="h-full rounded-full transition-all absolute left-0 top-0 opacity-30"
+                                        style={{
+                                          width: `${acquiredPercent}%`,
+                                          backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
+                                        }}
+                                      />
+                                      <div
+                                        className="h-full rounded-full transition-all absolute left-0 top-0"
+                                        style={{
+                                          width: `${keptPercent}%`,
+                                          backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-xs text-muted-foreground w-12 text-right">
+                                      {keptPercent}%
+                                    </span>
+                                    {acquiredSurplus > 0 && (
+                                      <Badge variant="outline" className="h-5 px-1.5 text-[10px] shrink-0">+{acquiredSurplus}</Badge>
+                                    )}
                                   </div>
-                                  <span className="text-xs text-muted-foreground w-12 text-right">
-                                    {percent}%
-                                  </span>
-                                  {surplus > 0 && (
-                                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] shrink-0">+{surplus}</Badge>
-                                  )}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {acq.exposure_duration}s · Bin {acq.bin}
+                                  <div className="text-xs text-muted-foreground">
+                                    {acq.exposure_duration}s · Bin {acq.bin}
+                                  </div>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-1 shrink-0">
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  disabled={acq.acquired <= 0 || updateAcquired.isPending}
-                                  onClick={() => updateAcquired.mutate({ id: acq.id, acquired: acq.acquired - 1 })}
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    className="h-7 w-16 text-center text-sm tabular-nums"
-                                    value={drafts[acq.id] ?? String(acq.acquired)}
-                                    onChange={(e) => setDrafts((d) => ({ ...d, [acq.id]: e.target.value }))}
-                                    onBlur={() => {
-                                      const raw = drafts[acq.id];
-                                      setDrafts((d) => { const n = { ...d }; delete n[acq.id]; return n; });
-                                      if (raw === undefined) return;
-                                      const v = parseInt(raw);
-                                      const next = isNaN(v) ? 0 : Math.max(0, v);
-                                      if (next !== acq.acquired) updateAcquired.mutate({ id: acq.id, acquired: next });
-                                    }}
-                                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                                  />
-                                  <span className="text-xs text-muted-foreground">/ {acq.quantity}</span>
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pl-[3.25rem]">
+                                {/* Acquired counter */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground w-16">Acquis</span>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      disabled={acq.acquired <= 0 || updateAcquired.isPending}
+                                      onClick={() => updateAcquired.mutate({ id: acq.id, acquired: acq.acquired - 1 })}
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <div className="flex items-center gap-1">
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        className="h-7 w-16 text-center text-sm tabular-nums"
+                                        value={draftsAcquired[acq.id] ?? String(acq.acquired)}
+                                        onChange={(e) => setDraftsAcquired((d) => ({ ...d, [acq.id]: e.target.value }))}
+                                        onBlur={() => {
+                                          const raw = draftsAcquired[acq.id];
+                                          setDraftsAcquired((d) => { const n = { ...d }; delete n[acq.id]; return n; });
+                                          if (raw === undefined) return;
+                                          const v = parseInt(raw);
+                                          const next = isNaN(v) ? 0 : Math.max(0, v);
+                                          if (next !== acq.acquired) updateAcquired.mutate({ id: acq.id, acquired: next });
+                                        }}
+                                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                      />
+                                      <span className="text-xs text-muted-foreground">/ {acq.quantity}</span>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      disabled={updateAcquired.isPending}
+                                      onClick={() => updateAcquired.mutate({ id: acq.id, acquired: acq.acquired + 1 })}
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  disabled={updateAcquired.isPending}
-                                  onClick={() => updateAcquired.mutate({ id: acq.id, acquired: acq.acquired + 1 })}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
+
+                                {/* Kept counter */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground w-16">Conservé</span>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      disabled={acq.kept <= 0 || updateKept.isPending}
+                                      onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept - 1 })}
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <div className="flex items-center gap-1">
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        className="h-7 w-16 text-center text-sm tabular-nums"
+                                        value={draftsKept[acq.id] ?? String(acq.kept)}
+                                        onChange={(e) => setDraftsKept((d) => ({ ...d, [acq.id]: e.target.value }))}
+                                        onBlur={() => {
+                                          const raw = draftsKept[acq.id];
+                                          setDraftsKept((d) => { const n = { ...d }; delete n[acq.id]; return n; });
+                                          if (raw === undefined) return;
+                                          const v = parseInt(raw);
+                                          const next = isNaN(v) ? 0 : Math.max(0, v);
+                                          if (next !== acq.kept) updateKept.mutate({ id: acq.id, kept: next });
+                                        }}
+                                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                      />
+                                      <span className="text-xs text-muted-foreground">/ {acq.acquired}</span>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      disabled={updateKept.isPending}
+                                      onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept + 1 })}
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
                               </div>
+
+                              {keptOverAcquired && (
+                                <div className="text-[11px] text-amber-500 flex items-center gap-1 pl-[3.25rem]">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Le nombre conservé dépasse le nombre acquis.
+                                </div>
+                              )}
                             </div>
                           );
                         })}
