@@ -459,7 +459,13 @@ const EditProject = () => {
                 <div className="flex items-center gap-2">
                   <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
                   <FolderScanner
-                    acquisitions={(projectAcquisitions || []).map(a => ({ id: a.id, filter: a.filter, quantity: a.quantity, acquired: a.acquired }))}
+                    acquisitions={(projectAcquisitions || []).map(a => ({
+                      id: a.id,
+                      filter: a.filter,
+                      quantity: a.quantity,
+                      acquired: a.acquired,
+                      paneNumber: a.pane_id ? (projectPanes?.find((p) => p.id === a.pane_id)?.pane_number ?? null) : null,
+                    }))}
                     onApplyResults={(updates) => {
                       const doUpdate = async () => {
                         for (const u of updates) {
