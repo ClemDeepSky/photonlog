@@ -12,10 +12,12 @@ import {
   LogOut,
   Menu,
   X,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
-const navItems = [
+const baseNavItems = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { to: "/teams", label: "Teams", icon: Users },
   { to: "/equipment", label: "Matériel", icon: Wrench },
@@ -27,6 +29,11 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { signOut, user } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isAdmin } = useIsAdmin();
+  const navItems = isAdmin
+    ? [...baseNavItems, { to: "/admin", label: "Administration", icon: Shield }]
+    : baseNavItems;
+
 
   return (
     <div className="min-h-screen bg-cosmic flex">

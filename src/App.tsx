@@ -19,6 +19,7 @@ import CreateProject from "./pages/CreateProject";
 import EditProject from "./pages/EditProject";
 import Frames from "./pages/Frames";
 import AcceptInvite from "./pages/AcceptInvite";
+import Admin from "./pages/Admin";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/projects/new" element={<CreateProject />} />
               <Route path="/projects/:id/edit" element={<EditProject />} />
               <Route path="/frames" element={<Frames />} />
+              <Route path="/admin" element={<Admin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
