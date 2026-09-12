@@ -100,27 +100,79 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     apply(next);
   };
 
-  const series = useMemo(() => {
-    const byFilter = new Map<string, { x: number; y: number; label: string }[]>();
+  // Distribution régulière : chaque image occupe la même place, triée par date+heure.
+  const { series, totalPoints } = useMemo(() => {
+    const kept: { idx: number; f: FrameRow }[] = [];
     for (const f of withDates) {
-      const value = f[metric];
-      if (value == null) continue;
+      if (f[metric] == null) continue;
       const filter = f.filter || "?";
       if (offFilters.has(filter)) continue;
       if (f.pane_number != null && offPanes.has(String(f.pane_number))) continue;
       if (offNights.has(nightOf(f.captured_at!))) continue;
-      const x = new Date(f.captured_at!).getTime();
+      kept.push({ idx: 0, f });
+    }
+    kept.sort(
+      (a, b) => new Date(a.f.captured_at!).getTime() - new Date(b.f.captured_at!).getTime()
+    );
+    kept.forEach((k, i) => (k.idx = i));
+    const byFilter = new Map<string, any[]>();
+    for (const { idx, f } of kept) {
+      const filter = f.filter || "?";
       if (!byFilter.has(filter)) byFilter.set(filter, []);
       byFilter.get(filter)!.push({
-        x,
-        y: Number(value),
-        label: new Date(f.captured_at!).toLocaleString("fr-FR"),
+        x: idx,
+        y: Number(f[metric]),
+        fileName: f.file_name || f.relative_path || "",
+        relativePath: f.relative_path || "",
+        fwhm: f.fwhm,
+        hfr: f.hfr,
+        eccentricity: f.eccentricity,
+        starCount: f.star_count,
       });
     }
-    return Array.from(byFilter.entries())
-      .map(([filter, points]) => ({ filter, points: points.sort((a, b) => a.x - b.x) }))
-      .sort((a, b) => a.filter.localeCompare(b.filter));
+    return {
+      series: Array.from(byFilter.entries())
+        .map(([filter, points]) => ({ filter, points }))
+        .sort((a, b) => a.filter.localeCompare(b.filter)),
+      totalPoints: kept.length,
+    };
   }, [withDates, metric, offFilters, offPanes, offNights]);
+
+  // Zoom horizontal à la molette : fenêtre visible [zMin, zMax] sur les indices.
+  const [zoom, setZoom] = useState<[number, number] | null>(null);
+  useEffect(() => setZoom(null), [metric, offFilters, offPanes, offNights, totalPoints]);
+  const chartWrapRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const totalRef = useRef(totalPoints);
+  totalRef.current = totalPoints;
+
+  useEffect(() => {
+    const el = chartWrapRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const n = totalRef.current;
+      if (n < 2) return;
+      e.preventDefault();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      const cur = zoomRef.current || [0, n - 1];
+      const span = cur[1] - cur[0] + 1;
+      const factor = Math.exp(dy * 0.002);
+      const nextSpan = Math.min(n, Math.max(5, span * factor));
+      if (nextSpan === span) return;
+      const rect = el.getBoundingClientRect();
+      const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      const anchor = cur[0] + frac * (span - 1);
+      let z0 = anchor - frac * (nextSpan - 1);
+      let z1 = z0 + nextSpan - 1;
+      if (z0 < 0) { z1 -= z0; z0 = 0; }
+      if (z1 > n - 1) { z0 -= z1 - (n - 1); z1 = n - 1; }
+      z0 = Math.max(0, z0);
+      setZoom(z0 <= 0 && z1 >= n - 1 ? null : [z0, z1]);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [hasMetricDataKey]);
 
   const hasMetricData = series.some((s) => s.points.length > 0);
   const metricLabel = METRICS.find((m) => m.key === metric)!.label;
