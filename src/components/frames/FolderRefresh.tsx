@@ -145,11 +145,15 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
 
     const unmatched = rows.filter((r) => !r.acquisition_id).length;
     toast({
-      title: rows.length ? `${rows.length} nouvelle(s) image(s)` : "Aucune nouvelle image",
+      title: rows.length || reparsed ? `${rows.length} nouvelle(s) image(s)` : "Aucune nouvelle image",
       description:
         `${seen} fichier(s) dans le dossier, ${rows.length} ajouté(s) à l'index, ${updated} ligne(s) d'acquisition mise(s) à jour.` +
-        (skippedType ? ` ${skippedType} fichier(s) ignoré(s) (calibration).` : "") +
-        (unmatched ? ` ${unmatched} sans filtre/panneau reconnu.` : ""),
+        (reparsed ? ` ${reparsed} image(s) déjà indexée(s) complétée(s) avec les mesures.` : "") +
+        (pattern
+          ? matched
+            ? ` Modèle de nommage reconnu sur ${matched} fichier(s).`
+            : " Le modèle de nommage ne correspond à aucun nom de fichier."
+          : " Aucun modèle de nommage renseigné dans le projet."),
     });
 
     onDone?.();
