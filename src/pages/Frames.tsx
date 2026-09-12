@@ -72,7 +72,7 @@ const Frames = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, is_mosaic, team_id, status, teams(name)")
+        .select("id, name, is_mosaic, team_id, status, filename_pattern, teams(name)")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Project[];
