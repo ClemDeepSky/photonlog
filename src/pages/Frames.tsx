@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
-import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3, AlertTriangle } from "lucide-react";
+import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
 
@@ -23,7 +22,7 @@ interface Acquisition {
   filter: string;
   quantity: number;
   acquired: number;
-  kept: number;
+  
   exposure_duration: number;
   bin: number;
   pane_id: string | null;
@@ -63,8 +62,6 @@ const Frames = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(searchParams.get("project"));
   const [expandedPanes, setExpandedPanes] = useState<Set<string>>(new Set(["global"]));
   const [draftsAcquired, setDraftsAcquired] = useState<Record<string, string>>({});
-  const [draftsKept, setDraftsKept] = useState<Record<string, string>>({});
-  const [showKept, setShowKept] = useState(true);
 
 
   const { data: projects } = useQuery({
@@ -124,20 +121,6 @@ const Frames = () => {
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
   });
 
-  const updateKept = useMutation({
-    mutationFn: async ({ id, kept }: { id: string; kept: number }) => {
-      const { error } = await supabase
-        .from("project_acquisitions")
-        .update({ kept: Math.max(0, kept) })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", selectedProjectId] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
-    },
-    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
-  });
 
 
 
@@ -181,19 +164,7 @@ const Frames = () => {
     return Math.min(100, Math.round((acquired / total) * 100));
   };
 
-  const getGroupKeptProgress = (acqs: Acquisition[]) => {
-    const total = acqs.reduce((s, a) => s + a.quantity, 0);
-    if (total === 0) return 0;
-    const kept = acqs.reduce((s, a) => s + a.kept, 0);
-    return Math.min(100, Math.round((kept / total) * 100));
-  };
-
-  const globalProgress = acquisitions ? getGroupKeptProgress(acquisitions) : 0;
   const globalAcquiredProgress = acquisitions ? getGroupProgress(acquisitions) : 0;
-
-  const totalExposure = acquisitions
-    ? acquisitions.reduce((s, a) => s + a.kept * a.exposure_duration, 0)
-    : 0;
 
   const totalAcquiredExposure = acquisitions
     ? acquisitions.reduce((s, a) => s + a.acquired * a.exposure_duration, 0)
@@ -298,87 +269,38 @@ const Frames = () => {
                     }}
                   />
                 )}
-                <span className="text-sm text-muted-foreground">Afficher les conservés</span>
-                <Switch
-                  checked={showKept}
-                  onCheckedChange={setShowKept}
-                  aria-label="Afficher les conservés"
-                />
               </div>
             </div>
 
 
             {/* Global stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {showKept ? "Progression conservée" : "Progression acquise"}
-                  </p>
+                  <p className="text-xs text-muted-foreground mb-1">Progression acquise</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-gradient">{showKept ? globalProgress : globalAcquiredProgress}%</span>
+                    <span className="text-3xl font-bold text-gradient">{globalAcquiredProgress}%</span>
                   </div>
-                  <Progress value={showKept ? globalProgress : globalAcquiredProgress} className="h-2 mt-2" />
-                  {showKept && (
-                    <p className="text-[11px] text-muted-foreground mt-1.5">{globalAcquiredProgress}% acquis bruts</p>
-                  )}
+                  <Progress value={globalAcquiredProgress} className="h-2 mt-2" />
                 </CardContent>
               </Card>
 
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {showKept ? "Frames conservées" : "Frames acquises"}
-                  </p>
+                  <p className="text-xs text-muted-foreground mb-1">Frames acquises</p>
                   <span className="text-3xl font-bold">
-                    {showKept
-                      ? acquisitions?.reduce((s, a) => s + a.kept, 0) || 0
-                      : acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0}
+                    {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0}
                     <span className="text-base font-normal text-muted-foreground">
                       /{acquisitions?.reduce((s, a) => s + a.quantity, 0) || 0}
                     </span>
                   </span>
-                  {showKept && (
-                    <p className="text-[11px] text-muted-foreground mt-1.5">
-                      {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0} acquises
-                    </p>
-                  )}
                 </CardContent>
               </Card>
 
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {showKept ? "Temps d'exposition conservé" : "Temps d'exposition acquis"}
-                  </p>
-                  <span className="text-3xl font-bold">{showKept ? formatExposure(totalExposure) : formatExposure(totalAcquiredExposure)}</span>
-                  {showKept && (
-                    <p className="text-[11px] text-muted-foreground mt-1.5">{formatExposure(totalAcquiredExposure)} acquis</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/50">
-                <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {showKept ? "Taux de conservation" : "Surplus d'acquisition"}
-                  </p>
-                  <span className="text-3xl font-bold">
-                    {showKept
-                      ? (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0) > 0
-                        ? Math.round(
-                            ((acquisitions?.reduce((s, a) => s + a.kept, 0) || 0) /
-                              (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 1)) *
-                              100
-                          )
-                        : 0
-                      : (() => {
-                          const total = acquisitions?.reduce((s, a) => s + a.quantity, 0) || 0;
-                          const acquired = acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0;
-                          return total > 0 ? Math.round(((acquired - total) / total) * 100) : 0;
-                        })()}
-                    %
-                  </span>
+                  <p className="text-xs text-muted-foreground mb-1">Temps d'exposition acquis</p>
+                  <span className="text-3xl font-bold">{formatExposure(totalAcquiredExposure)}</span>
                 </CardContent>
               </Card>
 
@@ -429,9 +351,7 @@ const Frames = () => {
                       <div className="space-y-2">
                         {acqs.map((acq) => {
                           const acquiredPercent = acq.quantity > 0 ? Math.min(100, Math.round((acq.acquired / acq.quantity) * 100)) : 0;
-                          const keptPercent = acq.quantity > 0 ? Math.min(100, Math.round((acq.kept / acq.quantity) * 100)) : 0;
                           const acquiredSurplus = Math.max(0, acq.acquired - acq.quantity);
-                          const keptOverAcquired = acq.kept > acq.acquired;
                           return (
                             <div
                               key={acq.id}
@@ -448,25 +368,16 @@ const Frames = () => {
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
                                     <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden relative">
-                                      {showKept && (
-                                        <div
-                                          className="h-full rounded-full transition-all absolute left-0 top-0 opacity-30"
-                                          style={{
-                                            width: `${acquiredPercent}%`,
-                                            backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
-                                          }}
-                                        />
-                                      )}
                                       <div
                                         className="h-full rounded-full transition-all absolute left-0 top-0"
                                         style={{
-                                          width: `${showKept ? keptPercent : acquiredPercent}%`,
+                                          width: `${acquiredPercent}%`,
                                           backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
                                         }}
                                       />
                                     </div>
                                     <span className="text-xs text-muted-foreground w-12 text-right">
-                                      {showKept ? keptPercent : acquiredPercent}%
+                                      {acquiredPercent}%
                                     </span>
 
                                     {acquiredSurplus > 0 && (
@@ -524,59 +435,9 @@ const Frames = () => {
                                   </div>
                                 </div>
 
-                                {showKept && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground w-16">Conservé</span>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-7 w-7"
-                                        disabled={acq.kept <= 0 || updateKept.isPending}
-                                        onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept - 1 })}
-                                      >
-                                        <Minus className="h-3 w-3" />
-                                      </Button>
-                                      <div className="flex items-center gap-1">
-                                        <Input
-                                          type="number"
-                                          min={0}
-                                          className="h-7 w-16 text-center text-sm tabular-nums"
-                                          value={draftsKept[acq.id] ?? String(acq.kept)}
-                                          onChange={(e) => setDraftsKept((d) => ({ ...d, [acq.id]: e.target.value }))}
-                                          onBlur={() => {
-                                            const raw = draftsKept[acq.id];
-                                            setDraftsKept((d) => { const n = { ...d }; delete n[acq.id]; return n; });
-                                            if (raw === undefined) return;
-                                            const v = parseInt(raw);
-                                            const next = isNaN(v) ? 0 : Math.max(0, v);
-                                            if (next !== acq.kept) updateKept.mutate({ id: acq.id, kept: next });
-                                          }}
-                                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                                        />
-                                        <span className="text-xs text-muted-foreground">/ {acq.acquired}</span>
-                                      </div>
-                                      <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-7 w-7"
-                                        disabled={updateKept.isPending}
-                                        onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept + 1 })}
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-
                               </div>
 
-                              {showKept && keptOverAcquired && (
-                                <div className="text-[11px] text-amber-500 flex items-center gap-1 pl-[3.25rem]">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  Le nombre conservé dépasse le nombre acquis.
-                                </div>
-                              )}
+
 
                             </div>
                           );

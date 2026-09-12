@@ -16,7 +16,6 @@ interface Acquisition {
   filter: string;
   quantity: number;
   acquired: number;
-  kept: number;
   exposure_duration: number;
 }
 
@@ -49,7 +48,7 @@ const Dashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, team_id, status, teams(name), project_acquisitions(filter, quantity, acquired, kept, exposure_duration)")
+        .select("id, name, team_id, status, teams(name), project_acquisitions(filter, quantity, acquired, exposure_duration)")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as ProjectWithAcquisitions[];
@@ -58,42 +57,35 @@ const Dashboard = () => {
   });
 
   const getGlobalProgress = (acqs: Acquisition[]) => {
-    if (!acqs.length) return { acquired: 0, kept: 0 };
+    if (!acqs.length) return { acquired: 0 };
     const totalTarget = acqs.reduce((s, a) => s + a.quantity * Number(a.exposure_duration || 0), 0);
-    if (totalTarget === 0) return { acquired: 0, kept: 0 };
+    if (totalTarget === 0) return { acquired: 0 };
     const totalAcquired = acqs.reduce((s, a) => s + a.acquired * Number(a.exposure_duration || 0), 0);
-    const totalKept = acqs.reduce((s, a) => s + a.kept * Number(a.exposure_duration || 0), 0);
     return {
       acquired: Math.min(100, Math.round((totalAcquired / totalTarget) * 100)),
-      kept: Math.min(100, Math.round((totalKept / totalTarget) * 100)),
     };
   };
 
   const getFilterProgress = (acqs: Acquisition[]) => {
-    const map: Record<string, { acquired: number; kept: number; quantity: number; acquiredSeconds: number; keptSeconds: number; plannedSeconds: number; durationCount: number; durationSum: number }> = {};
+    const map: Record<string, { acquired: number; quantity: number; acquiredSeconds: number; plannedSeconds: number; durationCount: number; durationSum: number }> = {};
     for (const a of acqs) {
       const dur = Number(a.exposure_duration || 0);
-      if (!map[a.filter]) map[a.filter] = { acquired: 0, kept: 0, quantity: 0, acquiredSeconds: 0, keptSeconds: 0, plannedSeconds: 0, durationCount: 0, durationSum: 0 };
+      if (!map[a.filter]) map[a.filter] = { acquired: 0, quantity: 0, acquiredSeconds: 0, plannedSeconds: 0, durationCount: 0, durationSum: 0 };
       map[a.filter].acquired += a.acquired;
-      map[a.filter].kept += a.kept;
       map[a.filter].quantity += a.quantity;
       map[a.filter].acquiredSeconds += a.acquired * dur;
-      map[a.filter].keptSeconds += a.kept * dur;
       map[a.filter].plannedSeconds += a.quantity * dur;
       map[a.filter].durationCount += a.quantity;
       map[a.filter].durationSum += a.quantity * dur;
     }
-    return Object.entries(map).map(([filter, { acquired, kept, quantity, acquiredSeconds, keptSeconds, plannedSeconds, durationCount, durationSum }]) => ({
+    return Object.entries(map).map(([filter, { acquired, quantity, acquiredSeconds, plannedSeconds, durationCount, durationSum }]) => ({
       filter,
       acquired,
-      kept,
       quantity,
       acquiredSeconds,
-      keptSeconds,
       plannedSeconds,
       exposureDuration: durationCount > 0 ? Math.round(durationSum / durationCount) : 0,
       acquiredPercent: quantity > 0 ? Math.min(100, Math.round((acquired / quantity) * 100)) : 0,
-      percent: quantity > 0 ? Math.min(100, Math.round((kept / quantity) * 100)) : 0,
     }));
   };
 
@@ -109,8 +101,6 @@ const Dashboard = () => {
   const acquiredSecondsOf = (acqs: Acquisition[]) =>
     acqs.reduce((s, a) => s + a.acquired * Number(a.exposure_duration || 0), 0);
 
-  const keptSecondsOf = (acqs: Acquisition[]) =>
-    acqs.reduce((s, a) => s + a.kept * Number(a.exposure_duration || 0), 0);
 
   return (
     <AppLayout>
@@ -200,42 +190,29 @@ const Dashboard = () => {
                         <div className="flex items-baseline justify-between mb-1.5">
                           <span className="text-xs text-muted-foreground">Progression globale</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl font-bold text-gradient">{globalPercent.kept}%</span>
-                            <span className="text-xs text-muted-foreground">({globalPercent.acquired}% acquis)</span>
+                            <span className="text-2xl font-bold text-gradient">{globalPercent.acquired}%</span>
                           </div>
                         </div>
                         <div className="h-2.5 rounded-full bg-secondary overflow-hidden relative">
                           <div
-                            className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
-                            style={{ width: `${globalPercent.acquired}%`, backgroundColor: "hsl(var(--primary))" }}
-                          />
-                          <div
                             className="h-full rounded-full transition-all absolute left-0 top-0"
-                            style={{ width: `${globalPercent.kept}%`, backgroundColor: "hsl(var(--primary))" }}
+                            style={{ width: `${globalPercent.acquired}%`, backgroundColor: "hsl(var(--primary))" }}
                           />
                         </div>
                       </div>
 
-                      {/* Prominent acquired / kept times */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-lg bg-secondary/50 px-3 py-2">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Acquis</p>
-                          <p className="text-lg font-bold text-foreground">
-                            {formatDuration(acquiredSecondsOf(project.project_acquisitions))}
-                          </p>
-                        </div>
-                        <div className="rounded-lg bg-secondary/50 px-3 py-2">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Conservé</p>
-                          <p className="text-base font-semibold text-foreground">
-                            {formatDuration(keptSecondsOf(project.project_acquisitions))}
-                          </p>
-                        </div>
+                      {/* Prominent acquired time */}
+                      <div className="rounded-lg bg-secondary/50 px-3 py-2">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Acquis</p>
+                        <p className="text-lg font-bold text-foreground">
+                          {formatDuration(acquiredSecondsOf(project.project_acquisitions))}
+                        </p>
                       </div>
 
                       {/* Per-filter progress */}
                       {filters.length > 0 && (
                         <div className="space-y-2">
-                          {filters.map(({ filter, kept, quantity, percent, acquiredPercent, exposureDuration, acquiredSeconds, keptSeconds, plannedSeconds }) => (
+                          {filters.map(({ filter, acquired, quantity, acquiredPercent, exposureDuration, acquiredSeconds, plannedSeconds }) => (
                             <div key={filter} className="space-y-1">
                               <div className="flex items-center gap-2 text-xs">
                                 <span
@@ -246,28 +223,21 @@ const Dashboard = () => {
                                 </span>
                                 <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden relative">
                                   <div
-                                    className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
+                                    className="h-full rounded-full transition-all absolute left-0 top-0"
                                     style={{
                                       width: `${acquiredPercent}%`,
                                       backgroundColor: filterColors[filter] || "hsl(var(--primary))",
                                     }}
                                   />
-                                  <div
-                                    className="h-full rounded-full transition-all absolute left-0 top-0"
-                                    style={{
-                                      width: `${percent}%`,
-                                      backgroundColor: filterColors[filter] || "hsl(var(--primary))",
-                                    }}
-                                  />
                                 </div>
                                 <span className="text-muted-foreground w-20 text-right shrink-0">
-                                  {kept}/{quantity}
+                                  {acquired}/{quantity}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-[10px] text-muted-foreground pl-10 pr-24">
                                 <span>{formatDuration(plannedSeconds)} visé</span>
                                 <span>{exposureDuration > 0 ? `${exposureDuration}s/pose` : "—"}</span>
-                                <span>{formatDuration(keptSeconds)} conservé</span>
+                                <span>{formatDuration(acquiredSeconds)} acquis</span>
                               </div>
                             </div>
                           ))}
