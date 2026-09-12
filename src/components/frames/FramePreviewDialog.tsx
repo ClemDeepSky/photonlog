@@ -152,7 +152,15 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     const lensX = e.clientX < window.innerWidth / 2 ? e.clientX + LENS_SIZE / 2 + margin : e.clientX - LENS_SIZE / 2 - margin;
     const lensY = e.clientY + LENS_SIZE / 2 + margin;
     setLensPos({ x: lensX, y: lensY });
-    setCross({ clientX: e.clientX, clientY: e.clientY, px, py });
+    // La croix est positionnée dans le conteneur : convertit les coords image en coords conteneur.
+    const box = imgBoxRef.current;
+    const boxRect = box?.getBoundingClientRect();
+    setCross({
+      clientX: e.clientX,
+      clientY: e.clientY,
+      px: boxRect ? rect.left - boxRect.left + px : px,
+      py: boxRect ? rect.top - boxRect.top + py : py,
+    });
   };
 
   const copyPath = async () => {
