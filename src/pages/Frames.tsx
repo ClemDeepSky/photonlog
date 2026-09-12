@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
-import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3, AlertTriangle } from "lucide-react";
+import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
 
@@ -23,7 +22,7 @@ interface Acquisition {
   filter: string;
   quantity: number;
   acquired: number;
-  kept: number;
+  
   exposure_duration: number;
   bin: number;
   pane_id: string | null;
@@ -63,8 +62,6 @@ const Frames = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(searchParams.get("project"));
   const [expandedPanes, setExpandedPanes] = useState<Set<string>>(new Set(["global"]));
   const [draftsAcquired, setDraftsAcquired] = useState<Record<string, string>>({});
-  const [draftsKept, setDraftsKept] = useState<Record<string, string>>({});
-  const [showKept, setShowKept] = useState(true);
 
 
   const { data: projects } = useQuery({
@@ -124,20 +121,6 @@ const Frames = () => {
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
   });
 
-  const updateKept = useMutation({
-    mutationFn: async ({ id, kept }: { id: string; kept: number }) => {
-      const { error } = await supabase
-        .from("project_acquisitions")
-        .update({ kept: Math.max(0, kept) })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", selectedProjectId] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
-    },
-    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
-  });
 
 
 
@@ -181,19 +164,7 @@ const Frames = () => {
     return Math.min(100, Math.round((acquired / total) * 100));
   };
 
-  const getGroupKeptProgress = (acqs: Acquisition[]) => {
-    const total = acqs.reduce((s, a) => s + a.quantity, 0);
-    if (total === 0) return 0;
-    const kept = acqs.reduce((s, a) => s + a.kept, 0);
-    return Math.min(100, Math.round((kept / total) * 100));
-  };
-
-  const globalProgress = acquisitions ? getGroupKeptProgress(acquisitions) : 0;
   const globalAcquiredProgress = acquisitions ? getGroupProgress(acquisitions) : 0;
-
-  const totalExposure = acquisitions
-    ? acquisitions.reduce((s, a) => s + a.kept * a.exposure_duration, 0)
-    : 0;
 
   const totalAcquiredExposure = acquisitions
     ? acquisitions.reduce((s, a) => s + a.acquired * a.exposure_duration, 0)
