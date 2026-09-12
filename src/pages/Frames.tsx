@@ -423,24 +423,27 @@ const Frames = () => {
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
                                     <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden relative">
-                                      <div
-                                        className="h-full rounded-full transition-all absolute left-0 top-0 opacity-30"
-                                        style={{
-                                          width: `${acquiredPercent}%`,
-                                          backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
-                                        }}
-                                      />
+                                      {showKept && (
+                                        <div
+                                          className="h-full rounded-full transition-all absolute left-0 top-0 opacity-30"
+                                          style={{
+                                            width: `${acquiredPercent}%`,
+                                            backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
+                                          }}
+                                        />
+                                      )}
                                       <div
                                         className="h-full rounded-full transition-all absolute left-0 top-0"
                                         style={{
-                                          width: `${keptPercent}%`,
+                                          width: `${showKept ? keptPercent : acquiredPercent}%`,
                                           backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
                                         }}
                                       />
                                     </div>
                                     <span className="text-xs text-muted-foreground w-12 text-right">
-                                      {keptPercent}%
+                                      {showKept ? keptPercent : acquiredPercent}%
                                     </span>
+
                                     {acquiredSurplus > 0 && (
                                       <Badge variant="outline" className="h-5 px-1.5 text-[10px] shrink-0">+{acquiredSurplus}</Badge>
                                     )}
