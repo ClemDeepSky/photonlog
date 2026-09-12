@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Copy, Download, Loader2 } from "lucide-react";
+import { Copy, Download, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { decodeFitsToCanvas, isFitsName } from "@/lib/fitsPreview";
 
@@ -10,13 +20,18 @@ interface FramePreviewDialogProps {
   relativePath: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Suppression définitive du fichier sur le disque (Chrome/Edge uniquement). */
+  onDelete?: () => Promise<void>;
 }
 
-const FramePreviewDialog = ({ file, relativePath, open, onOpenChange }: FramePreviewDialogProps) => {
+const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }: FramePreviewDialogProps) => {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dims, setDims] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const canDelete = !!onDelete && typeof (window as any).showDirectoryPicker === "function";
 
   useEffect(() => {
     let revoke: string | null = null;
