@@ -89,7 +89,7 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending, pattern }: Fol
       if (!isAstroFile(entry.name)) continue;
       totalFiles++;
 
-      const filter = detectFilterFromPath(entry.relativePath);
+      const filter = detectFilter(entry.relativePath);
       if (!filter) continue;
       const paneNumber = hasPanes ? detectPaneFromPath(entry.relativePath) : null;
       const key = `${paneNumber ?? "none"}|${filter}`;
