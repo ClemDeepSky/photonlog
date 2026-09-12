@@ -114,10 +114,9 @@ const Projects = () => {
                   {(() => {
                     const acqs = (project as any).project_acquisitions || [];
                     const acquired = acqs.reduce((s: number, a: any) => s + (a.acquired || 0), 0);
-                    const kept = acqs.reduce((s: number, a: any) => s + (a.kept || 0), 0);
                     const quantity = acqs.reduce((s: number, a: any) => s + (a.quantity || 0), 0);
-                    const seconds = acqs.reduce((s: number, a: any) => s + (a.kept || 0) * (a.exposure_duration || 0), 0);
-                    const percent = quantity > 0 ? Math.min(100, Math.round((kept / quantity) * 100)) : 0;
+                    const seconds = acqs.reduce((s: number, a: any) => s + (a.acquired || 0) * (a.exposure_duration || 0), 0);
+                    const percent = quantity > 0 ? Math.min(100, Math.round((acquired / quantity) * 100)) : 0;
                     if (quantity === 0) return null;
                     return (
                       <div className="mb-3 space-y-1.5">
