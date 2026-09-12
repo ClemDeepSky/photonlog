@@ -256,6 +256,7 @@ const CreateProject = () => {
           name, description: description || null, setup: setup || null, target_object: null,
           image_url: imageUrl,
           folder_path: folderPath || null,
+          filename_pattern: filenamePattern || null,
           team_id: isTeamProject ? selectedTeamId : null, created_by: user!.id, is_mosaic: isMosaic,
           ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
           position_angle: isMosaic ? null : (parseFloat(positionAngle) || null),
