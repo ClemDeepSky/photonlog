@@ -125,8 +125,7 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
     let updated = 0;
     for (const acq of acquisitions) {
       const key = `${isMosaic ? acq.paneNumber ?? "none" : "all"}|${acq.filter}`;
-      const count = counts.get(key);
-      if (count === undefined) continue;
+      const count = counts.get(key) ?? 0;
       const { error } = await supabase
         .from("project_acquisitions")
         .update({ acquired: count })
