@@ -36,8 +36,11 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
   const [deleting, setDeleting] = useState(false);
   const [stretch, setStretch] = useState(1);
   const [isFits, setIsFits] = useState(false);
-  const [lens, setLens] = useState<{ x: number; y: number; bx: number; by: number; iw: number; ih: number } | null>(null);
+  const [lens, setLens] = useState<{ x: number; y: number } | null>(null);
   const fitsRef = useRef<FitsPreview | null>(null);
+  const fullCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fullImageRef = useRef<HTMLImageElement | null>(null);
+  const lensCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgBoxRef = useRef<HTMLDivElement | null>(null);
   const canDelete = !!onDelete && typeof (window as any).showDirectoryPicker === "function";
 
