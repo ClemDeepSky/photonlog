@@ -44,9 +44,37 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending, pattern }: Fol
 
   const hasPanes = acquisitions.some((a) => a.paneNumber != null);
 
+  // Étiquettes de filtre déclarées dans le projet (pour reconnaître n'importe
+  // quel nom de filtre, même absent des catalogues : L-eXtreme, Antlia, etc.)
+  const projectFilters = Array.from(new Set(acquisitions.map((a) => a.filter).filter(Boolean)));
+
+  /** Cherche un filtre du projet dans les dossiers puis dans le nom du fichier */
+  const detectFilter = (relativePath: string): string | null => {
+    const parsed = parseFrameName(relativePath, pattern);
+    if (parsed.filter) {
+      const known = projectFilters.find(
+        (f) => slug(f) === slug(parsed.filter!) || slug(normalizeFilter(f) || f) === slug(parsed.filter!)
+      );
+      return known || parsed.filter;
+    }
+
+    const parts = relativePath.replace(/\\/g, "/").split("/");
+    const folders = parts.slice(0, -1).reverse();
+    const segments = (parts[parts.length - 1] || "").replace(/\.[^.]+$/, "").split(/[_\-\s.]+/);
+    for (const candidate of [...folders, ...segments]) {
+      const s = slug(candidate);
+      if (!s) continue;
+      const known = projectFilters.find(
+        (f) => slug(f) === s || slug(normalizeFilter(f) || f) === s || slug(normalizeFilter(candidate) || "") === slug(f)
+      );
+      if (known) return known;
+    }
+    return null;
+  };
+
   // Find the acquisitions matching a scan result (filter + pane when relevant)
   const matchingAcqs = (r: ScanResult) => {
-    const sameFilter = acquisitions.filter((a) => a.filter === r.filter);
+    const sameFilter = acquisitions.filter((a) => slug(a.filter) === slug(r.filter));
     if (!hasPanes) return sameFilter;
     if (r.paneNumber == null) return [];
     return sameFilter.filter((a) => a.paneNumber === r.paneNumber);
