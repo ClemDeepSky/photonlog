@@ -12,6 +12,7 @@ import {
   getFileFromHandle,
   openLocalFile,
 } from "@/lib/dirHandleStore";
+import { getCachedProjectFile } from "@/lib/localFileCache";
 import {
   ScatterChart,
   Scatter,
