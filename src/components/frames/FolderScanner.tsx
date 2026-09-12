@@ -239,12 +239,29 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     setResults(null);
   };
 
+  const inIframe = typeof window !== "undefined" && window.self !== window.top;
+
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         Seule la liste des noms de fichiers est lue — aucun fichier n'est importé ni envoyé.
         {hasPanes && " Les fichiers sont comptabilisés par panneau et par filtre."}
       </p>
+      {inIframe && (
+        <p className="text-xs text-muted-foreground">
+          Dans cet aperçu intégré, le navigateur affiche un message « Importer N fichiers » : c'est
+          sa demande d'autorisation, aucun fichier n'est réellement transféré. Pour l'éviter,{" "}
+          <button
+            type="button"
+            className="underline"
+            onClick={() => window.open(window.location.href, "_blank")}
+          >
+            ouvrez la page dans un nouvel onglet
+          </button>
+          .
+        </p>
+      )}
+
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
