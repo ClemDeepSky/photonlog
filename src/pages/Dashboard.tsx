@@ -4,13 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 import { Badge } from "@/components/ui/badge";
-import { Users, User, Plus, Star, FolderOpen } from "lucide-react";
+import { Users, User, Plus, Star, FolderOpen, PlayCircle, Sparkles } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import StatsOverview from "@/components/dashboard/StatsOverview";
 import { formatDuration } from "@/lib/duration";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { useDemoTour } from "@/hooks/useDemoTour";
+import { createDemoProject } from "@/lib/demoProject";
+import { toast } from "@/hooks/use-toast";
 
 interface Acquisition {
   filter: string;
