@@ -158,6 +158,15 @@ const Frames = () => {
     return groups;
   })();
 
+  // Sort pane groups by pane number ("global" group last)
+  const sortedPaneEntries = Object.entries(groupedAcquisitions).sort(([keyA], [keyB]) => {
+    const paneA = panes?.find((p) => p.id === keyA);
+    const paneB = panes?.find((p) => p.id === keyB);
+    const numA = paneA?.pane_number ?? Number.MAX_SAFE_INTEGER;
+    const numB = paneB?.pane_number ?? Number.MAX_SAFE_INTEGER;
+    return numA - numB;
+  });
+
   const getGroupProgress = (acqs: Acquisition[]) => {
     const total = acqs.reduce((s, a) => s + a.quantity, 0);
     if (total === 0) return 0;
