@@ -167,7 +167,7 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
           ) : (
             <FolderSearch className="h-4 w-4 mr-1" />
           )}
-          {scanning ? "Scan en cours..." : "Sélectionner le dossier local"}
+          {scanning ? "Lecture en cours..." : "Importer la liste des fichiers du dossier"}
         </Button>
         <input
           ref={inputRef}
