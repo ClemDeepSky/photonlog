@@ -87,6 +87,7 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
       }
 
       const parsed = parseFrameName(entry.relativePath, pattern);
+      if (parsed.matchedPattern) matched++;
       if (parsed.imageType && parsed.imageType !== "LIGHT") {
         skippedType++;
         continue;
