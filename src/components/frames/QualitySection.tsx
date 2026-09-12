@@ -172,7 +172,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [hasMetricDataKey]);
+  }, [totalPoints > 0]);
 
   const hasMetricData = series.some((s) => s.points.length > 0);
   const metricLabel = METRICS.find((m) => m.key === metric)!.label;
