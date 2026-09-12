@@ -546,12 +546,13 @@ const Frames = () => {
 
                               </div>
 
-                              {keptOverAcquired && (
+                              {showKept && keptOverAcquired && (
                                 <div className="text-[11px] text-amber-500 flex items-center gap-1 pl-[3.25rem]">
                                   <AlertTriangle className="h-3 w-3" />
                                   Le nombre conservé dépasse le nombre acquis.
                                 </div>
                               )}
+
                             </div>
                           );
                         })}
