@@ -307,18 +307,25 @@ const Frames = () => {
 
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Frames conservées</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {showKept ? "Frames conservées" : "Frames acquises"}
+                  </p>
                   <span className="text-3xl font-bold">
-                    {acquisitions?.reduce((s, a) => s + a.kept, 0) || 0}
+                    {showKept
+                      ? acquisitions?.reduce((s, a) => s + a.kept, 0) || 0
+                      : acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0}
                     <span className="text-base font-normal text-muted-foreground">
                       /{acquisitions?.reduce((s, a) => s + a.quantity, 0) || 0}
                     </span>
                   </span>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">
-                    {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0} acquises
-                  </p>
+                  {showKept && (
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0} acquises
+                    </p>
+                  )}
                 </CardContent>
               </Card>
+
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
                   <p className="text-xs text-muted-foreground mb-1">Temps d'exposition conservé</p>
