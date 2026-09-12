@@ -4,11 +4,12 @@ import { RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  listLocalFiles,
+  pickLocalDirectory,
   entriesFromInputFileList,
   supportsDirectoryPicker,
   type LocalFileEntry,
 } from "@/lib/localFiles";
+import { saveProjectDirHandle } from "@/lib/dirHandleStore";
 import { isAstroFile, parseFrameName } from "@/lib/frameNames";
 
 export interface RefreshAcquisition {
@@ -181,9 +182,12 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
     }
     setBusy(true);
     try {
-      const entries = await listLocalFiles();
+      const picked = await pickLocalDirectory();
       setBusy(false);
-      if (entries) await run(entries);
+      if (picked) {
+        await saveProjectDirHandle(projectId, picked.handle);
+        await run(picked.entries);
+      }
     } catch (err: any) {
       setBusy(false);
       const msg = String(err?.message || "");
