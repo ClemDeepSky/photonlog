@@ -36,7 +36,7 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
   const [deleting, setDeleting] = useState(false);
   const [stretch, setStretch] = useState(1);
   const [isFits, setIsFits] = useState(false);
-  const [lens, setLens] = useState<{ x: number; y: number; bx: number; by: number } | null>(null);
+  const [lens, setLens] = useState<{ x: number; y: number; bx: number; by: number; iw: number; ih: number } | null>(null);
   const fitsRef = useRef<FitsPreview | null>(null);
   const imgBoxRef = useRef<HTMLDivElement | null>(null);
   const canDelete = !!onDelete && typeof (window as any).showDirectoryPicker === "function";
@@ -108,6 +108,8 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
       y: e.clientY,
       bx: LENS_ZOOM * rect.width * fx - LENS_SIZE / 2,
       by: LENS_ZOOM * rect.height * fy - LENS_SIZE / 2,
+      iw: rect.width,
+      ih: rect.height,
     });
   };
 
@@ -222,7 +224,7 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
               height: LENS_SIZE,
               backgroundImage: `url(${src})`,
               backgroundRepeat: "no-repeat",
-              backgroundSize: `${LENS_ZOOM * 100}%`,
+              backgroundSize: `${LENS_ZOOM * lens.iw}px ${LENS_ZOOM * lens.ih}px`,
               backgroundPosition: `-${lens.bx}px -${lens.by}px`,
             }}
           />
