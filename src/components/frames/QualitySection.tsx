@@ -10,9 +10,9 @@ import {
   getProjectDirHandle,
   ensureReadPermission,
   getFileFromHandle,
-  openLocalFile,
 } from "@/lib/dirHandleStore";
 import { getCachedProjectFile } from "@/lib/localFileCache";
+import FramePreviewDialog from "@/components/frames/FramePreviewDialog";
 import {
   ScatterChart,
   Scatter,
@@ -182,13 +182,15 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     return () => el.removeEventListener("wheel", onWheel);
   }, [totalPoints > 0]);
 
+  const [preview, setPreview] = useState<{ file: File; path: string } | null>(null);
+
   // Ouverture d'une brute depuis le dossier local mémorisé.
   const openFrame = async (relativePath?: string, fileName?: string) => {
     if (!relativePath) return;
     // 1) Fichiers gardés en mémoire lors du dernier rafraîchissement.
     const cached = getCachedProjectFile(projectId, relativePath, fileName);
     if (cached) {
-      await openLocalFile(cached);
+      setPreview({ file: cached, path: relativePath });
       return;
     }
     // 2) Accès au dossier mémorisé (Chrome/Edge, hors aperçu intégré).
@@ -219,7 +221,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       });
       return;
     }
-    await openLocalFile(file);
+    setPreview({ file, path: relativePath });
   };
 
   const hasMetricData = series.some((s) => s.points.length > 0);
@@ -360,7 +362,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                                   <div className="font-medium text-primary break-all" title={p.relativePath}>
                                     {p.fileName}
                                   </div>
-                                  <div className="text-muted-foreground">Cliquez sur le point pour ouvrir le fichier</div>
+                                  <div className="text-muted-foreground">Cliquez sur le point pour l'aperçu</div>
                                 </div>
                               )}
                               {row("FWHM", p.fwhm)}
@@ -395,6 +397,12 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
           </div>
         )}
       </CardContent>
+      <FramePreviewDialog
+        file={preview?.file || null}
+        relativePath={preview?.path || ""}
+        open={!!preview}
+        onOpenChange={(o) => !o && setPreview(null)}
+      />
     </Card>
   );
 };
