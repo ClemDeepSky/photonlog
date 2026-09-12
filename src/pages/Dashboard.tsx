@@ -101,8 +101,6 @@ const Dashboard = () => {
   const acquiredSecondsOf = (acqs: Acquisition[]) =>
     acqs.reduce((s, a) => s + a.acquired * Number(a.exposure_duration || 0), 0);
 
-  const keptSecondsOf = (acqs: Acquisition[]) =>
-    acqs.reduce((s, a) => s + a.kept * Number(a.exposure_duration || 0), 0);
 
   return (
     <AppLayout>
