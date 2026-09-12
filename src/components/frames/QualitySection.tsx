@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import {
+  getProjectDirHandle,
+  ensureReadPermission,
+  getFileFromHandle,
+  openLocalFile,
+} from "@/lib/dirHandleStore";
 import {
   ScatterChart,
   Scatter,
@@ -173,6 +180,39 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [totalPoints > 0]);
+
+  // Ouverture d'une brute depuis le dossier local mémorisé.
+  const openFrame = async (relativePath?: string, fileName?: string) => {
+    if (!relativePath) return;
+    const handle = await getProjectDirHandle(projectId);
+    if (!handle) {
+      toast({
+        title: "Dossier non mémorisé",
+        description:
+          "Cliquez d'abord sur « Rafraîchir le dossier » et choisissez le dossier du projet : l'accès sera mémorisé pour ouvrir les fichiers.",
+      });
+      return;
+    }
+    const ok = await ensureReadPermission(handle);
+    if (!ok) {
+      toast({
+        title: "Accès refusé",
+        description: "Autorisez la lecture du dossier pour ouvrir les fichiers.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const file = await getFileFromHandle(handle, relativePath);
+    if (!file) {
+      toast({
+        title: "Fichier introuvable",
+        description: `${fileName || relativePath} n'est plus à cet emplacement dans le dossier.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    await openLocalFile(file);
+  };
 
   const hasMetricData = series.some((s) => s.points.length > 0);
   const metricLabel = METRICS.find((m) => m.key === metric)!.label;
