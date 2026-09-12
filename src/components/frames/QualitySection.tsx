@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ interface FrameRow {
   hfr: number | null;
   star_count: number | null;
   sensor_temp: number | null;
+  file_name: string | null;
+  relative_path: string | null;
 }
 
 const METRICS = [
@@ -66,7 +68,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_frames")
-        .select("id, filter, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp")
+        .select("id, filter, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp, file_name, relative_path")
         .eq("project_id", projectId)
         .order("captured_at", { ascending: true })
         .limit(20000);
@@ -98,27 +100,79 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     apply(next);
   };
 
-  const series = useMemo(() => {
-    const byFilter = new Map<string, { x: number; y: number; label: string }[]>();
+  // Distribution régulière : chaque image occupe la même place, triée par date+heure.
+  const { series, totalPoints } = useMemo(() => {
+    const kept: { idx: number; f: FrameRow }[] = [];
     for (const f of withDates) {
-      const value = f[metric];
-      if (value == null) continue;
+      if (f[metric] == null) continue;
       const filter = f.filter || "?";
       if (offFilters.has(filter)) continue;
       if (f.pane_number != null && offPanes.has(String(f.pane_number))) continue;
       if (offNights.has(nightOf(f.captured_at!))) continue;
-      const x = new Date(f.captured_at!).getTime();
+      kept.push({ idx: 0, f });
+    }
+    kept.sort(
+      (a, b) => new Date(a.f.captured_at!).getTime() - new Date(b.f.captured_at!).getTime()
+    );
+    kept.forEach((k, i) => (k.idx = i));
+    const byFilter = new Map<string, any[]>();
+    for (const { idx, f } of kept) {
+      const filter = f.filter || "?";
       if (!byFilter.has(filter)) byFilter.set(filter, []);
       byFilter.get(filter)!.push({
-        x,
-        y: Number(value),
-        label: new Date(f.captured_at!).toLocaleString("fr-FR"),
+        x: idx,
+        y: Number(f[metric]),
+        fileName: f.file_name || f.relative_path || "",
+        relativePath: f.relative_path || "",
+        fwhm: f.fwhm,
+        hfr: f.hfr,
+        eccentricity: f.eccentricity,
+        starCount: f.star_count,
       });
     }
-    return Array.from(byFilter.entries())
-      .map(([filter, points]) => ({ filter, points: points.sort((a, b) => a.x - b.x) }))
-      .sort((a, b) => a.filter.localeCompare(b.filter));
+    return {
+      series: Array.from(byFilter.entries())
+        .map(([filter, points]) => ({ filter, points }))
+        .sort((a, b) => a.filter.localeCompare(b.filter)),
+      totalPoints: kept.length,
+    };
   }, [withDates, metric, offFilters, offPanes, offNights]);
+
+  // Zoom horizontal à la molette : fenêtre visible [zMin, zMax] sur les indices.
+  const [zoom, setZoom] = useState<[number, number] | null>(null);
+  useEffect(() => setZoom(null), [metric, offFilters, offPanes, offNights, totalPoints]);
+  const chartWrapRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const totalRef = useRef(totalPoints);
+  totalRef.current = totalPoints;
+
+  useEffect(() => {
+    const el = chartWrapRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const n = totalRef.current;
+      if (n < 2) return;
+      e.preventDefault();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      const cur = zoomRef.current || [0, n - 1];
+      const span = cur[1] - cur[0] + 1;
+      const factor = Math.exp(dy * 0.002);
+      const nextSpan = Math.min(n, Math.max(5, span * factor));
+      if (nextSpan === span) return;
+      const rect = el.getBoundingClientRect();
+      const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      const anchor = cur[0] + frac * (span - 1);
+      let z0 = anchor - frac * (nextSpan - 1);
+      let z1 = z0 + nextSpan - 1;
+      if (z0 < 0) { z1 -= z0; z0 = 0; }
+      if (z1 > n - 1) { z0 -= z1 - (n - 1); z1 = n - 1; }
+      z0 = Math.max(0, z0);
+      setZoom(z0 <= 0 && z1 >= n - 1 ? null : [z0, z1]);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [totalPoints > 0]);
 
   const hasMetricData = series.some((s) => s.points.length > 0);
   const metricLabel = METRICS.find((m) => m.key === metric)!.label;
@@ -208,46 +262,89 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
             </div>
 
             {hasMetricData ? (
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-                    <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                    <XAxis
-                      type="number"
-                      dataKey="x"
-                      domain={["dataMin", "dataMax"]}
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      tickFormatter={(v) => new Date(v).toLocaleDateString("fr-FR")}
-                    />
-                    <YAxis
-                      type="number"
-                      dataKey="y"
-                      name={metricLabel}
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      domain={["auto", "auto"]}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: 8,
-                        fontSize: 12,
-                      }}
-                      formatter={(value: any, name: any) => [value, name === "y" ? metricLabel : name]}
-                      labelFormatter={(v) => new Date(Number(v)).toLocaleString("fr-FR")}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    {series.map((s) => (
-                      <Scatter
-                        key={s.filter}
-                        name={s.filter}
-                        data={s.points}
-                        line={{ strokeWidth: 1 }}
-                        fill={filterColors[s.filter] || "hsl(var(--primary))"}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Molette de la souris : zoom horizontal
+                    {zoom ? ` — ${Math.round(zoom[1] - zoom[0] + 1)} images affichées sur ${totalPoints}` : ""}
+                  </p>
+                  {zoom && (
+                    <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => setZoom(null)}>
+                      Réinitialiser le zoom
+                    </Button>
+                  )}
+                </div>
+                <div ref={chartWrapRef} className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                      <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                      <XAxis
+                        type="number"
+                        dataKey="x"
+                        domain={zoom ? [zoom[0], zoom[1]] : [0, Math.max(0, totalPoints - 1)]}
+                        allowDataOverflow
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        tickFormatter={() => ""}
+                        label={{ value: "Images (ordre chronologique)", position: "insideBottom", offset: -4, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                       />
-                    ))}
-                  </ScatterChart>
-                </ResponsiveContainer>
+                      <YAxis
+                        type="number"
+                        dataKey="y"
+                        name={metricLabel}
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        domain={["auto", "auto"]}
+                      />
+                      <Tooltip
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const p = payload[0].payload;
+                          const row = (label: string, v: any) =>
+                            v != null ? (
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground">{label}</span>
+                                <span className="font-medium">{v}</span>
+                              </div>
+                            ) : null;
+                          return (
+                            <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md max-w-xs space-y-0.5">
+                              {p.fileName && (
+                                <div className="font-medium text-primary break-all mb-1">
+                                  {p.relativePath ? (
+                                    <a
+                                      href={`file://${p.relativePath}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title={p.relativePath}
+                                      className="hover:underline"
+                                    >
+                                      {p.fileName}
+                                    </a>
+                                  ) : (
+                                    p.fileName
+                                  )}
+                                </div>
+                              )}
+                              {row("FWHM", p.fwhm)}
+                              {row("HFR", p.hfr)}
+                              {row("Excentricité", p.eccentricity)}
+                              {row("Étoiles", p.starCount)}
+                            </div>
+                          );
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      {series.map((s) => (
+                        <Scatter
+                          key={s.filter}
+                          name={s.filter}
+                          data={s.points}
+                          line={{ strokeWidth: 1 }}
+                          fill={filterColors[s.filter] || "hsl(var(--primary))"}
+                        />
+                      ))}
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
