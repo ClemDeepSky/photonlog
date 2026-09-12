@@ -393,9 +393,13 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
   const hasMetricData = series.some((s) => s.points.length > 0);
   const overviewDenominator = Math.max(1, totalPoints);
-  const overviewStart = ((zoom?.[0] ?? 0) / overviewDenominator) * 100;
-  const overviewEnd = (((zoom?.[1] ?? Math.max(0, totalPoints - 1)) + 1) / overviewDenominator) * 100;
+  const zoomWindow = zoom || fullWindow(Math.max(1, totalPoints));
+  const overviewStart = Math.max(0, ((zoomWindow[0] + 0.5) / overviewDenominator) * 100);
+  const overviewEnd = Math.min(100, ((zoomWindow[1] + 0.5) / overviewDenominator) * 100);
   const overviewWidth = totalPoints < 2 ? 100 : Math.max(1.5, overviewEnd - overviewStart);
+  const visibleCount = zoom
+    ? Math.max(1, Math.round(Math.min(totalPoints, zoom[1]) - Math.max(-0.5, zoom[0])))
+    : totalPoints;
 
   return (
     <Card className="border-border/50">
