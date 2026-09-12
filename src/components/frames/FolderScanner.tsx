@@ -188,15 +188,22 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
             {results.map((r) => {
               const hasMatch = acquisitions.some((a) => a.filter === r.filter);
               return (
-                <div
+                <details
                   key={r.filter}
                   className={`text-xs px-2 py-1 rounded-md border ${
                     hasMatch ? "border-primary/50 bg-primary/10" : "border-border bg-muted"
                   }`}
                 >
-                  <span className="font-semibold">{r.filter}</span>: {r.count} fichier(s)
-                  {!hasMatch && <span className="text-muted-foreground ml-1">(pas configuré)</span>}
-                </div>
+                  <summary className="cursor-pointer select-none">
+                    <span className="font-semibold">{r.filter}</span>: {r.count} fichier(s)
+                    {!hasMatch && <span className="text-muted-foreground ml-1">(pas configuré)</span>}
+                  </summary>
+                  <ul className="mt-1 max-h-32 overflow-y-auto space-y-0.5 text-muted-foreground">
+                    {r.files.map((f) => (
+                      <li key={f} className="truncate" title={f}>{f}</li>
+                    ))}
+                  </ul>
+                </details>
               );
             })}
           </div>
