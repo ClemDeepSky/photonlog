@@ -86,8 +86,8 @@ function readPixels(
   return out;
 }
 
-/** Étirement automatique par percentiles (0.5 % / 99.5 %) sur un échantillon. */
-function autoStretchBounds(px: Float32Array): [number, number] {
+/** Bornes d'étirement par percentiles sur un échantillon. */
+function stretchBounds(px: Float32Array, loPct: number, hiPct: number): [number, number] {
   const step = Math.max(1, Math.floor(px.length / 200000));
   const sample: number[] = [];
   for (let i = 0; i < px.length; i += step) {
@@ -96,13 +96,13 @@ function autoStretchBounds(px: Float32Array): [number, number] {
   }
   if (sample.length === 0) return [0, 1];
   sample.sort((a, b) => a - b);
-  const lo = sample[Math.floor(sample.length * 0.005)];
-  const hi = sample[Math.floor(sample.length * 0.995)];
+  const lo = sample[Math.floor(sample.length * loPct)];
+  const hi = sample[Math.min(sample.length - 1, Math.floor(sample.length * hiPct))];
   return hi > lo ? [lo, hi] : [sample[0], sample[sample.length - 1] || sample[0] + 1];
 }
 
-/** Décode un FITS en canvas prêt à afficher (mono ou première couche couleur). */
-export async function decodeFitsToCanvas(file: File, maxSide = 1400): Promise<FitsPreview> {
+/** Décode un FITS en pixels bruts (mono ou première couche). */
+export async function decodeFitsToCanvas(file: File): Promise<FitsPreview> {
   const buf = await file.arrayBuffer();
   const { header, dataStart } = parseHeader(buf);
   const w = Number(header.NAXIS1);
@@ -116,8 +116,16 @@ export async function decodeFitsToCanvas(file: File, maxSide = 1400): Promise<Fi
   if (bzero !== 0 || bscale !== 1) {
     for (let i = 0; i < px.length; i++) px[i] = px[i] * bscale + bzero;
   }
+  return { pixels: px, width: w, height: h, header };
+}
 
-  const [lo, hi] = autoStretchBounds(px);
+/** Rend les pixels décodés en canvas avec le niveau d'étirement choisi. */
+export function stretchToCanvas(preview: FitsPreview, level: number, maxSide = 1400): HTMLCanvasElement {
+  const px = preview.pixels;
+  const w = preview.width;
+  const h = preview.height;
+  const spec = STRETCH_LEVELS[level] ?? STRETCH_LEVELS[1];
+  const [lo, hi] = stretchBounds(px, spec.lo, spec.hi);
   const range = hi - lo || 1;
 
   // Réduction éventuelle pour rester léger à l'affichage.
