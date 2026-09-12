@@ -21,7 +21,7 @@ const Projects = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*, teams(name, logo_url), project_acquisitions(acquired, kept, quantity, exposure_duration)")
+        .select("*, teams(name, logo_url), project_acquisitions(acquired, quantity, exposure_duration)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -122,8 +122,8 @@ const Projects = () => {
                       <div className="mb-3 space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1.5 text-muted-foreground">
-                            <CheckCircle2 className="h-3 w-3" />
-                            {kept} / {quantity} conservées
+                            <Camera className="h-3 w-3" />
+                            {acquired} / {quantity} acquises
                           </span>
                           <span className="text-muted-foreground">{percent}%</span>
                         </div>
@@ -134,7 +134,6 @@ const Projects = () => {
                           />
                         </div>
                         <p className="text-[11px] text-muted-foreground flex items-center gap-3">
-                          <span className="flex items-center gap-1"><Camera className="h-3 w-3" />{acquired} acquises</span>
                           <span>{Math.round(seconds / 60)} min d'intégration</span>
                         </p>
                       </div>
