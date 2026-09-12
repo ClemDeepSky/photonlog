@@ -122,7 +122,7 @@ export function stretchToCanvas(preview: FitsPreview, level: number, maxSide = 1
   const px = preview.pixels;
   const w = preview.width;
   const h = preview.height;
-  const spec = STRETCH_LEVELS[level] ?? STRETCH_LEVELS[1];
+  const spec = STRETCH_LEVELS[level] ?? STRETCH_LEVELS[0];
   const [lo, hi] = stretchBounds(px, spec.lo, spec.hi);
   const range = hi - lo || 1;
 
