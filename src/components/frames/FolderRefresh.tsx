@@ -10,6 +10,7 @@ import {
   type LocalFileEntry,
 } from "@/lib/localFiles";
 import { saveProjectDirHandle } from "@/lib/dirHandleStore";
+import { cacheProjectFiles } from "@/lib/localFileCache";
 import { isAstroFile, parseFrameName } from "@/lib/frameNames";
 
 export interface RefreshAcquisition {
