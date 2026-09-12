@@ -52,6 +52,8 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     setDims(null);
     setLens(null);
     fitsRef.current = null;
+    fullCanvasRef.current = null;
+    fullImageRef.current = null;
     if (!file || !open) return;
 
     const run = async () => {
@@ -64,11 +66,21 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
           fitsRef.current = preview;
           const canvas = stretchToCanvas(preview, stretch);
           setSrc(canvas.toDataURL("image/png"));
+          // Version pleine résolution pour la loupe (×2 sur les pixels réels).
+          fullCanvasRef.current = stretchToCanvas(preview, stretch, Math.max(preview.width, preview.height));
           setDims(`${preview.width} × ${preview.height} px`);
         } else {
           setIsFits(false);
           const url = URL.createObjectURL(file);
           revoke = url;
+          const img = new Image();
+          img.src = url;
+          try {
+            await img.decode();
+            fullImageRef.current = img;
+          } catch {
+            /* image non décodable : pas de loupe */
+          }
           if (!cancelled) setSrc(url);
         }
       } catch (e: any) {
