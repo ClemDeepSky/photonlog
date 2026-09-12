@@ -52,6 +52,7 @@ const CreateProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
+  const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [setup, setSetup] = useState("");
@@ -255,6 +256,7 @@ const CreateProject = () => {
           name, description: description || null, setup: setup || null, target_object: null,
           image_url: imageUrl,
           folder_path: folderPath || null,
+          filename_pattern: filenamePattern || null,
           team_id: isTeamProject ? selectedTeamId : null, created_by: user!.id, is_mosaic: isMosaic,
           ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
           position_angle: isMosaic ? null : (parseFloat(positionAngle) || null),
@@ -362,6 +364,18 @@ const CreateProject = () => {
                 <Label>Chemin du dossier local</Label>
                 <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" />
                 <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition (utilisé pour le scan automatique)</p>
+              </div>
+              <div>
+                <Label>Structure des noms de fichiers (optionnel)</Label>
+                <Input
+                  value={filenamePattern}
+                  onChange={(e) => setFilenamePattern(e.target.value)}
+                  placeholder="$$TARGETNAME$$_$$IMAGETYPE$$_$$FILTER$$_$$DATE$$_$$TIME$$_$$SENSORTEMP$$_$$EXPOSURETIME$$s_FWHM$$FWHM$$_ex$$ECCENTRICITY$$_starsCount-$$STARCOUNT$$_hfr-$$HFR$$_$$FRAMENR$$"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Collez le modèle de nommage de votre logiciel (N.I.N.A. par exemple) pour extraire automatiquement
+                  la qualité de chaque brute. Laissez vide si vos fichiers ne contiennent pas ces informations.
+                </p>
               </div>
               <div>
                 <Label>Setup</Label>

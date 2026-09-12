@@ -248,6 +248,78 @@ export type Database = {
           },
         ]
       }
+      project_frames: {
+        Row: {
+          acquisition_id: string | null
+          captured_at: string | null
+          created_at: string
+          eccentricity: number | null
+          exposure_duration: number | null
+          file_name: string
+          filter: string | null
+          frame_nr: number | null
+          fwhm: number | null
+          hfr: number | null
+          id: string
+          pane_number: number | null
+          project_id: string
+          relative_path: string
+          sensor_temp: number | null
+          star_count: number | null
+        }
+        Insert: {
+          acquisition_id?: string | null
+          captured_at?: string | null
+          created_at?: string
+          eccentricity?: number | null
+          exposure_duration?: number | null
+          file_name: string
+          filter?: string | null
+          frame_nr?: number | null
+          fwhm?: number | null
+          hfr?: number | null
+          id?: string
+          pane_number?: number | null
+          project_id: string
+          relative_path: string
+          sensor_temp?: number | null
+          star_count?: number | null
+        }
+        Update: {
+          acquisition_id?: string | null
+          captured_at?: string | null
+          created_at?: string
+          eccentricity?: number | null
+          exposure_duration?: number | null
+          file_name?: string
+          filter?: string | null
+          frame_nr?: number | null
+          fwhm?: number | null
+          hfr?: number | null
+          id?: string
+          pane_number?: number | null
+          project_id?: string
+          relative_path?: string
+          sensor_temp?: number | null
+          star_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_frames_acquisition_id_fkey"
+            columns: ["acquisition_id"]
+            isOneToOne: false
+            referencedRelation: "project_acquisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_frames_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_panes: {
         Row: {
           col_index: number | null
@@ -307,6 +379,7 @@ export type Database = {
           created_by: string
           dec: string | null
           description: string | null
+          filename_pattern: string | null
           folder_path: string | null
           id: string
           image_url: string | null
@@ -325,6 +398,7 @@ export type Database = {
           created_by: string
           dec?: string | null
           description?: string | null
+          filename_pattern?: string | null
           folder_path?: string | null
           id?: string
           image_url?: string | null
@@ -343,6 +417,7 @@ export type Database = {
           created_by?: string
           dec?: string | null
           description?: string | null
+          filename_pattern?: string | null
           folder_path?: string | null
           id?: string
           image_url?: string | null

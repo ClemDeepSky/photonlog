@@ -54,6 +54,7 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
+  const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [setup, setSetup] = useState("");
@@ -137,6 +138,7 @@ const EditProject = () => {
 
     setName(project.name);
     setFolderPath((project as any).folder_path || "");
+    setFilenamePattern((project as any).filename_pattern || "");
     setDescription(project.description || "");
     setImageUrl((project as any).image_url || null);
     setSetup(project.setup || "");
@@ -338,6 +340,7 @@ const EditProject = () => {
           name, description: description || null, setup: setup || null,
           image_url: imageUrl,
           folder_path: folderPath || null,
+          filename_pattern: filenamePattern || null,
           team_id: isTeamProject ? selectedTeamId : null, is_mosaic: isMosaic,
           ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
           position_angle: isMosaic ? null : (parseFloat(positionAngle) || null),
@@ -485,6 +488,19 @@ const EditProject = () => {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Chemin de référence. Utilisez le bouton pour scanner et compter les fichiers par filtre.</p>
+              </div>
+              <div>
+                <Label>Structure des noms de fichiers (optionnel)</Label>
+                <Input
+                  value={filenamePattern}
+                  onChange={(e) => setFilenamePattern(e.target.value)}
+                  placeholder="$$TARGETNAME$$_$$IMAGETYPE$$_$$FILTER$$_$$DATE$$_$$TIME$$_$$SENSORTEMP$$_$$EXPOSURETIME$$s_FWHM$$FWHM$$_ex$$ECCENTRICITY$$_starsCount-$$STARCOUNT$$_hfr-$$HFR$$_$$FRAMENR$$"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Collez le modèle de nommage de votre logiciel (N.I.N.A. par exemple) pour extraire automatiquement
+                  la qualité de chaque brute (FWHM, excentricité, HFR, étoiles, température). Laissez vide si vos
+                  fichiers ne contiennent pas ces informations.
+                </p>
               </div>
               <div>
                 <Label>Setup</Label>

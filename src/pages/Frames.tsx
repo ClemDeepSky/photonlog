@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3, AlertTriangle } from "lucide-react";
+import FolderRefresh from "@/components/frames/FolderRefresh";
+import QualitySection from "@/components/frames/QualitySection";
 
 
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +42,7 @@ interface Project {
   is_mosaic: boolean;
   team_id: string | null;
   status: string;
+  filename_pattern: string | null;
   teams: { name: string } | null;
 }
 
@@ -69,7 +72,7 @@ const Frames = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, is_mosaic, team_id, status, teams(name)")
+        .select("id, name, is_mosaic, team_id, status, filename_pattern, teams(name)")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Project[];
@@ -278,6 +281,23 @@ const Frames = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {selectedProject && (
+                  <FolderRefresh
+                    projectId={selectedProject.id}
+                    pattern={selectedProject.filename_pattern}
+                    isMosaic={selectedProject.is_mosaic}
+                    acquisitions={(acquisitions || []).map((a) => ({
+                      id: a.id,
+                      filter: a.filter,
+                      paneNumber: a.pane_id ? panes?.find((p) => p.id === a.pane_id)?.pane_number ?? null : null,
+                    }))}
+                    onDone={() => {
+                      queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", selectedProjectId] });
+                      queryClient.invalidateQueries({ queryKey: ["project-frames", selectedProjectId] });
+                      queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
+                    }}
+                  />
+                )}
                 <span className="text-sm text-muted-foreground">Afficher les conservés</span>
                 <Switch
                   checked={showKept}
@@ -363,6 +383,11 @@ const Frames = () => {
               </Card>
 
             </div>
+
+            {selectedProject && (
+              <QualitySection projectId={selectedProject.id} isMosaic={selectedProject.is_mosaic} />
+            )}
+
 
             {/* Acquisitions by pane */}
             {sortedPaneEntries.map(([paneKey, acqs]) => {
