@@ -13,7 +13,7 @@ export interface FitsPreview {
 
 /** Niveaux d'étirement : percentiles bas/haut + gamma. */
 export const STRETCH_LEVELS = [
-  { id: 0, label: "Standard", lo: 0.000605, hi: 0.9999, gamma: 0.486 },
+  { id: 0, label: "Standard", lo: 0.000635, hi: 0.9999, gamma: 0.462 },
 ] as const;
 
 const CARD = 80;
