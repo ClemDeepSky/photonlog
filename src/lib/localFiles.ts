@@ -35,7 +35,12 @@ export async function listLocalFiles(): Promise<LocalFileEntry[] | null> {
  * Comme listLocalFiles, mais retourne aussi le "handle" du dossier choisi afin
  * de pouvoir mémoriser l'accès et rouvrir un fichier plus tard.
  */
-export async function pickLocalDirectory(): Promise<{ handle: any; entries: LocalFileEntry[] } | null> {
+export async function pickLocalDirectory(options?: {
+  /** Identifiant de dossier mémorisé par le navigateur (rouvre au même endroit). */
+  id?: string;
+  /** "readwrite" permet aussi la suppression de fichiers ensuite. */
+  mode?: "read" | "readwrite";
+}): Promise<{ handle: any; entries: LocalFileEntry[] } | null> {
   const picker = (window as any).showDirectoryPicker;
   if (typeof picker !== "function") {
     throw new Error("showDirectoryPicker non supporté");
@@ -43,14 +48,18 @@ export async function pickLocalDirectory(): Promise<{ handle: any; entries: Loca
 
   let root: DirHandle;
   try {
-    root = await picker.call(window, { mode: "read" });
+    root = await picker.call(window, { mode: options?.mode ?? "readwrite", id: options?.id });
   } catch (err: any) {
     if (err?.name === "AbortError") return null; // utilisateur a annulé
     throw err;
   }
 
-  const entries: LocalFileEntry[] = [];
+  return { handle: root, entries: await entriesFromDirHandle(root) };
+}
 
+/** Parcourt récursivement un dossier déjà autorisé et retourne la liste des fichiers. */
+export async function entriesFromDirHandle(root: any): Promise<LocalFileEntry[]> {
+  const entries: LocalFileEntry[] = [];
   const walk = async (dir: DirHandle, prefix: string) => {
     for await (const child of dir.values()) {
       if (child.kind === "directory") {
@@ -61,9 +70,8 @@ export async function pickLocalDirectory(): Promise<{ handle: any; entries: Loca
       }
     }
   };
-
   await walk(root, "");
-  return { handle: root, entries };
+  return entries;
 }
 
 /** true si le navigateur supporte la File System Access API (Chrome, Edge…). */
@@ -74,15 +82,25 @@ export function supportsDirectoryPicker(): boolean {
 /**
  * Fallback pour les navigateurs sans File System Access API :
  * convertit la FileList d'un <input webkitdirectory> en simple liste de noms.
+ * Le nom du dossier racine est retiré pour obtenir les mêmes chemins relatifs
+ * que la File System Access API (sinon l'index se croirait entièrement neuf).
  */
 export function entriesFromInputFileList(files: FileList): LocalFileEntry[] {
   const entries: LocalFileEntry[] = [];
+  let root = "";
+  for (let i = 0; i < files.length; i++) {
+    const rel = (files[i] as any).webkitRelativePath as string | undefined;
+    if (rel && rel.includes("/")) {
+      root = rel.split("/")[0] + "/";
+      break;
+    }
+  }
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
-    entries.push({
-      name: f.name,
-      relativePath: (f as any).webkitRelativePath || f.name,
-    });
+    let rel = ((f as any).webkitRelativePath as string) || f.name;
+    if (root && rel.startsWith(root)) rel = rel.slice(root.length);
+    entries.push({ name: f.name, relativePath: rel });
   }
   return entries;
 }
+

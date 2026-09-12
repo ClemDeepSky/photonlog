@@ -6,11 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   pickLocalDirectory,
   entriesFromInputFileList,
+  entriesFromDirHandle,
   supportsDirectoryPicker,
   type LocalFileEntry,
 } from "@/lib/localFiles";
-import { saveProjectDirHandle } from "@/lib/dirHandleStore";
+import { saveProjectDirHandle, getProjectDirHandle, ensureReadPermission } from "@/lib/dirHandleStore";
 import { cacheProjectFiles } from "@/lib/localFileCache";
+
 import { isAstroFile, parseFrameName } from "@/lib/frameNames";
 
 export interface RefreshAcquisition {
@@ -168,15 +170,31 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
       inputRef.current?.click();
       return;
     }
-    setBusy(true);
     try {
-      const picked = await pickLocalDirectory();
+      // 1) Dossier déjà mémorisé : on le relit sans redemander (sauf si
+      // l'autorisation a expiré, auquel cas le navigateur la redemande).
+      const saved = await getProjectDirHandle(projectId);
+      if (saved) {
+        const allowed = await ensureReadPermission(saved);
+        if (allowed) {
+          setBusy(true);
+          const entries = await entriesFromDirHandle(saved);
+          setBusy(false);
+          await run(entries);
+          return;
+        }
+      }
+      // 2) Sinon on demande le dossier, en rouvrant au même endroit que la
+      // dernière fois et avec l'accès écriture (nécessaire pour supprimer).
+      setBusy(true);
+      const picked = await pickLocalDirectory({ id: `photonlog-${projectId}`, mode: "readwrite" });
       setBusy(false);
       if (picked) {
         await saveProjectDirHandle(projectId, picked.handle);
         await run(picked.entries);
       }
     } catch (err: any) {
+
       setBusy(false);
       const msg = String(err?.message || "");
       const unavailable =
