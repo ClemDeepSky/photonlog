@@ -190,42 +190,29 @@ const Dashboard = () => {
                         <div className="flex items-baseline justify-between mb-1.5">
                           <span className="text-xs text-muted-foreground">Progression globale</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl font-bold text-gradient">{globalPercent.kept}%</span>
-                            <span className="text-xs text-muted-foreground">({globalPercent.acquired}% acquis)</span>
+                            <span className="text-2xl font-bold text-gradient">{globalPercent.acquired}%</span>
                           </div>
                         </div>
                         <div className="h-2.5 rounded-full bg-secondary overflow-hidden relative">
                           <div
-                            className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
-                            style={{ width: `${globalPercent.acquired}%`, backgroundColor: "hsl(var(--primary))" }}
-                          />
-                          <div
                             className="h-full rounded-full transition-all absolute left-0 top-0"
-                            style={{ width: `${globalPercent.kept}%`, backgroundColor: "hsl(var(--primary))" }}
+                            style={{ width: `${globalPercent.acquired}%`, backgroundColor: "hsl(var(--primary))" }}
                           />
                         </div>
                       </div>
 
-                      {/* Prominent acquired / kept times */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-lg bg-secondary/50 px-3 py-2">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Acquis</p>
-                          <p className="text-lg font-bold text-foreground">
-                            {formatDuration(acquiredSecondsOf(project.project_acquisitions))}
-                          </p>
-                        </div>
-                        <div className="rounded-lg bg-secondary/50 px-3 py-2">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Conservé</p>
-                          <p className="text-base font-semibold text-foreground">
-                            {formatDuration(keptSecondsOf(project.project_acquisitions))}
-                          </p>
-                        </div>
+                      {/* Prominent acquired time */}
+                      <div className="rounded-lg bg-secondary/50 px-3 py-2">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Acquis</p>
+                        <p className="text-lg font-bold text-foreground">
+                          {formatDuration(acquiredSecondsOf(project.project_acquisitions))}
+                        </p>
                       </div>
 
                       {/* Per-filter progress */}
                       {filters.length > 0 && (
                         <div className="space-y-2">
-                          {filters.map(({ filter, kept, quantity, percent, acquiredPercent, exposureDuration, acquiredSeconds, keptSeconds, plannedSeconds }) => (
+                          {filters.map(({ filter, acquired, quantity, acquiredPercent, exposureDuration, acquiredSeconds, plannedSeconds }) => (
                             <div key={filter} className="space-y-1">
                               <div className="flex items-center gap-2 text-xs">
                                 <span
