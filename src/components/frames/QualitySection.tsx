@@ -51,16 +51,6 @@ const METRICS = [
 
 type MetricKey = (typeof METRICS)[number]["key"];
 
-const filterColors: Record<string, string> = {
-  L: "hsl(var(--foreground))",
-  R: "hsl(0, 72%, 55%)",
-  G: "hsl(142, 71%, 45%)",
-  B: "hsl(217, 91%, 60%)",
-  Ha: "hsl(0, 85%, 60%)",
-  OIII: "hsl(192, 91%, 54%)",
-  SII: "hsl(35, 92%, 55%)",
-};
-
 const nightOf = (iso: string) => {
   // Une nuit = la date du soir : avant midi, on rattache au jour précédent.
   const d = new Date(iso);
