@@ -153,6 +153,14 @@ export async function openLocalFile(file: File): Promise<void> {
 }
 
 /**
+ * Identifiant du sélecteur de dossier : caractères alphanumériques
+ * uniquement et 32 caractères maximum (contrainte Chrome).
+ */
+export function pickerId(projectId: string): string {
+  return `pl${projectId.replace(/[^a-zA-Z0-9]/g, "")}`.slice(0, 32);
+}
+
+/**
  * Demande à l'utilisateur de désigner le dossier du projet (accès lecture+écriture)
  * et mémorise le handle. Lève une erreur si l'API n'est pas disponible
  * (navigateur non compatible ou page affichée dans un cadre intégré).
@@ -164,7 +172,7 @@ export async function requestProjectDirHandle(projectId: string): Promise<any> {
     e.name = "NotSupportedError";
     throw e;
   }
-  const handle = await picker.call(window, { mode: "readwrite", id: `photonlog-${projectId}` });
+  const handle = await picker.call(window, { mode: "readwrite", id: pickerId(projectId) });
   await saveProjectDirHandle(projectId, handle);
   return handle;
 }
