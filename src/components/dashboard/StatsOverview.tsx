@@ -7,7 +7,6 @@ export interface StatAcquisition {
   filter: string;
   quantity: number;
   acquired: number;
-  kept: number;
   exposure_duration: number;
 }
 
@@ -20,25 +19,21 @@ interface Props {
 
 const StatsOverview = ({ acquisitions, projectCount, activeCount, filterColors }: Props) => {
   const acquiredSeconds = acquisitions.reduce((s, a) => s + a.acquired * Number(a.exposure_duration || 0), 0);
-  const keptSeconds = acquisitions.reduce((s, a) => s + a.kept * Number(a.exposure_duration || 0), 0);
   const plannedSeconds = acquisitions.reduce((s, a) => s + a.quantity * Number(a.exposure_duration || 0), 0);
   const remainingSeconds = acquisitions.reduce(
-    (s, a) => s + Math.max(0, a.quantity - a.kept) * Number(a.exposure_duration || 0),
+    (s, a) => s + Math.max(0, a.quantity - a.acquired) * Number(a.exposure_duration || 0),
     0
   );
   const acquiredFrames = acquisitions.reduce((s, a) => s + a.acquired, 0);
-  const keptFrames = acquisitions.reduce((s, a) => s + a.kept, 0);
   const plannedFrames = acquisitions.reduce((s, a) => s + a.quantity, 0);
-  const avgExposure = keptFrames > 0 ? Math.round(keptSeconds / keptFrames) : acquiredFrames > 0 ? Math.round(acquiredSeconds / acquiredFrames) : 0;
+  const avgExposure = acquiredFrames > 0 ? Math.round(acquiredSeconds / acquiredFrames) : 0;
   const globalAcquiredPercent = plannedSeconds > 0 ? Math.min(100, Math.round((acquiredSeconds / plannedSeconds) * 100)) : 0;
-  const globalKeptPercent = plannedSeconds > 0 ? Math.min(100, Math.round((keptSeconds / plannedSeconds) * 100)) : 0;
 
   const byFilter = Object.entries(
-    acquisitions.reduce<Record<string, { acquired: number; kept: number; planned: number; durationCount: number; durationSum: number }>>((acc, a) => {
+    acquisitions.reduce<Record<string, { acquired: number; planned: number; durationCount: number; durationSum: number }>>((acc, a) => {
       const dur = Number(a.exposure_duration || 0);
-      acc[a.filter] = acc[a.filter] || { acquired: 0, kept: 0, planned: 0, durationCount: 0, durationSum: 0 };
+      acc[a.filter] = acc[a.filter] || { acquired: 0, planned: 0, durationCount: 0, durationSum: 0 };
       acc[a.filter].acquired += a.acquired * dur;
-      acc[a.filter].kept += a.kept * dur;
       acc[a.filter].planned += a.quantity * dur;
       acc[a.filter].durationCount += a.quantity;
       acc[a.filter].durationSum += a.quantity * dur;
@@ -48,21 +43,15 @@ const StatsOverview = ({ acquisitions, projectCount, activeCount, filterColors }
     .map(([filter, v]) => ({
       filter,
       acquired: v.acquired,
-      kept: v.kept,
       planned: v.planned,
       exposureDuration: v.durationCount > 0 ? Math.round(v.durationSum / v.durationCount) : 0,
       acquiredPercent: v.planned > 0 ? Math.min(100, Math.round((v.acquired / v.planned) * 100)) : 0,
-      keptPercent: v.planned > 0 ? Math.min(100, Math.round((v.kept / v.planned) * 100)) : 0,
     }))
-    .sort((a, b) => b.kept - a.kept || b.acquired - a.acquired);
-
-  const keptOverAcquired = keptFrames > acquiredFrames;
+    .sort((a, b) => b.acquired - a.acquired);
 
   const tiles = [
-    { icon: Camera, label: "Frames acquises", value: `${acquiredFrames} / ${plannedFrames}` },
-    { icon: CheckCircle2, label: "Frames conservées", value: `${keptFrames} / ${plannedFrames}`, highlight: true },
-    { icon: Clock, label: "Intégration acquise", value: formatDuration(acquiredSeconds) },
-    { icon: CheckCircle2, label: "Intégration conservée", value: formatDuration(keptSeconds), highlight: true },
+    { icon: Camera, label: "Frames acquises", value: `${acquiredFrames} / ${plannedFrames}`, highlight: true },
+    { icon: Clock, label: "Intégration acquise", value: formatDuration(acquiredSeconds), highlight: true },
     { icon: Target, label: "Intégration visée", value: formatDuration(plannedSeconds) },
     { icon: Hourglass, label: "Restant à acquérir", value: formatDuration(remainingSeconds) },
     { icon: Timer, label: "Pose moyenne", value: avgExposure > 0 ? `${avgExposure}s` : "—" },
