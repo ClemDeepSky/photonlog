@@ -292,14 +292,19 @@ const Frames = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Progression conservée</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {showKept ? "Progression conservée" : "Progression acquise"}
+                  </p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-gradient">{globalProgress}%</span>
+                    <span className="text-3xl font-bold text-gradient">{showKept ? globalProgress : globalAcquiredProgress}%</span>
                   </div>
-                  <Progress value={globalProgress} className="h-2 mt-2" />
-                  <p className="text-[11px] text-muted-foreground mt-1.5">{globalAcquiredProgress}% acquis bruts</p>
+                  <Progress value={showKept ? globalProgress : globalAcquiredProgress} className="h-2 mt-2" />
+                  {showKept && (
+                    <p className="text-[11px] text-muted-foreground mt-1.5">{globalAcquiredProgress}% acquis bruts</p>
+                  )}
                 </CardContent>
               </Card>
+
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
                   <p className="text-xs text-muted-foreground mb-1">Frames conservées</p>
