@@ -51,7 +51,8 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     setSrc(null);
     setError(null);
     setDims(null);
-    setLens(null);
+    setCross(null);
+    setLensPos(null);
     fitsRef.current = null;
     fullCanvasRef.current = null;
     fullImageRef.current = null;
