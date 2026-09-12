@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CookieBanner from "@/components/CookieBanner";
 import { CookieConsentProvider } from "@/hooks/useCookieConsent";
+import { DemoTourProvider } from "@/hooks/useDemoTour";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -33,6 +34,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <CookieConsentProvider>
+          <DemoTourProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -54,6 +56,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CookieBanner />
+          </DemoTourProvider>
           </CookieConsentProvider>
         </AuthProvider>
       </BrowserRouter>

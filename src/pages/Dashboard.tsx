@@ -4,13 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 import { Badge } from "@/components/ui/badge";
-import { Users, User, Plus, Star, FolderOpen } from "lucide-react";
+import { Users, User, Plus, Star, FolderOpen, PlayCircle, Sparkles } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import StatsOverview from "@/components/dashboard/StatsOverview";
 import { formatDuration } from "@/lib/duration";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { useDemoTour } from "@/hooks/useDemoTour";
+import { createDemoProject } from "@/lib/demoProject";
+import { toast } from "@/hooks/use-toast";
 
 interface Acquisition {
   filter: string;
@@ -41,7 +44,24 @@ const filterColors: Record<string, string> = {
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { startTour } = useDemoTour();
   const username = user?.user_metadata?.username || user?.email?.split("@")[0] || "Astronome";
+
+  const loadDemo = useMutation({
+    mutationFn: async () => createDemoProject(user!.id),
+    onSuccess: (id) => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast({
+        title: "Projet de démo chargé",
+        description: "Explorez-le librement, vous pouvez le supprimer quand vous voulez.",
+      });
+      navigate(`/frames?project=${id}`);
+    },
+    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+  });
+
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["dashboard-projects"],
@@ -114,7 +134,7 @@ const Dashboard = () => {
 
         {/* Quick start */}
         <div className="mb-8">
-          <Card className="border-border/50">
+          <Card className="border-border/50" data-tour="quick-start">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Star className="h-4 w-4 text-primary" />
@@ -126,6 +146,22 @@ const Dashboard = () => {
               <p>2. Configurez votre <strong className="text-foreground">Matériel</strong></p>
               <p>3. Créez un <strong className="text-foreground">Projet</strong> d'acquisition</p>
               <p>4. Ajoutez vos <strong className="text-foreground">Frames</strong> au fur et à mesure</p>
+              <div className="flex flex-wrap gap-2 pt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-tour="demo-project"
+                  disabled={loadDemo.isPending}
+                  onClick={() => loadDemo.mutate()}
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  {loadDemo.isPending ? "Chargement…" : "Charger le projet de démo"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={startTour}>
+                  <PlayCircle className="h-3.5 w-3.5 mr-1.5" />
+                  Revoir la visite
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
