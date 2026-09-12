@@ -524,59 +524,9 @@ const Frames = () => {
                                   </div>
                                 </div>
 
-                                {showKept && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground w-16">Conservé</span>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-7 w-7"
-                                        disabled={acq.kept <= 0 || updateKept.isPending}
-                                        onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept - 1 })}
-                                      >
-                                        <Minus className="h-3 w-3" />
-                                      </Button>
-                                      <div className="flex items-center gap-1">
-                                        <Input
-                                          type="number"
-                                          min={0}
-                                          className="h-7 w-16 text-center text-sm tabular-nums"
-                                          value={draftsKept[acq.id] ?? String(acq.kept)}
-                                          onChange={(e) => setDraftsKept((d) => ({ ...d, [acq.id]: e.target.value }))}
-                                          onBlur={() => {
-                                            const raw = draftsKept[acq.id];
-                                            setDraftsKept((d) => { const n = { ...d }; delete n[acq.id]; return n; });
-                                            if (raw === undefined) return;
-                                            const v = parseInt(raw);
-                                            const next = isNaN(v) ? 0 : Math.max(0, v);
-                                            if (next !== acq.kept) updateKept.mutate({ id: acq.id, kept: next });
-                                          }}
-                                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                                        />
-                                        <span className="text-xs text-muted-foreground">/ {acq.acquired}</span>
-                                      </div>
-                                      <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-7 w-7"
-                                        disabled={updateKept.isPending}
-                                        onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept + 1 })}
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-
                               </div>
 
-                              {showKept && keptOverAcquired && (
-                                <div className="text-[11px] text-amber-500 flex items-center gap-1 pl-[3.25rem]">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  Le nombre conservé dépasse le nombre acquis.
-                                </div>
-                              )}
+
 
                             </div>
                           );
