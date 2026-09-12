@@ -281,6 +281,23 @@ const Frames = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {selectedProject && (
+                  <FolderRefresh
+                    projectId={selectedProject.id}
+                    pattern={selectedProject.filename_pattern}
+                    isMosaic={selectedProject.is_mosaic}
+                    acquisitions={(acquisitions || []).map((a) => ({
+                      id: a.id,
+                      filter: a.filter,
+                      paneNumber: a.pane_id ? panes?.find((p) => p.id === a.pane_id)?.pane_number ?? null : null,
+                    }))}
+                    onDone={() => {
+                      queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", selectedProjectId] });
+                      queryClient.invalidateQueries({ queryKey: ["project-frames", selectedProjectId] });
+                      queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
+                    }}
+                  />
+                )}
                 <span className="text-sm text-muted-foreground">Afficher les conservés</span>
                 <Switch
                   checked={showKept}
