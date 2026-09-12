@@ -239,6 +239,8 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     setResults(null);
   };
 
+  const inIframe = typeof window !== "undefined" && window.self !== window.top;
+
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
