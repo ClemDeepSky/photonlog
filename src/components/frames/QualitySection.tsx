@@ -587,7 +587,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                         <button
                           key={range.night}
                           type="button"
-                          onClick={() => setZoom([range.start, Math.max(range.start, range.end)])}
+                          onClick={() => setZoom(clampZoom(range.start - 0.5, range.end + 0.5, totalPoints))}
                           className={
                             "absolute inset-y-0 z-10 border-r border-border/60 text-[9px] leading-none text-foreground transition-opacity hover:opacity-80 " +
                             (index % 2 === 0 ? "bg-primary/10" : "bg-accent/10")
