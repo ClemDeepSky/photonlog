@@ -13,9 +13,7 @@ export interface FitsPreview {
 
 /** Niveaux d'étirement : percentiles bas/haut + gamma. */
 export const STRETCH_LEVELS = [
-  { id: 0, label: "Doux", lo: 0.001, hi: 0.999, gamma: 0.15 },
-  { id: 1, label: "Standard", lo: 0.002, hi: 0.999, gamma: 0.35 },
-  { id: 2, label: "Fort", lo: 0.002, hi: 0.999, gamma: 0.55 },
+  { id: 0, label: "Standard", lo: 0.0005, hi: 0.9999, gamma: 0.6 },
 ] as const;
 
 const CARD = 80;
@@ -124,7 +122,7 @@ export function stretchToCanvas(preview: FitsPreview, level: number, maxSide = 1
   const px = preview.pixels;
   const w = preview.width;
   const h = preview.height;
-  const spec = STRETCH_LEVELS[level] ?? STRETCH_LEVELS[1];
+  const spec = STRETCH_LEVELS[level] ?? STRETCH_LEVELS[0];
   const [lo, hi] = stretchBounds(px, spec.lo, spec.hi);
   const range = hi - lo || 1;
 

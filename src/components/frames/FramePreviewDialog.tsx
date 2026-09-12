@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Copy, Download, Loader2, Trash2, ZoomIn } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { decodeFitsToCanvas, isFitsName, stretchToCanvas, STRETCH_LEVELS, type FitsPreview } from "@/lib/fitsPreview";
+import { decodeFitsToCanvas, isFitsName, stretchToCanvas, type FitsPreview } from "@/lib/fitsPreview";
 
 interface FramePreviewDialogProps {
   file: File | null;
@@ -34,7 +34,7 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
   const [dims, setDims] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [stretch, setStretch] = useState(1);
+  
   const [isFits, setIsFits] = useState(false);
   const [cross, setCross] = useState<{ clientX: number; clientY: number; px: number; py: number } | null>(null);
   const [lensPos, setLensPos] = useState<{ x: number; y: number } | null>(null);
@@ -66,10 +66,10 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
           const preview = await decodeFitsToCanvas(file);
           if (cancelled) return;
           fitsRef.current = preview;
-          const canvas = stretchToCanvas(preview, stretch);
+          const canvas = stretchToCanvas(preview, 0);
           setSrc(canvas.toDataURL("image/png"));
           // Version pleine résolution pour la loupe (×2 sur les pixels réels).
-          fullCanvasRef.current = stretchToCanvas(preview, stretch, Math.max(preview.width, preview.height));
+          fullCanvasRef.current = stretchToCanvas(preview, 0, Math.max(preview.width, preview.height));
           setDims(`${preview.width} × ${preview.height} px`);
         } else {
           setIsFits(false);
@@ -100,15 +100,6 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file, open]);
 
-  // Réétirement à la demande pour les FITS.
-  const changeStretch = (level: number) => {
-    setStretch(level);
-    const preview = fitsRef.current;
-    if (!preview) return;
-    const canvas = stretchToCanvas(preview, level);
-    setSrc(canvas.toDataURL("image/png"));
-    fullCanvasRef.current = stretchToCanvas(preview, level, Math.max(preview.width, preview.height));
-  };
 
   // Loupe : dessine la zone sous le curseur à 200 % des pixels réels du fichier.
   const onImageMove = (e: React.MouseEvent<HTMLImageElement>) => {
@@ -216,22 +207,6 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
                 )}
                 Supprimer le fichier
               </Button>
-            )}
-            {isFits && (
-              <div className="ml-2 flex items-center gap-1">
-                <span className="text-xs text-muted-foreground mr-1">Étirement :</span>
-                {STRETCH_LEVELS.map((l) => (
-                  <Button
-                    key={l.id}
-                    size="sm"
-                    variant={stretch === l.id ? "default" : "outline"}
-                    className="h-7 px-2 text-xs"
-                    onClick={() => changeStretch(l.id)}
-                  >
-                    {l.label}
-                  </Button>
-                ))}
-              </div>
             )}
             <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
               <ZoomIn className="h-3.5 w-3.5" />
