@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { AlertTriangle, Clock, Layers, Target, Timer, Hourglass, Camera, CheckCircle2 } from "lucide-react";
+import { Clock, Layers, Target, Timer, Hourglass, Camera } from "lucide-react";
 import { formatDuration } from "@/lib/duration";
 
 export interface StatAcquisition {
