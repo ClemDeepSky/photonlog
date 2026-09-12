@@ -446,25 +446,16 @@ const Frames = () => {
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
                                     <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden relative">
-                                      {showKept && (
-                                        <div
-                                          className="h-full rounded-full transition-all absolute left-0 top-0 opacity-30"
-                                          style={{
-                                            width: `${acquiredPercent}%`,
-                                            backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
-                                          }}
-                                        />
-                                      )}
                                       <div
                                         className="h-full rounded-full transition-all absolute left-0 top-0"
                                         style={{
-                                          width: `${showKept ? keptPercent : acquiredPercent}%`,
+                                          width: `${acquiredPercent}%`,
                                           backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
                                         }}
                                       />
                                     </div>
                                     <span className="text-xs text-muted-foreground w-12 text-right">
-                                      {showKept ? keptPercent : acquiredPercent}%
+                                      {acquiredPercent}%
                                     </span>
 
                                     {acquiredSurplus > 0 && (
