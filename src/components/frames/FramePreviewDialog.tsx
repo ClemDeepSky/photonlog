@@ -139,6 +139,37 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
             ) : null}
           </div>
         </div>
+
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Supprimer définitivement ce fichier ?</AlertDialogTitle>
+              <AlertDialogDescription className="break-all">
+                {file?.name} sera supprimé de votre disque (sans passage par la corbeille) et retiré de
+                l'index Photonlog. Cette action est irréversible.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!onDelete) return;
+                  setDeleting(true);
+                  try {
+                    await onDelete();
+                    setConfirmOpen(false);
+                    onOpenChange(false);
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+              >
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
