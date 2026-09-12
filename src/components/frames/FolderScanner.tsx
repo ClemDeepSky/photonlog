@@ -177,11 +177,20 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
       const entries = await listLocalFiles();
       if (entries) analyzeEntries(entries); // null = annulé par l'utilisateur
     } catch (err: any) {
-      if (err?.message?.includes("non supporté")) {
-        inputRef.current?.click(); // fallback webkitdirectory
+      const msg = String(err?.message || "");
+      const unavailable =
+        msg.includes("non supporté") ||
+        err?.name === "SecurityError" ||
+        err?.name === "NotAllowedError" ||
+        msg.includes("Cross origin") ||
+        msg.includes("cross-origin") ||
+        msg.includes("sub frames");
+      if (unavailable) {
+        inputRef.current?.click(); // fallback : lecture des noms uniquement
         return;
       }
       toast({ title: "Erreur de scan", description: err.message, variant: "destructive" });
+
     } finally {
       setScanning(false);
     }
