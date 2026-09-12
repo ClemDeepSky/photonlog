@@ -81,34 +81,22 @@ const StatsOverview = ({ acquisitions, projectCount, activeCount, filterColors }
         <CardContent className="space-y-4">
           <div>
             <div className="flex items-baseline justify-between mb-1.5 text-xs text-muted-foreground">
-              <span>Avancement global (conservé / acquis / visée)</span>
+              <span>Avancement global (acquis / visée)</span>
               <div className="flex items-center gap-2">
-                <span className="text-foreground font-semibold">{globalKeptPercent}% conservé</span>
-                <span className="text-muted-foreground">({globalAcquiredPercent}% acquis)</span>
+                <span className="text-foreground font-semibold">{globalAcquiredPercent}% acquis</span>
               </div>
             </div>
             <div className="h-2.5 rounded-full bg-secondary overflow-hidden relative">
               <div
-                className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
-                style={{ width: `${globalAcquiredPercent}%`, backgroundColor: "hsl(var(--primary))" }}
-              />
-              <div
                 className="h-full rounded-full transition-all absolute left-0 top-0"
-                style={{ width: `${globalKeptPercent}%`, backgroundColor: "hsl(var(--primary))" }}
+                style={{ width: `${globalAcquiredPercent}%`, backgroundColor: "hsl(var(--primary))" }}
               />
             </div>
           </div>
 
-          {keptOverAcquired && (
-            <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 rounded-md px-3 py-2">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>Le nombre de frames conservées dépasse le nombre de frames acquises. Vérifiez vos saisies.</span>
-            </div>
-          )}
-
           {byFilter.length > 0 ? (
             <div className="space-y-2">
-              {byFilter.map(({ filter, acquired, kept, planned, exposureDuration, acquiredPercent, keptPercent }) => (
+              {byFilter.map(({ filter, acquired, planned, exposureDuration, acquiredPercent }) => (
                 <div key={filter} className="space-y-1">
                   <div className="flex items-center gap-2 text-xs">
                     <span
