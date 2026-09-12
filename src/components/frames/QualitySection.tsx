@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LineChart } from "lucide-react";
@@ -24,7 +24,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
+  ReferenceArea,
 } from "recharts";
 
 interface FrameRow {
@@ -42,24 +42,14 @@ interface FrameRow {
 }
 
 const METRICS = [
-  { key: "fwhm", label: "FWHM" },
-  { key: "eccentricity", label: "Excentricité" },
-  { key: "hfr", label: "HFR" },
-  { key: "star_count", label: "Étoiles" },
-  { key: "sensor_temp", label: "Température" },
+  { key: "fwhm", label: "FWHM", color: "hsl(var(--primary))" },
+  { key: "eccentricity", label: "Excentricité", color: "hsl(var(--accent))" },
+  { key: "hfr", label: "HFR", color: "hsl(var(--foreground))" },
+  { key: "star_count", label: "Étoiles", color: "hsl(var(--destructive))" },
+  { key: "sensor_temp", label: "Température", color: "hsl(var(--muted-foreground))" },
 ] as const;
 
 type MetricKey = (typeof METRICS)[number]["key"];
-
-const filterColors: Record<string, string> = {
-  L: "hsl(var(--foreground))",
-  R: "hsl(0, 72%, 55%)",
-  G: "hsl(142, 71%, 45%)",
-  B: "hsl(217, 91%, 60%)",
-  Ha: "hsl(0, 85%, 60%)",
-  OIII: "hsl(192, 91%, 54%)",
-  SII: "hsl(35, 92%, 55%)",
-};
 
 const nightOf = (iso: string) => {
   // Une nuit = la date du soir : avant midi, on rattache au jour précédent.
@@ -70,8 +60,10 @@ const nightOf = (iso: string) => {
 
 const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: boolean }) => {
   const queryClient = useQueryClient();
-  const [metric, setMetric] = useState<MetricKey>("fwhm");
-  const [offFilters, setOffFilters] = useState<Set<string>>(new Set());
+  const [activeMetrics, setActiveMetrics] = useState<Set<MetricKey>>(
+    new Set<MetricKey>(["fwhm", "eccentricity"])
+  );
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [offPanes, setOffPanes] = useState<Set<string>>(new Set());
   const [offNights, setOffNights] = useState<Set<string>>(new Set());
 
@@ -90,7 +82,10 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     enabled: !!projectId,
   });
 
-  const withDates = useMemo(() => (frames || []).filter((f) => f.captured_at), [frames]);
+  const withDates = useMemo(
+    () => (frames || []).filter((f): f is FrameRow & { captured_at: string } => Boolean(f.captured_at)),
+    [frames]
+  );
 
   const availableFilters = useMemo(
     () => Array.from(new Set(withDates.map((f) => f.filter).filter(Boolean) as string[])).sort(),
@@ -101,9 +96,19 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     [withDates]
   );
   const availableNights = useMemo(
-    () => Array.from(new Set(withDates.map((f) => nightOf(f.captured_at!)))).sort(),
+    () => Array.from(new Set(withDates.map((f) => nightOf(f.captured_at)))).sort(),
     [withDates]
   );
+
+  useEffect(() => {
+    if (availableFilters.length === 0) {
+      setSelectedFilter(null);
+      return;
+    }
+    if (!selectedFilter || !availableFilters.includes(selectedFilter)) {
+      setSelectedFilter(availableFilters[0]);
+    }
+  }, [availableFilters, selectedFilter]);
 
   const toggle = (set: Set<string>, key: string, apply: (s: Set<string>) => void) => {
     const next = new Set(set);
@@ -112,47 +117,82 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     apply(next);
   };
 
+  const toggleMetric = (key: MetricKey) => {
+    setActiveMetrics((current) => {
+      if (current.has(key) && current.size === 1) return current;
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   // Distribution régulière : chaque image occupe la même place, triée par date+heure.
-  const { series, totalPoints } = useMemo(() => {
-    const kept: { idx: number; f: FrameRow }[] = [];
+  const { series, totalPoints, nightRanges } = useMemo(() => {
+    const kept: Array<{ idx: number; f: FrameRow & { captured_at: string } }> = [];
     for (const f of withDates) {
-      if (f[metric] == null) continue;
       const filter = f.filter || "?";
-      if (offFilters.has(filter)) continue;
+      if (selectedFilter && filter !== selectedFilter) continue;
       if (f.pane_number != null && offPanes.has(String(f.pane_number))) continue;
-      if (offNights.has(nightOf(f.captured_at!))) continue;
+      if (offNights.has(nightOf(f.captured_at))) continue;
       kept.push({ idx: 0, f });
     }
     kept.sort(
-      (a, b) => new Date(a.f.captured_at!).getTime() - new Date(b.f.captured_at!).getTime()
+      (a, b) => new Date(a.f.captured_at).getTime() - new Date(b.f.captured_at).getTime()
     );
     kept.forEach((k, i) => (k.idx = i));
-    const byFilter = new Map<string, any[]>();
-    for (const { idx, f } of kept) {
-      const filter = f.filter || "?";
-      if (!byFilter.has(filter)) byFilter.set(filter, []);
-      byFilter.get(filter)!.push({
-        x: idx,
-        y: Number(f[metric]),
-        fileName: f.file_name || f.relative_path || "",
-        relativePath: f.relative_path || "",
-        fwhm: f.fwhm,
-        hfr: f.hfr,
-        eccentricity: f.eccentricity,
-        starCount: f.star_count,
+
+    const metricSeries = METRICS.filter((item) => activeMetrics.has(item.key)).map((item) => {
+      const values = kept
+        .map(({ f }) => f[item.key])
+        .filter((value): value is number => value != null && Number.isFinite(value));
+      const min = values.length ? Math.min(...values) : 0;
+      const max = values.length ? Math.max(...values) : 0;
+      const spread = max - min;
+      const points = kept.flatMap(({ idx, f }) => {
+        const value = f[item.key];
+        if (value == null || !Number.isFinite(value)) return [];
+        return [{
+          x: idx,
+          y: spread === 0 ? 50 : ((Number(value) - min) / spread) * 100,
+          actualValue: Number(value),
+          metricKey: item.key,
+          metricLabel: item.label,
+          capturedAt: f.captured_at,
+          fileName: f.file_name || f.relative_path || "",
+          relativePath: f.relative_path || "",
+          fwhm: f.fwhm,
+          hfr: f.hfr,
+          eccentricity: f.eccentricity,
+          starCount: f.star_count,
+          sensorTemp: f.sensor_temp,
+        }];
       });
+      return { ...item, points };
+    });
+
+    const ranges = new Map<string, { night: string; start: number; end: number; count: number }>();
+    for (const { idx, f } of kept) {
+      const night = nightOf(f.captured_at);
+      const existing = ranges.get(night);
+      if (existing) {
+        existing.end = idx;
+        existing.count += 1;
+      } else {
+        ranges.set(night, { night, start: idx, end: idx, count: 1 });
+      }
     }
+
     return {
-      series: Array.from(byFilter.entries())
-        .map(([filter, points]) => ({ filter, points }))
-        .sort((a, b) => a.filter.localeCompare(b.filter)),
+      series: metricSeries,
       totalPoints: kept.length,
+      nightRanges: Array.from(ranges.values()),
     };
-  }, [withDates, metric, offFilters, offPanes, offNights]);
+  }, [withDates, selectedFilter, activeMetrics, offPanes, offNights]);
 
   // Zoom horizontal à la molette : fenêtre visible [zMin, zMax] sur les indices.
   const [zoom, setZoom] = useState<[number, number] | null>(null);
-  useEffect(() => setZoom(null), [metric, offFilters, offPanes, offNights, totalPoints]);
+  useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, offNights, totalPoints]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
@@ -300,30 +340,75 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
 
   const hasMetricData = series.some((s) => s.points.length > 0);
-  const metricLabel = METRICS.find((m) => m.key === metric)!.label;
+  const overviewDenominator = Math.max(1, totalPoints - 1);
+  const overviewStart = ((zoom?.[0] ?? 0) / overviewDenominator) * 100;
+  const overviewEnd = ((zoom?.[1] ?? Math.max(0, totalPoints - 1)) / overviewDenominator) * 100;
+  const overviewWidth = totalPoints < 2 ? 100 : Math.max(1.5, overviewEnd - overviewStart);
 
   return (
     <Card className="border-border/50">
-      <CardHeader className="pb-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <CardHeader className="pb-3 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <LineChart className="h-4 w-4 text-primary" />
             Qualité des brutes
           </CardTitle>
-          <div className="flex flex-wrap gap-1">
-            {METRICS.map((m) => (
-              <Button
-                key={m.key}
-                size="sm"
-                variant={metric === m.key ? "default" : "outline"}
-                className="h-7 px-2 text-xs"
-                onClick={() => setMetric(m.key)}
-              >
-                {m.label}
-              </Button>
-            ))}
-          </div>
+          {availableFilters.length > 0 && (
+            <div className="flex max-w-full flex-wrap justify-end gap-1" role="tablist" aria-label="Filtre affiché">
+              {availableFilters.map((filter) => (
+                <Button
+                  key={filter}
+                  role="tab"
+                  aria-selected={selectedFilter === filter}
+                  size="sm"
+                  variant={selectedFilter === filter ? "default" : "ghost"}
+                  className="h-7 min-w-8 px-2 text-xs"
+                  onClick={() => setSelectedFilter(filter)}
+                >
+                  {filter}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span className="text-xs text-muted-foreground">Mesures</span>
+          {METRICS.map((item) => {
+            const checkboxId = `quality-${projectId}-${item.key}`;
+            return (
+              <label key={item.key} htmlFor={checkboxId} className="flex cursor-pointer items-center gap-1.5 text-xs">
+                <Checkbox
+                  id={checkboxId}
+                  checked={activeMetrics.has(item.key)}
+                  onCheckedChange={() => toggleMetric(item.key)}
+                  className="h-3.5 w-3.5"
+                  aria-label={`Afficher ${item.label}`}
+                />
+                <span style={{ color: item.color }}>{item.label}</span>
+              </label>
+            );
+          })}
+        </div>
+        {isMosaic && availablePanes.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-xs text-muted-foreground">Panneaux</span>
+            {availablePanes.map((pane) => {
+              const paneKey = String(pane);
+              const checkboxId = `quality-${projectId}-pane-${pane}`;
+              return (
+                <label key={pane} htmlFor={checkboxId} className="flex cursor-pointer items-center gap-1.5 text-xs">
+                  <Checkbox
+                    id={checkboxId}
+                    checked={!offPanes.has(paneKey)}
+                    onCheckedChange={() => toggle(offPanes, paneKey, setOffPanes)}
+                    className="h-3.5 w-3.5"
+                  />
+                  P{pane}
+                </label>
+              );
+            })}
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -335,59 +420,8 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
           </p>
         ) : (
           <div className="space-y-4">
-            <div className="space-y-2">
-              {availableFilters.length > 1 && (
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground mr-1">Filtres</span>
-                  {availableFilters.map((f) => (
-                    <Badge
-                      key={f}
-                      variant={offFilters.has(f) ? "outline" : "secondary"}
-                      className="cursor-pointer text-xs"
-                      onClick={() => toggle(offFilters, f, setOffFilters)}
-                      style={!offFilters.has(f) ? { color: filterColors[f] } : undefined}
-                    >
-                      {f}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {isMosaic && availablePanes.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground mr-1">Panneaux</span>
-                  {availablePanes.map((p) => (
-                    <Badge
-                      key={p}
-                      variant={offPanes.has(String(p)) ? "outline" : "secondary"}
-                      className="cursor-pointer text-xs"
-                      onClick={() => toggle(offPanes, String(p), setOffPanes)}
-                    >
-                      P{p}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {availableNights.length > 1 && (
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground mr-1">Nuits</span>
-                  {availableNights.map((n) => (
-                    <Badge
-                      key={n}
-                      variant={offNights.has(n) ? "outline" : "secondary"}
-                      className="cursor-pointer text-xs"
-                      onClick={() => toggle(offNights, n, setOffNights)}
-                    >
-                      {new Date(n).toLocaleDateString("fr-FR")}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {hasMetricData ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
                     Molette de la souris : zoom horizontal
@@ -399,10 +433,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                     </Button>
                   )}
                 </div>
-                <div ref={chartWrapRef} className="h-72 w-full">
+                <div ref={chartWrapRef} className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                    <ScatterChart margin={{ top: 8, right: 16, bottom: 12, left: 0 }}>
                       <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                      {nightRanges.map((range, index) => (
+                        <ReferenceArea
+                          key={range.night}
+                          x1={Math.max(0, range.start - 0.45)}
+                          x2={Math.min(Math.max(0, totalPoints - 1), range.end + 0.45)}
+                          fill={index % 2 === 0 ? "hsl(var(--primary))" : "hsl(var(--accent))"}
+                          fillOpacity={0.055}
+                          strokeOpacity={0}
+                        />
+                      ))}
                       <XAxis
                         type="number"
                         dataKey="x"
@@ -410,14 +454,15 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                         allowDataOverflow
                         tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                         tickFormatter={() => ""}
-                        label={{ value: "Images (ordre chronologique)", position: "insideBottom", offset: -4, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        label={{ value: "Images (date puis heure)", position: "insideBottom", offset: -6, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                       />
                       <YAxis
                         type="number"
                         dataKey="y"
-                        name={metricLabel}
                         tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                        domain={["auto", "auto"]}
+                        domain={[0, 100]}
+                        tickFormatter={(value) => `${value}%`}
+                        width={42}
                       />
                       <Tooltip
                         content={({ active, payload }: any) => {
@@ -440,22 +485,33 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                                   <div className="text-muted-foreground">Cliquez sur le point pour l'aperçu</div>
                                 </div>
                               )}
+                              <div className="flex justify-between gap-4 border-b border-border pb-1 mb-1">
+                                <span style={{ color: METRICS.find((item) => item.key === p.metricKey)?.color }}>
+                                  {p.metricLabel}
+                                </span>
+                                <span className="font-medium">{p.actualValue}</span>
+                              </div>
+                              {p.capturedAt && (
+                                <div className="text-muted-foreground">
+                                  {new Date(p.capturedAt).toLocaleString("fr-FR")}
+                                </div>
+                              )}
                               {row("FWHM", p.fwhm)}
                               {row("HFR", p.hfr)}
                               {row("Excentricité", p.eccentricity)}
                               {row("Étoiles", p.starCount)}
+                              {row("Température", p.sensorTemp)}
                             </div>
                           );
                         }}
                       />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
                       {series.map((s) => (
                         <Scatter
-                          key={s.filter}
-                          name={s.filter}
+                          key={s.key}
+                          name={s.label}
                           data={s.points}
-                          line={{ strokeWidth: 1 }}
-                          fill={filterColors[s.filter] || "hsl(var(--primary))"}
+                          line={{ stroke: s.color, strokeWidth: 1.5 }}
+                          fill={s.color}
                           cursor="pointer"
                           onClick={(p: any) => openFrame(p?.relativePath, p?.fileName)}
                         />
@@ -463,11 +519,57 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                     </ScatterChart>
                   </ResponsiveContainer>
                 </div>
+                <div className="space-y-2" aria-label="Vue d'ensemble du zoom">
+                  <div className="relative h-2 overflow-hidden rounded-sm bg-muted">
+                    {nightRanges.map((range, index) => {
+                      const left = totalPoints < 2 ? 0 : (range.start / overviewDenominator) * 100;
+                      const width = totalPoints < 2 ? 100 : Math.max(0.5, ((range.end - range.start) / overviewDenominator) * 100);
+                      return (
+                        <span
+                          key={range.night}
+                          className={index % 2 === 0 ? "absolute inset-y-0 bg-primary/20" : "absolute inset-y-0 bg-accent/20"}
+                          style={{ left: `${left}%`, width: `${width}%` }}
+                        />
+                      );
+                    })}
+                    <span
+                      className="absolute inset-y-0 rounded-sm border border-primary bg-primary/20 transition-[left,width]"
+                      style={{ left: `${overviewStart}%`, width: `${overviewWidth}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>Début</span>
+                    <span>{zoom ? "Vue agrandie" : "Vue complète"}</span>
+                    <span>Fin</span>
+                  </div>
+                </div>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Aucune valeur de {metricLabel.toLowerCase()} dans les noms de fichiers indexés.
+                Aucune valeur disponible pour les mesures et sélections actives.
               </p>
+            )}
+
+            {availableNights.length > 0 && (
+              <div className="border-t border-border/70 pt-3">
+                <div className="mb-2 text-xs text-muted-foreground">Nuits affichées</div>
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                  {availableNights.map((night) => {
+                    const checkboxId = `quality-${projectId}-night-${night}`;
+                    return (
+                      <label key={night} htmlFor={checkboxId} className="flex cursor-pointer items-center gap-1.5 text-xs">
+                        <Checkbox
+                          id={checkboxId}
+                          checked={!offNights.has(night)}
+                          onCheckedChange={() => toggle(offNights, night, setOffNights)}
+                          className="h-3.5 w-3.5"
+                        />
+                        {new Date(`${night}T12:00:00`).toLocaleDateString("fr-FR")}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
         )}
