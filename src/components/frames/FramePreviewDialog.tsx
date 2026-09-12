@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Copy, Download, Loader2, Trash2, ZoomIn } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { decodeFitsToCanvas, isFitsName, stretchToCanvas, STRETCH_LEVELS, type FitsPreview } from "@/lib/fitsPreview";
+import { decodeFitsToCanvas, isFitsName, stretchToCanvas, type FitsPreview } from "@/lib/fitsPreview";
 
 interface FramePreviewDialogProps {
   file: File | null;
