@@ -340,19 +340,28 @@ const Frames = () => {
 
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Taux de conservation</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {showKept ? "Taux de conservation" : "Surplus d'acquisition"}
+                  </p>
                   <span className="text-3xl font-bold">
-                    {(acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0) > 0
-                      ? Math.round(
-                          ((acquisitions?.reduce((s, a) => s + a.kept, 0) || 0) /
-                            (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 1)) *
-                            100
-                        )
-                      : 0}
+                    {showKept
+                      ? (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0) > 0
+                        ? Math.round(
+                            ((acquisitions?.reduce((s, a) => s + a.kept, 0) || 0) /
+                              (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 1)) *
+                              100
+                          )
+                        : 0
+                      : (() => {
+                          const total = acquisitions?.reduce((s, a) => s + a.quantity, 0) || 0;
+                          const acquired = acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0;
+                          return total > 0 ? Math.round(((acquired - total) / total) * 100) : 0;
+                        })()}
                     %
                   </span>
                 </CardContent>
               </Card>
+
             </div>
 
             {/* Acquisitions by pane */}
