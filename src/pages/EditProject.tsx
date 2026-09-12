@@ -462,6 +462,7 @@ const EditProject = () => {
                 <div className="flex items-center gap-2">
                   <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
                   <FolderScanner
+                    pattern={filenamePattern}
                     acquisitions={(projectAcquisitions || []).map(a => ({
                       id: a.id,
                       filter: a.filter,
