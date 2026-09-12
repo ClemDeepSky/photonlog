@@ -8,6 +8,11 @@ import {
   entriesFromInputFileList,
   type LocalFileEntry,
 } from "@/lib/localFiles";
+import { isAstroFile, detectPaneFromPath, normalizeFilter, parseFrameName } from "@/lib/frameNames";
+
+/** Comparaison souple d'étiquettes de filtre (casse, accents, séparateurs ignorés) */
+const slug = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 interface ScanResult {
   filter: string;
@@ -28,6 +33,8 @@ interface FolderScannerProps {
   acquisitions: ScannerAcquisition[];
   onApplyResults: (updates: { id: string; acquired: number }[]) => void;
   isPending?: boolean;
+  /** Modèle de nommage du projet (optionnel) */
+  pattern?: string | null;
 }
 
 const FolderScanner = ({ acquisitions, onApplyResults, isPending, pattern }: FolderScannerProps) => {
