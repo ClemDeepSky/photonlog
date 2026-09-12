@@ -602,7 +602,6 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       aria-valuenow={Math.round(zoom?.[0] ?? 0)}
                       className="pointer-events-none absolute inset-y-0 z-30 rounded-sm border-2 border-primary bg-primary/15"
                       style={{ left: `${overviewStart}%`, width: `${overviewWidth}%` }}
-                      onPointerDown={(e) => startOverviewDrag(e, "move")}
                       onPointerMove={moveOverviewDrag}
                       onPointerUp={endOverviewDrag}
                       onPointerCancel={endOverviewDrag}
