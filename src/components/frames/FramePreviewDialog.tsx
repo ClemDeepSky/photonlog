@@ -66,10 +66,10 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
           const preview = await decodeFitsToCanvas(file);
           if (cancelled) return;
           fitsRef.current = preview;
-          const canvas = stretchToCanvas(preview, stretch);
+          const canvas = stretchToCanvas(preview, 0);
           setSrc(canvas.toDataURL("image/png"));
           // Version pleine résolution pour la loupe (×2 sur les pixels réels).
-          fullCanvasRef.current = stretchToCanvas(preview, stretch, Math.max(preview.width, preview.height));
+          fullCanvasRef.current = stretchToCanvas(preview, 0, Math.max(preview.width, preview.height));
           setDims(`${preview.width} × ${preview.height} px`);
         } else {
           setIsFits(false);
