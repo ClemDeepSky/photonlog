@@ -245,21 +245,19 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
           </div>
         </div>
 
-        {lens && src && (
-          <div
-            className="pointer-events-none fixed z-50 rounded-full border-2 border-primary/70 shadow-xl"
-            style={{
-              left: lens.x - LENS_SIZE / 2,
-              top: lens.y - LENS_SIZE / 2,
-              width: LENS_SIZE,
-              height: LENS_SIZE,
-              backgroundImage: `url(${src})`,
-              backgroundRepeat: "no-repeat",
-              backgroundSize: `${LENS_ZOOM * lens.iw}px ${LENS_ZOOM * lens.ih}px`,
-              backgroundPosition: `-${lens.bx}px -${lens.by}px`,
-            }}
-          />
-        )}
+        <canvas
+          ref={lensCanvasRef}
+          width={LENS_SIZE}
+          height={LENS_SIZE}
+          className="pointer-events-none fixed z-50 rounded-full border-2 border-primary/70 shadow-xl"
+          style={{
+            display: lens && src ? "block" : "none",
+            left: (lens?.x ?? 0) - LENS_SIZE / 2,
+            top: (lens?.y ?? 0) - LENS_SIZE / 2,
+            width: LENS_SIZE,
+            height: LENS_SIZE,
+          }}
+        />
 
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <AlertDialogContent>
