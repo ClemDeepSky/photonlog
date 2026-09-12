@@ -223,28 +223,21 @@ const Dashboard = () => {
                                 </span>
                                 <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden relative">
                                   <div
-                                    className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
+                                    className="h-full rounded-full transition-all absolute left-0 top-0"
                                     style={{
                                       width: `${acquiredPercent}%`,
                                       backgroundColor: filterColors[filter] || "hsl(var(--primary))",
                                     }}
                                   />
-                                  <div
-                                    className="h-full rounded-full transition-all absolute left-0 top-0"
-                                    style={{
-                                      width: `${percent}%`,
-                                      backgroundColor: filterColors[filter] || "hsl(var(--primary))",
-                                    }}
-                                  />
                                 </div>
                                 <span className="text-muted-foreground w-20 text-right shrink-0">
-                                  {kept}/{quantity}
+                                  {acquired}/{quantity}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-[10px] text-muted-foreground pl-10 pr-24">
                                 <span>{formatDuration(plannedSeconds)} visé</span>
                                 <span>{exposureDuration > 0 ? `${exposureDuration}s/pose` : "—"}</span>
-                                <span>{formatDuration(keptSeconds)} conservé</span>
+                                <span>{formatDuration(acquiredSeconds)} acquis</span>
                               </div>
                             </div>
                           ))}
