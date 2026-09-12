@@ -4,11 +4,19 @@
 // obtenir une vignette lisible. Tout se passe localement, rien n'est envoyé.
 
 export interface FitsPreview {
-  canvas: HTMLCanvasElement;
+  /** Pixels décodés (après BZERO/BSCALE), ligne du bas en premier (ordre FITS). */
+  pixels: Float32Array;
   width: number;
   height: number;
   header: Record<string, string | number>;
 }
+
+/** Niveaux d'étirement : percentiles bas/haut + gamma. */
+export const STRETCH_LEVELS = [
+  { id: 0, label: "Doux", lo: 0.002, hi: 0.999, gamma: 0.55 },
+  { id: 1, label: "Standard", lo: 0.005, hi: 0.995, gamma: 0.45 },
+  { id: 2, label: "Fort", lo: 0.01, hi: 0.99, gamma: 0.35 },
+] as const;
 
 const CARD = 80;
 const BLOCK = 2880;
