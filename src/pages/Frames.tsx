@@ -328,11 +328,16 @@ const Frames = () => {
 
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Temps d'exposition conservé</p>
-                  <span className="text-3xl font-bold">{formatExposure(totalExposure)}</span>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">{formatExposure(totalAcquiredExposure)} acquis</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {showKept ? "Temps d'exposition conservé" : "Temps d'exposition acquis"}
+                  </p>
+                  <span className="text-3xl font-bold">{showKept ? formatExposure(totalExposure) : formatExposure(totalAcquiredExposure)}</span>
+                  {showKept && (
+                    <p className="text-[11px] text-muted-foreground mt-1.5">{formatExposure(totalAcquiredExposure)} acquis</p>
+                  )}
                 </CardContent>
               </Card>
+
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
                   <p className="text-xs text-muted-foreground mb-1">Taux de conservation</p>
