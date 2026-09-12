@@ -44,7 +44,24 @@ const filterColors: Record<string, string> = {
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { startTour } = useDemoTour();
   const username = user?.user_metadata?.username || user?.email?.split("@")[0] || "Astronome";
+
+  const loadDemo = useMutation({
+    mutationFn: async () => createDemoProject(user!.id),
+    onSuccess: (id) => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast({
+        title: "Projet de démo chargé",
+        description: "Explorez-le librement, vous pouvez le supprimer quand vous voulez.",
+      });
+      navigate(`/frames?project=${id}`);
+    },
+    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+  });
+
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["dashboard-projects"],
