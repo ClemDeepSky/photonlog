@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ interface FrameRow {
   hfr: number | null;
   star_count: number | null;
   sensor_temp: number | null;
+  file_name: string | null;
+  relative_path: string | null;
 }
 
 const METRICS = [
@@ -66,7 +68,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_frames")
-        .select("id, filter, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp")
+        .select("id, filter, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp, file_name, relative_path")
         .eq("project_id", projectId)
         .order("captured_at", { ascending: true })
         .limit(20000);
