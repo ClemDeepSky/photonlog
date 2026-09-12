@@ -4,11 +4,19 @@
 // obtenir une vignette lisible. Tout se passe localement, rien n'est envoyé.
 
 export interface FitsPreview {
-  canvas: HTMLCanvasElement;
+  /** Pixels décodés (après BZERO/BSCALE), ligne du bas en premier (ordre FITS). */
+  pixels: Float32Array;
   width: number;
   height: number;
   header: Record<string, string | number>;
 }
+
+/** Niveaux d'étirement : percentiles bas/haut + gamma. */
+export const STRETCH_LEVELS = [
+  { id: 0, label: "Doux", lo: 0.002, hi: 0.999, gamma: 0.55 },
+  { id: 1, label: "Standard", lo: 0.005, hi: 0.995, gamma: 0.45 },
+  { id: 2, label: "Fort", lo: 0.01, hi: 0.99, gamma: 0.35 },
+] as const;
 
 const CARD = 80;
 const BLOCK = 2880;
@@ -78,8 +86,8 @@ function readPixels(
   return out;
 }
 
-/** Étirement automatique par percentiles (0.5 % / 99.5 %) sur un échantillon. */
-function autoStretchBounds(px: Float32Array): [number, number] {
+/** Bornes d'étirement par percentiles sur un échantillon. */
+function stretchBounds(px: Float32Array, loPct: number, hiPct: number): [number, number] {
   const step = Math.max(1, Math.floor(px.length / 200000));
   const sample: number[] = [];
   for (let i = 0; i < px.length; i += step) {
@@ -88,13 +96,13 @@ function autoStretchBounds(px: Float32Array): [number, number] {
   }
   if (sample.length === 0) return [0, 1];
   sample.sort((a, b) => a - b);
-  const lo = sample[Math.floor(sample.length * 0.005)];
-  const hi = sample[Math.floor(sample.length * 0.995)];
+  const lo = sample[Math.floor(sample.length * loPct)];
+  const hi = sample[Math.min(sample.length - 1, Math.floor(sample.length * hiPct))];
   return hi > lo ? [lo, hi] : [sample[0], sample[sample.length - 1] || sample[0] + 1];
 }
 
-/** Décode un FITS en canvas prêt à afficher (mono ou première couche couleur). */
-export async function decodeFitsToCanvas(file: File, maxSide = 1400): Promise<FitsPreview> {
+/** Décode un FITS en pixels bruts (mono ou première couche). */
+export async function decodeFitsToCanvas(file: File): Promise<FitsPreview> {
   const buf = await file.arrayBuffer();
   const { header, dataStart } = parseHeader(buf);
   const w = Number(header.NAXIS1);
@@ -108,8 +116,16 @@ export async function decodeFitsToCanvas(file: File, maxSide = 1400): Promise<Fi
   if (bzero !== 0 || bscale !== 1) {
     for (let i = 0; i < px.length; i++) px[i] = px[i] * bscale + bzero;
   }
+  return { pixels: px, width: w, height: h, header };
+}
 
-  const [lo, hi] = autoStretchBounds(px);
+/** Rend les pixels décodés en canvas avec le niveau d'étirement choisi. */
+export function stretchToCanvas(preview: FitsPreview, level: number, maxSide = 1400): HTMLCanvasElement {
+  const px = preview.pixels;
+  const w = preview.width;
+  const h = preview.height;
+  const spec = STRETCH_LEVELS[level] ?? STRETCH_LEVELS[1];
+  const [lo, hi] = stretchBounds(px, spec.lo, spec.hi);
   const range = hi - lo || 1;
 
   // Réduction éventuelle pour rester léger à l'affichage.
@@ -132,7 +148,7 @@ export async function decodeFitsToCanvas(file: File, maxSide = 1400): Promise<Fi
       let v = (px[srcRow + sx] - lo) / range;
       v = v <= 0 ? 0 : v >= 1 ? 1 : v;
       // Léger gamma pour révéler les zones faibles.
-      const g = Math.round(255 * Math.pow(v, 0.45));
+      const g = Math.round(255 * Math.pow(v, spec.gamma));
       const o = (y * dw + x) * 4;
       img.data[o] = g;
       img.data[o + 1] = g;
@@ -141,5 +157,5 @@ export async function decodeFitsToCanvas(file: File, maxSide = 1400): Promise<Fi
     }
   }
   ctx.putImageData(img, 0, 0);
-  return { canvas, width: w, height: h, header };
+  return canvas;
 }
