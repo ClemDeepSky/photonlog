@@ -36,8 +36,11 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
   const [deleting, setDeleting] = useState(false);
   const [stretch, setStretch] = useState(1);
   const [isFits, setIsFits] = useState(false);
-  const [lens, setLens] = useState<{ x: number; y: number; bx: number; by: number; iw: number; ih: number } | null>(null);
+  const [lens, setLens] = useState<{ x: number; y: number } | null>(null);
   const fitsRef = useRef<FitsPreview | null>(null);
+  const fullCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fullImageRef = useRef<HTMLImageElement | null>(null);
+  const lensCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgBoxRef = useRef<HTMLDivElement | null>(null);
   const canDelete = !!onDelete && typeof (window as any).showDirectoryPicker === "function";
 
@@ -49,6 +52,8 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     setDims(null);
     setLens(null);
     fitsRef.current = null;
+    fullCanvasRef.current = null;
+    fullImageRef.current = null;
     if (!file || !open) return;
 
     const run = async () => {
@@ -61,11 +66,21 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
           fitsRef.current = preview;
           const canvas = stretchToCanvas(preview, stretch);
           setSrc(canvas.toDataURL("image/png"));
+          // Version pleine résolution pour la loupe (×2 sur les pixels réels).
+          fullCanvasRef.current = stretchToCanvas(preview, stretch, Math.max(preview.width, preview.height));
           setDims(`${preview.width} × ${preview.height} px`);
         } else {
           setIsFits(false);
           const url = URL.createObjectURL(file);
           revoke = url;
+          const img = new Image();
+          img.src = url;
+          try {
+            await img.decode();
+            fullImageRef.current = img;
+          } catch {
+            /* image non décodable : pas de loupe */
+          }
           if (!cancelled) setSrc(url);
         }
       } catch (e: any) {
@@ -90,8 +105,10 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     if (!preview) return;
     const canvas = stretchToCanvas(preview, level);
     setSrc(canvas.toDataURL("image/png"));
+    fullCanvasRef.current = stretchToCanvas(preview, level, Math.max(preview.width, preview.height));
   };
 
+  // Loupe : dessine la zone sous le curseur à 200 % des pixels réels du fichier.
   const onImageMove = (e: React.MouseEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
     const rect = img.getBoundingClientRect();
@@ -101,16 +118,30 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
       setLens(null);
       return;
     }
-    const fx = px / rect.width;
-    const fy = py / rect.height;
-    setLens({
-      x: e.clientX,
-      y: e.clientY,
-      bx: LENS_ZOOM * rect.width * fx - LENS_SIZE / 2,
-      by: LENS_ZOOM * rect.height * fy - LENS_SIZE / 2,
-      iw: rect.width,
-      ih: rect.height,
-    });
+    const source = fullCanvasRef.current ?? fullImageRef.current;
+    const lensCanvas = lensCanvasRef.current;
+    if (!source || !lensCanvas) {
+      setLens(null);
+      return;
+    }
+    const natW = fullCanvasRef.current ? fullCanvasRef.current.width : (fullImageRef.current?.naturalWidth ?? 0);
+    const natH = fullCanvasRef.current ? fullCanvasRef.current.height : (fullImageRef.current?.naturalHeight ?? 0);
+    if (!natW || !natH) {
+      setLens(null);
+      return;
+    }
+    const natX = (px / rect.width) * natW;
+    const natY = (py / rect.height) * natH;
+    const sw = LENS_SIZE / LENS_ZOOM;
+    const sx = natX - sw / 2;
+    const sy = natY - sw / 2;
+    const ctx = lensCanvas.getContext("2d");
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, LENS_SIZE, LENS_SIZE);
+    ctx.drawImage(source, sx, sy, sw, sw, 0, 0, LENS_SIZE, LENS_SIZE);
+    setLens({ x: e.clientX, y: e.clientY });
   };
 
   const copyPath = async () => {
@@ -214,21 +245,19 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
           </div>
         </div>
 
-        {lens && src && (
-          <div
-            className="pointer-events-none fixed z-50 rounded-full border-2 border-primary/70 shadow-xl"
-            style={{
-              left: lens.x - LENS_SIZE / 2,
-              top: lens.y - LENS_SIZE / 2,
-              width: LENS_SIZE,
-              height: LENS_SIZE,
-              backgroundImage: `url(${src})`,
-              backgroundRepeat: "no-repeat",
-              backgroundSize: `${LENS_ZOOM * lens.iw}px ${LENS_ZOOM * lens.ih}px`,
-              backgroundPosition: `-${lens.bx}px -${lens.by}px`,
-            }}
-          />
-        )}
+        <canvas
+          ref={lensCanvasRef}
+          width={LENS_SIZE}
+          height={LENS_SIZE}
+          className="pointer-events-none fixed z-50 rounded-full border-2 border-primary/70 shadow-xl"
+          style={{
+            display: lens && src ? "block" : "none",
+            left: (lens?.x ?? 0) - LENS_SIZE / 2,
+            top: (lens?.y ?? 0) - LENS_SIZE / 2,
+            width: LENS_SIZE,
+            height: LENS_SIZE,
+          }}
+        />
 
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <AlertDialogContent>
