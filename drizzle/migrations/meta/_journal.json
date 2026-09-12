@@ -15,6 +15,13 @@
       "when": 1789238007232,
       "tag": "0001_add_project_frames_and_filename_pattern",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789249594961,
+      "tag": "0002_admin_role_and_overview",
+      "breakpoints": true
     }
   ]
 }
