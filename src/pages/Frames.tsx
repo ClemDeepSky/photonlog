@@ -61,6 +61,8 @@ const Frames = () => {
   const [expandedPanes, setExpandedPanes] = useState<Set<string>>(new Set(["global"]));
   const [draftsAcquired, setDraftsAcquired] = useState<Record<string, string>>({});
   const [draftsKept, setDraftsKept] = useState<Record<string, string>>({});
+  const [showKept, setShowKept] = useState(true);
+
 
   const { data: projects } = useQuery({
     queryKey: ["frames-projects"],
