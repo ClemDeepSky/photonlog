@@ -16,15 +16,16 @@ export interface AstroBinImport {
 }
 
 const FILTER_ALIASES: Record<string, string> = {
-  "hα": "Ha", "ha": "Ha", "h-alpha": "Ha", "halpha": "Ha", "h alpha": "Ha",
-  "oiii": "OIII", "o3": "OIII", "oxygen iii": "OIII", "[oiii]": "OIII",
-  "sii": "SII", "s2": "SII", "sulfur ii": "SII", "[sii]": "SII",
+  "hα": "Ha", "ha": "Ha", "h-alpha": "Ha", "halpha": "Ha", "h alpha": "Ha", "h": "Ha",
+  "oiii": "OIII", "o3": "OIII", "oxygen iii": "OIII", "[oiii]": "OIII", "o": "OIII",
+  "sii": "SII", "s2": "SII", "sulfur ii": "SII", "[sii]": "SII", "s": "SII",
   "l": "L", "lum": "L", "luminance": "L",
   "r": "R", "red": "R", "rouge": "R",
-  "g": "G", "green": "G", "vert": "G",
+  "g": "G", "green": "G", "vert": "G", "v": "G",
   "b": "B", "blue": "B", "bleu": "B",
   "uv": "UV", "ir": "IR", "uv/ir": "IR",
 };
+
 
 export const normalizeFilter = (raw: string): string => {
   const key = raw.trim().toLowerCase().replace(/\s+/g, " ");
