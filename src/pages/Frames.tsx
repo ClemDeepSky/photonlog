@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3, AlertTriangle } from "lucide-react";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +61,8 @@ const Frames = () => {
   const [expandedPanes, setExpandedPanes] = useState<Set<string>>(new Set(["global"]));
   const [draftsAcquired, setDraftsAcquired] = useState<Record<string, string>>({});
   const [draftsKept, setDraftsKept] = useState<Record<string, string>>({});
+  const [showKept, setShowKept] = useState(true);
+
 
   const { data: projects } = useQuery({
     queryKey: ["frames-projects"],
@@ -260,7 +264,7 @@ const Frames = () => {
           // Acquisition tracking view
           <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={() => setSelectedProjectId(null)}>
                   ← Retour
@@ -273,56 +277,91 @@ const Frames = () => {
                   <p className="text-xs text-muted-foreground">{selectedProject?.teams?.name || "Personnel"}</p>
                 </div>
               </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">Afficher les conservés</span>
+                <Switch
+                  checked={showKept}
+                  onCheckedChange={setShowKept}
+                  aria-label="Afficher les conservés"
+                />
+              </div>
             </div>
+
 
             {/* Global stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Progression conservée</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {showKept ? "Progression conservée" : "Progression acquise"}
+                  </p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-gradient">{globalProgress}%</span>
+                    <span className="text-3xl font-bold text-gradient">{showKept ? globalProgress : globalAcquiredProgress}%</span>
                   </div>
-                  <Progress value={globalProgress} className="h-2 mt-2" />
-                  <p className="text-[11px] text-muted-foreground mt-1.5">{globalAcquiredProgress}% acquis bruts</p>
+                  <Progress value={showKept ? globalProgress : globalAcquiredProgress} className="h-2 mt-2" />
+                  {showKept && (
+                    <p className="text-[11px] text-muted-foreground mt-1.5">{globalAcquiredProgress}% acquis bruts</p>
+                  )}
                 </CardContent>
               </Card>
+
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Frames conservées</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {showKept ? "Frames conservées" : "Frames acquises"}
+                  </p>
                   <span className="text-3xl font-bold">
-                    {acquisitions?.reduce((s, a) => s + a.kept, 0) || 0}
+                    {showKept
+                      ? acquisitions?.reduce((s, a) => s + a.kept, 0) || 0
+                      : acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0}
                     <span className="text-base font-normal text-muted-foreground">
                       /{acquisitions?.reduce((s, a) => s + a.quantity, 0) || 0}
                     </span>
                   </span>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">
-                    {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0} acquises
+                  {showKept && (
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0} acquises
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/50">
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {showKept ? "Temps d'exposition conservé" : "Temps d'exposition acquis"}
                   </p>
+                  <span className="text-3xl font-bold">{showKept ? formatExposure(totalExposure) : formatExposure(totalAcquiredExposure)}</span>
+                  {showKept && (
+                    <p className="text-[11px] text-muted-foreground mt-1.5">{formatExposure(totalAcquiredExposure)} acquis</p>
+                  )}
                 </CardContent>
               </Card>
+
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Temps d'exposition conservé</p>
-                  <span className="text-3xl font-bold">{formatExposure(totalExposure)}</span>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">{formatExposure(totalAcquiredExposure)} acquis</p>
-                </CardContent>
-              </Card>
-              <Card className="border-border/50">
-                <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Taux de conservation</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {showKept ? "Taux de conservation" : "Surplus d'acquisition"}
+                  </p>
                   <span className="text-3xl font-bold">
-                    {(acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0) > 0
-                      ? Math.round(
-                          ((acquisitions?.reduce((s, a) => s + a.kept, 0) || 0) /
-                            (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 1)) *
-                            100
-                        )
-                      : 0}
+                    {showKept
+                      ? (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0) > 0
+                        ? Math.round(
+                            ((acquisitions?.reduce((s, a) => s + a.kept, 0) || 0) /
+                              (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 1)) *
+                              100
+                          )
+                        : 0
+                      : (() => {
+                          const total = acquisitions?.reduce((s, a) => s + a.quantity, 0) || 0;
+                          const acquired = acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0;
+                          return total > 0 ? Math.round(((acquired - total) / total) * 100) : 0;
+                        })()}
                     %
                   </span>
                 </CardContent>
               </Card>
+
             </div>
 
             {/* Acquisitions by pane */}
@@ -384,24 +423,27 @@ const Frames = () => {
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
                                     <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden relative">
-                                      <div
-                                        className="h-full rounded-full transition-all absolute left-0 top-0 opacity-30"
-                                        style={{
-                                          width: `${acquiredPercent}%`,
-                                          backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
-                                        }}
-                                      />
+                                      {showKept && (
+                                        <div
+                                          className="h-full rounded-full transition-all absolute left-0 top-0 opacity-30"
+                                          style={{
+                                            width: `${acquiredPercent}%`,
+                                            backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
+                                          }}
+                                        />
+                                      )}
                                       <div
                                         className="h-full rounded-full transition-all absolute left-0 top-0"
                                         style={{
-                                          width: `${keptPercent}%`,
+                                          width: `${showKept ? keptPercent : acquiredPercent}%`,
                                           backgroundColor: filterColors[acq.filter] || "hsl(var(--primary))",
                                         }}
                                       />
                                     </div>
                                     <span className="text-xs text-muted-foreground w-12 text-right">
-                                      {keptPercent}%
+                                      {showKept ? keptPercent : acquiredPercent}%
                                     </span>
+
                                     {acquiredSurplus > 0 && (
                                       <Badge variant="outline" className="h-5 px-1.5 text-[10px] shrink-0">+{acquiredSurplus}</Badge>
                                     )}
@@ -457,57 +499,60 @@ const Frames = () => {
                                   </div>
                                 </div>
 
-                                {/* Kept counter */}
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground w-16">Conservé</span>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      disabled={acq.kept <= 0 || updateKept.isPending}
-                                      onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept - 1 })}
-                                    >
-                                      <Minus className="h-3 w-3" />
-                                    </Button>
-                                    <div className="flex items-center gap-1">
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        className="h-7 w-16 text-center text-sm tabular-nums"
-                                        value={draftsKept[acq.id] ?? String(acq.kept)}
-                                        onChange={(e) => setDraftsKept((d) => ({ ...d, [acq.id]: e.target.value }))}
-                                        onBlur={() => {
-                                          const raw = draftsKept[acq.id];
-                                          setDraftsKept((d) => { const n = { ...d }; delete n[acq.id]; return n; });
-                                          if (raw === undefined) return;
-                                          const v = parseInt(raw);
-                                          const next = isNaN(v) ? 0 : Math.max(0, v);
-                                          if (next !== acq.kept) updateKept.mutate({ id: acq.id, kept: next });
-                                        }}
-                                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                                      />
-                                      <span className="text-xs text-muted-foreground">/ {acq.acquired}</span>
+                                {showKept && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground w-16">Conservé</span>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        disabled={acq.kept <= 0 || updateKept.isPending}
+                                        onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept - 1 })}
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                      <div className="flex items-center gap-1">
+                                        <Input
+                                          type="number"
+                                          min={0}
+                                          className="h-7 w-16 text-center text-sm tabular-nums"
+                                          value={draftsKept[acq.id] ?? String(acq.kept)}
+                                          onChange={(e) => setDraftsKept((d) => ({ ...d, [acq.id]: e.target.value }))}
+                                          onBlur={() => {
+                                            const raw = draftsKept[acq.id];
+                                            setDraftsKept((d) => { const n = { ...d }; delete n[acq.id]; return n; });
+                                            if (raw === undefined) return;
+                                            const v = parseInt(raw);
+                                            const next = isNaN(v) ? 0 : Math.max(0, v);
+                                            if (next !== acq.kept) updateKept.mutate({ id: acq.id, kept: next });
+                                          }}
+                                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                        />
+                                        <span className="text-xs text-muted-foreground">/ {acq.acquired}</span>
+                                      </div>
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        disabled={updateKept.isPending}
+                                        onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept + 1 })}
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                      </Button>
                                     </div>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      disabled={updateKept.isPending}
-                                      onClick={() => updateKept.mutate({ id: acq.id, kept: acq.kept + 1 })}
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
                                   </div>
-                                </div>
+                                )}
+
                               </div>
 
-                              {keptOverAcquired && (
+                              {showKept && keptOverAcquired && (
                                 <div className="text-[11px] text-amber-500 flex items-center gap-1 pl-[3.25rem]">
                                   <AlertTriangle className="h-3 w-3" />
                                   Le nombre conservé dépasse le nombre acquis.
                                 </div>
                               )}
+
                             </div>
                           );
                         })}
