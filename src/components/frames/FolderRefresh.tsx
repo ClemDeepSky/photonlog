@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   listLocalFiles,
   entriesFromInputFileList,
+  supportsDirectoryPicker,
   type LocalFileEntry,
 } from "@/lib/localFiles";
 import { isAstroFile, parseFrameName } from "@/lib/frameNames";
