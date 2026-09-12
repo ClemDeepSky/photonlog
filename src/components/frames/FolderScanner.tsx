@@ -108,7 +108,9 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending, pattern }: Fol
     if (scanResults.length === 0) {
       toast({
         title: "Aucun filtre détecté",
-        description: `${totalFiles} fichier(s) trouvé(s) mais aucun filtre reconnu. Vérifiez la convention de nommage (ex: M42_Panneau1_Ha_300s_001.fit ou sous-dossiers par panneau/filtre).`,
+        description: `${totalFiles} fichier(s) trouvé(s) mais aucun filtre reconnu. Exemple : ${
+          entries.find((e) => isAstroFile(e.name))?.relativePath || "—"
+        }. Filtres attendus : ${projectFilters.join(", ") || "aucun filtre défini dans le projet"}.`,
         variant: "destructive",
       });
     } else {
