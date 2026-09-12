@@ -463,6 +463,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
         relativePath={preview?.path || ""}
         open={!!preview}
         onOpenChange={(o) => !o && setPreview(null)}
+        onDelete={preview ? () => deleteFrame(preview.path) : undefined}
       />
     </Card>
   );
