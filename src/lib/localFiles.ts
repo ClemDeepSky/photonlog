@@ -26,6 +26,16 @@ type DirHandle = {
  * Lève une erreur si l'API n'est pas supportée par le navigateur.
  */
 export async function listLocalFiles(): Promise<LocalFileEntry[] | null> {
+  const picked = await pickLocalDirectory();
+  if (!picked) return null;
+  return picked.entries;
+}
+
+/**
+ * Comme listLocalFiles, mais retourne aussi le "handle" du dossier choisi afin
+ * de pouvoir mémoriser l'accès et rouvrir un fichier plus tard.
+ */
+export async function pickLocalDirectory(): Promise<{ handle: any; entries: LocalFileEntry[] } | null> {
   const picker = (window as any).showDirectoryPicker;
   if (typeof picker !== "function") {
     throw new Error("showDirectoryPicker non supporté");
