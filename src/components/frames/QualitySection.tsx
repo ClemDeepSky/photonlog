@@ -496,8 +496,8 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       {nightRanges.map((range, index) => (
                         <ReferenceArea
                           key={range.night}
-                          x1={Math.max(0, range.start - 0.45)}
-                          x2={Math.min(Math.max(0, totalPoints - 1), range.end + 0.45)}
+                          x1={range.start - 0.5}
+                          x2={range.end + 0.5}
                           fill={index % 2 === 0 ? "hsl(var(--primary))" : "hsl(var(--accent))"}
                           fillOpacity={0.055}
                           strokeOpacity={0}
@@ -506,7 +506,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       <XAxis
                         type="number"
                         dataKey="x"
-                        domain={zoom ? [zoom[0], zoom[1]] : [0, Math.max(0, totalPoints - 1)]}
+                        domain={zoomWindow}
                         allowDataOverflow
                         tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                         tickFormatter={() => ""}
