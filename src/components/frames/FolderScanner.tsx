@@ -5,12 +5,21 @@ import { toast } from "@/hooks/use-toast";
 
 interface ScanResult {
   filter: string;
+  paneNumber: number | null;
   count: number;
   files: string[];
 }
 
+interface ScannerAcquisition {
+  id: string;
+  filter: string;
+  quantity: number;
+  acquired: number;
+  paneNumber?: number | null;
+}
+
 interface FolderScannerProps {
-  acquisitions: { id: string; filter: string; quantity: number; acquired: number }[];
+  acquisitions: ScannerAcquisition[];
   onApplyResults: (updates: { id: string; acquired: number }[]) => void;
   isPending?: boolean;
 }
@@ -34,18 +43,16 @@ const FILTER_ALIASES: Record<string, string> = {
 function normalizeFilter(raw: string): string | null {
   const lower = raw.toLowerCase();
   if (FILTER_ALIASES[lower]) return FILTER_ALIASES[lower];
-  // Direct match (case-insensitive)
   const direct = KNOWN_FILTERS.find((f) => f.toLowerCase() === lower);
   if (direct) return direct;
   return null;
 }
 
 function detectFilterFromPath(filePath: string): string | null {
-  // Strategy 1: Check parent folder name (e.g., /Ha/file.fit)
   const parts = filePath.replace(/\\/g, "/").split("/");
-  if (parts.length >= 2) {
-    const parentFolder = parts[parts.length - 2];
-    const fromFolder = normalizeFilter(parentFolder);
+  // Strategy 1: any folder in the path named after a filter (closest first)
+  for (let i = parts.length - 2; i >= 0; i--) {
+    const fromFolder = normalizeFilter(parts[i]);
     if (fromFolder) return fromFolder;
   }
 
@@ -61,6 +68,38 @@ function detectFilterFromPath(filePath: string): string | null {
   return null;
 }
 
+// Panel patterns: Panel 1, panneau_2, P3, pane-4, tile5, mosaic_2, M1
+const PANE_PATTERNS = [
+  /\b(?:panneau|panel|pane|tile|tuile|mosaic|mosaique)[\s_\-]*0*(\d{1,3})\b/i,
+  /\b[pt]0*(\d{1,3})\b/i,
+];
+
+function detectPaneFromSegment(segment: string): number | null {
+  for (const re of PANE_PATTERNS) {
+    const m = segment.match(re);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (!isNaN(n) && n > 0) return n;
+    }
+  }
+  return null;
+}
+
+function detectPaneFromPath(filePath: string): number | null {
+  const parts = filePath.replace(/\\/g, "/").split("/");
+  // Folders first (closest to the file), then the filename segments
+  for (let i = parts.length - 2; i >= 0; i--) {
+    const found = detectPaneFromSegment(parts[i]);
+    if (found !== null) return found;
+  }
+  const nameWithoutExt = parts[parts.length - 1].replace(/\.[^.]+$/, "");
+  for (const seg of nameWithoutExt.split(/[_\-\s]+/)) {
+    const found = detectPaneFromSegment(seg);
+    if (found !== null) return found;
+  }
+  return null;
+}
+
 function isAstroFile(name: string): boolean {
   const ext = name.split(".").pop()?.toLowerCase() || "";
   return ASTRO_EXTENSIONS.has(ext);
@@ -71,6 +110,16 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<ScanResult[] | null>(null);
 
+  const hasPanes = acquisitions.some((a) => a.paneNumber != null);
+
+  // Find the acquisitions matching a scan result (filter + pane when relevant)
+  const matchingAcqs = (r: ScanResult) => {
+    const sameFilter = acquisitions.filter((a) => a.filter === r.filter);
+    if (!hasPanes) return sameFilter;
+    if (r.paneNumber == null) return [];
+    return sameFilter.filter((a) => a.paneNumber === r.paneNumber);
+  };
+
   const handleScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -79,7 +128,7 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     setResults(null);
 
     try {
-      const counts: Record<string, { count: number; files: string[] }> = {};
+      const counts: Record<string, { filter: string; paneNumber: number | null; count: number; files: string[] }> = {};
       let totalFiles = 0;
       let matchedFiles = 0;
 
@@ -90,37 +139,40 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
 
         const relativePath = (file as any).webkitRelativePath || file.name;
         const filter = detectFilterFromPath(relativePath);
-        if (filter) {
-          if (!counts[filter]) counts[filter] = { count: 0, files: [] };
-          counts[filter].count++;
-          counts[filter].files.push(relativePath);
-          matchedFiles++;
-        }
+        if (!filter) continue;
+        const paneNumber = hasPanes ? detectPaneFromPath(relativePath) : null;
+        const key = `${paneNumber ?? "none"}|${filter}`;
+        if (!counts[key]) counts[key] = { filter, paneNumber, count: 0, files: [] };
+        counts[key].count++;
+        counts[key].files.push(relativePath);
+        matchedFiles++;
       }
 
-      const scanResults = Object.entries(counts)
-        .map(([filter, v]) => ({ filter, count: v.count, files: v.files }))
-        .sort((a, b) => a.filter.localeCompare(b.filter));
+      const scanResults = Object.values(counts).sort(
+        (a, b) => (a.paneNumber ?? 0) - (b.paneNumber ?? 0) || a.filter.localeCompare(b.filter)
+      );
 
       setResults(scanResults);
 
       if (scanResults.length === 0) {
         toast({
           title: "Aucun filtre détecté",
-          description: `${totalFiles} fichier(s) trouvé(s) mais aucun filtre reconnu. Vérifiez la convention de nommage (ex: M42_Ha_300s_001.fit ou sous-dossiers par filtre).`,
+          description: `${totalFiles} fichier(s) trouvé(s) mais aucun filtre reconnu. Vérifiez la convention de nommage (ex: M42_Panneau1_Ha_300s_001.fit ou sous-dossiers par panneau/filtre).`,
           variant: "destructive",
         });
       } else {
+        const unassigned = hasPanes ? scanResults.filter((r) => r.paneNumber == null).length : 0;
         toast({
           title: "Scan terminé",
-          description: `${matchedFiles} fichier(s) détecté(s) sur ${totalFiles} pour ${scanResults.length} filtre(s).`,
+          description: `${matchedFiles} fichier(s) détecté(s) sur ${totalFiles}, réparti(s) en ${scanResults.length} groupe(s)${
+            unassigned ? ` — ${unassigned} groupe(s) sans panneau identifié` : ""
+          }.`,
         });
       }
     } catch (err: any) {
       toast({ title: "Erreur de scan", description: err.message, variant: "destructive" });
     } finally {
       setScanning(false);
-      // Reset input
       if (inputRef.current) inputRef.current.value = "";
     }
   };
@@ -130,9 +182,7 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
 
     const updates: { id: string; acquired: number }[] = [];
     for (const result of results) {
-      // Find matching acquisition(s)
-      const matching = acquisitions.filter((a) => a.filter === result.filter);
-      for (const acq of matching) {
+      for (const acq of matchingAcqs(result)) {
         updates.push({ id: acq.id, acquired: result.count });
       }
     }
@@ -140,7 +190,9 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     if (updates.length === 0) {
       toast({
         title: "Aucune correspondance",
-        description: "Les filtres détectés ne correspondent à aucune acquisition configurée.",
+        description: hasPanes
+          ? "Les panneaux/filtres détectés ne correspondent à aucune acquisition configurée."
+          : "Les filtres détectés ne correspondent à aucune acquisition configurée.",
         variant: "destructive",
       });
       return;
@@ -154,6 +206,7 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         Seule la liste des noms de fichiers est lue — aucun fichier n'est importé ni envoyé.
+        {hasPanes && " Les fichiers sont comptabilisés par panneau et par filtre."}
       </p>
       <div className="flex items-center gap-2">
         <Button
@@ -186,16 +239,19 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
           <p className="text-sm font-medium">Résultat du scan :</p>
           <div className="flex flex-wrap gap-2">
             {results.map((r) => {
-              const hasMatch = acquisitions.some((a) => a.filter === r.filter);
+              const hasMatch = matchingAcqs(r).length > 0;
+              const label = hasPanes
+                ? `${r.paneNumber != null ? `Panneau ${r.paneNumber}` : "Panneau ?"} · ${r.filter}`
+                : r.filter;
               return (
                 <details
-                  key={r.filter}
+                  key={`${r.paneNumber ?? "none"}-${r.filter}`}
                   className={`text-xs px-2 py-1 rounded-md border ${
                     hasMatch ? "border-primary/50 bg-primary/10" : "border-border bg-muted"
                   }`}
                 >
                   <summary className="cursor-pointer select-none">
-                    <span className="font-semibold">{r.filter}</span>: {r.count} fichier(s)
+                    <span className="font-semibold">{label}</span>: {r.count} fichier(s)
                     {!hasMatch && <span className="text-muted-foreground ml-1">(pas configuré)</span>}
                   </summary>
                   <ul className="mt-1 max-h-32 overflow-y-auto space-y-0.5 text-muted-foreground">
