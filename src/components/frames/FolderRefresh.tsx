@@ -6,11 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   pickLocalDirectory,
   entriesFromInputFileList,
+  entriesFromDirHandle,
   supportsDirectoryPicker,
   type LocalFileEntry,
 } from "@/lib/localFiles";
-import { saveProjectDirHandle } from "@/lib/dirHandleStore";
+import { saveProjectDirHandle, getProjectDirHandle, ensureReadPermission } from "@/lib/dirHandleStore";
 import { cacheProjectFiles } from "@/lib/localFileCache";
+
 import { isAstroFile, parseFrameName } from "@/lib/frameNames";
 
 export interface RefreshAcquisition {
