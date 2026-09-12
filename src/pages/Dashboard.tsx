@@ -134,7 +134,7 @@ const Dashboard = () => {
 
         {/* Quick start */}
         <div className="mb-8">
-          <Card className="border-border/50">
+          <Card className="border-border/50" data-tour="quick-start">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Star className="h-4 w-4 text-primary" />
@@ -146,6 +146,22 @@ const Dashboard = () => {
               <p>2. Configurez votre <strong className="text-foreground">Matériel</strong></p>
               <p>3. Créez un <strong className="text-foreground">Projet</strong> d'acquisition</p>
               <p>4. Ajoutez vos <strong className="text-foreground">Frames</strong> au fur et à mesure</p>
+              <div className="flex flex-wrap gap-2 pt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-tour="demo-project"
+                  disabled={loadDemo.isPending}
+                  onClick={() => loadDemo.mutate()}
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  {loadDemo.isPending ? "Chargement…" : "Charger le projet de démo"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={startTour}>
+                  <PlayCircle className="h-3.5 w-3.5 mr-1.5" />
+                  Revoir la visite
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
