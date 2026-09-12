@@ -8,6 +8,11 @@ import {
   entriesFromInputFileList,
   type LocalFileEntry,
 } from "@/lib/localFiles";
+import { isAstroFile, detectPaneFromPath, normalizeFilter, parseFrameName } from "@/lib/frameNames";
+
+/** Comparaison souple d'étiquettes de filtre (casse, accents, séparateurs ignorés) */
+const slug = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 interface ScanResult {
   filter: string;
@@ -28,99 +33,48 @@ interface FolderScannerProps {
   acquisitions: ScannerAcquisition[];
   onApplyResults: (updates: { id: string; acquired: number }[]) => void;
   isPending?: boolean;
+  /** Modèle de nommage du projet (optionnel) */
+  pattern?: string | null;
 }
 
-// Common astrophotography file extensions
-const ASTRO_EXTENSIONS = new Set([
-  "fit", "fits", "fts", "xisf", "tif", "tiff", "cr2", "cr3", "nef", "arw", "png", "jpg", "jpeg",
-]);
-
-// Known filter names (case-insensitive matching)
-const KNOWN_FILTERS = ["L", "R", "G", "B", "Ha", "OIII", "SII", "UV", "IR", "Lum", "Red", "Green", "Blue"];
-
-const FILTER_ALIASES: Record<string, string> = {
-  lum: "L", luminance: "L", luminosity: "L",
-  red: "R", green: "G", blue: "B",
-  halpha: "Ha", h_alpha: "Ha", "h-alpha": "Ha",
-  oiii: "OIII", o3: "OIII",
-  sii: "SII", s2: "SII",
-};
-
-function normalizeFilter(raw: string): string | null {
-  const lower = raw.toLowerCase();
-  if (FILTER_ALIASES[lower]) return FILTER_ALIASES[lower];
-  const direct = KNOWN_FILTERS.find((f) => f.toLowerCase() === lower);
-  if (direct) return direct;
-  return null;
-}
-
-function detectFilterFromPath(filePath: string): string | null {
-  const parts = filePath.replace(/\\/g, "/").split("/");
-  // Strategy 1: any folder in the path named after a filter (closest first)
-  for (let i = parts.length - 2; i >= 0; i--) {
-    const fromFolder = normalizeFilter(parts[i]);
-    if (fromFolder) return fromFolder;
-  }
-
-  // Strategy 2: Parse filename segments separated by _ or -
-  const filename = parts[parts.length - 1];
-  const nameWithoutExt = filename.replace(/\.[^.]+$/, "");
-  const segments = nameWithoutExt.split(/[_\-\s]+/);
-  for (const seg of segments) {
-    const fromSeg = normalizeFilter(seg);
-    if (fromSeg) return fromSeg;
-  }
-
-  return null;
-}
-
-// Panel patterns: Panel 1, panneau_2, P3, pane-4, tile5, mosaic_2, M1
-const PANE_PATTERNS = [
-  /\b(?:panneau|panel|pane|tile|tuile|mosaic|mosaique)[\s_\-]*0*(\d{1,3})\b/i,
-  /\b[pt]0*(\d{1,3})\b/i,
-];
-
-function detectPaneFromSegment(segment: string): number | null {
-  for (const re of PANE_PATTERNS) {
-    const m = segment.match(re);
-    if (m) {
-      const n = parseInt(m[1], 10);
-      if (!isNaN(n) && n > 0) return n;
-    }
-  }
-  return null;
-}
-
-function detectPaneFromPath(filePath: string): number | null {
-  const parts = filePath.replace(/\\/g, "/").split("/");
-  // Folders first (closest to the file), then the filename segments
-  for (let i = parts.length - 2; i >= 0; i--) {
-    const found = detectPaneFromSegment(parts[i]);
-    if (found !== null) return found;
-  }
-  const nameWithoutExt = parts[parts.length - 1].replace(/\.[^.]+$/, "");
-  for (const seg of nameWithoutExt.split(/[_\-\s]+/)) {
-    const found = detectPaneFromSegment(seg);
-    if (found !== null) return found;
-  }
-  return null;
-}
-
-function isAstroFile(name: string): boolean {
-  const ext = name.split(".").pop()?.toLowerCase() || "";
-  return ASTRO_EXTENSIONS.has(ext);
-}
-
-const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScannerProps) => {
+const FolderScanner = ({ acquisitions, onApplyResults, isPending, pattern }: FolderScannerProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<ScanResult[] | null>(null);
 
   const hasPanes = acquisitions.some((a) => a.paneNumber != null);
 
+  // Étiquettes de filtre déclarées dans le projet (pour reconnaître n'importe
+  // quel nom de filtre, même absent des catalogues : L-eXtreme, Antlia, etc.)
+  const projectFilters = Array.from(new Set(acquisitions.map((a) => a.filter).filter(Boolean)));
+
+  /** Cherche un filtre du projet dans les dossiers puis dans le nom du fichier */
+  const detectFilter = (relativePath: string): string | null => {
+    const parsed = parseFrameName(relativePath, pattern);
+    if (parsed.filter) {
+      const known = projectFilters.find(
+        (f) => slug(f) === slug(parsed.filter!) || slug(normalizeFilter(f) || f) === slug(parsed.filter!)
+      );
+      return known || parsed.filter;
+    }
+
+    const parts = relativePath.replace(/\\/g, "/").split("/");
+    const folders = parts.slice(0, -1).reverse();
+    const segments = (parts[parts.length - 1] || "").replace(/\.[^.]+$/, "").split(/[_\-\s.]+/);
+    for (const candidate of [...folders, ...segments]) {
+      const s = slug(candidate);
+      if (!s) continue;
+      const known = projectFilters.find(
+        (f) => slug(f) === s || slug(normalizeFilter(f) || f) === s || slug(normalizeFilter(candidate) || "") === slug(f)
+      );
+      if (known) return known;
+    }
+    return null;
+  };
+
   // Find the acquisitions matching a scan result (filter + pane when relevant)
   const matchingAcqs = (r: ScanResult) => {
-    const sameFilter = acquisitions.filter((a) => a.filter === r.filter);
+    const sameFilter = acquisitions.filter((a) => slug(a.filter) === slug(r.filter));
     if (!hasPanes) return sameFilter;
     if (r.paneNumber == null) return [];
     return sameFilter.filter((a) => a.paneNumber === r.paneNumber);
@@ -135,7 +89,7 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
       if (!isAstroFile(entry.name)) continue;
       totalFiles++;
 
-      const filter = detectFilterFromPath(entry.relativePath);
+      const filter = detectFilter(entry.relativePath);
       if (!filter) continue;
       const paneNumber = hasPanes ? detectPaneFromPath(entry.relativePath) : null;
       const key = `${paneNumber ?? "none"}|${filter}`;
@@ -154,7 +108,9 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     if (scanResults.length === 0) {
       toast({
         title: "Aucun filtre détecté",
-        description: `${totalFiles} fichier(s) trouvé(s) mais aucun filtre reconnu. Vérifiez la convention de nommage (ex: M42_Panneau1_Ha_300s_001.fit ou sous-dossiers par panneau/filtre).`,
+        description: `${totalFiles} fichier(s) trouvé(s) mais aucun filtre reconnu. Exemple : ${
+          entries.find((e) => isAstroFile(e.name))?.relativePath || "—"
+        }. Filtres attendus : ${projectFilters.join(", ") || "aucun filtre défini dans le projet"}.`,
         variant: "destructive",
       });
     } else {
