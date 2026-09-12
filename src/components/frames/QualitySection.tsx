@@ -12,6 +12,7 @@ import {
   ensureWritePermission,
   deleteFileFromHandle,
   getFileFromHandle,
+  requestProjectDirHandle,
 } from "@/lib/dirHandleStore";
 import { getCachedProjectFile } from "@/lib/localFileCache";
 import FramePreviewDialog from "@/components/frames/FramePreviewDialog";
@@ -229,16 +230,29 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
   // Suppression définitive du fichier sur le disque + désindexation.
   const deleteFrame = async (relativePath: string) => {
-    const handle = await getProjectDirHandle(projectId);
+    let handle = await getProjectDirHandle(projectId);
     if (!handle) {
-      toast({
-        title: "Dossier non mémorisé",
-        description:
-          "Cliquez d'abord sur « Rafraîchir le dossier » et choisissez le dossier du projet pour autoriser la suppression.",
-        variant: "destructive",
-      });
-      return;
+      // Le rafraîchissement a pu se faire sans mémoriser le dossier (aperçu intégré) :
+      // on demande le dossier maintenant pour autoriser la suppression sur le disque.
+      try {
+        handle = await requestProjectDirHandle(projectId);
+      } catch (err: any) {
+        const msg = String(err?.message || "");
+        const aborted = err?.name === "AbortError";
+        if (!aborted) {
+          toast({
+            title: "Suppression indisponible ici",
+            description:
+              err?.name === "NotSupportedError"
+                ? "Utilisez Chrome ou Edge pour supprimer un fichier du disque."
+                : "Ouvrez la page dans un nouvel onglet (hors aperçu intégré) puis désignez le dossier du projet.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
     }
+
     const ok = await ensureWritePermission(handle);
     if (!ok) {
       toast({
