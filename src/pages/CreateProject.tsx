@@ -366,6 +366,18 @@ const CreateProject = () => {
                 <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition (utilisé pour le scan automatique)</p>
               </div>
               <div>
+                <Label>Structure des noms de fichiers (optionnel)</Label>
+                <Input
+                  value={filenamePattern}
+                  onChange={(e) => setFilenamePattern(e.target.value)}
+                  placeholder="$$TARGETNAME$$_$$IMAGETYPE$$_$$FILTER$$_$$DATE$$_$$TIME$$_$$SENSORTEMP$$_$$EXPOSURETIME$$s_FWHM$$FWHM$$_ex$$ECCENTRICITY$$_starsCount-$$STARCOUNT$$_hfr-$$HFR$$_$$FRAMENR$$"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Collez le modèle de nommage de votre logiciel (N.I.N.A. par exemple) pour extraire automatiquement
+                  la qualité de chaque brute. Laissez vide si vos fichiers ne contiennent pas ces informations.
+                </p>
+              </div>
+              <div>
                 <Label>Setup</Label>
                 <Select value={setup} onValueChange={setSetup}>
                   <SelectTrigger><SelectValue placeholder={equipment?.length ? "Sélectionner un setup" : "Aucun setup — créez-en un dans Matériel"} /></SelectTrigger>
