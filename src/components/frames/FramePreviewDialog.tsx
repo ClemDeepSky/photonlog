@@ -36,7 +36,8 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
   const [deleting, setDeleting] = useState(false);
   const [stretch, setStretch] = useState(1);
   const [isFits, setIsFits] = useState(false);
-  const [lens, setLens] = useState<{ x: number; y: number } | null>(null);
+  const [cross, setCross] = useState<{ clientX: number; clientY: number; px: number; py: number } | null>(null);
+  const [lensPos, setLensPos] = useState<{ x: number; y: number } | null>(null);
   const fitsRef = useRef<FitsPreview | null>(null);
   const fullCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const fullImageRef = useRef<HTMLImageElement | null>(null);
@@ -50,7 +51,8 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     setSrc(null);
     setError(null);
     setDims(null);
-    setLens(null);
+    setCross(null);
+    setLensPos(null);
     fitsRef.current = null;
     fullCanvasRef.current = null;
     fullImageRef.current = null;
@@ -115,19 +117,22 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
     if (px < 0 || py < 0 || px > rect.width || py > rect.height) {
-      setLens(null);
+      setCross(null);
+      setLensPos(null);
       return;
     }
     const source = fullCanvasRef.current ?? fullImageRef.current;
     const lensCanvas = lensCanvasRef.current;
     if (!source || !lensCanvas) {
-      setLens(null);
+      setCross(null);
+      setLensPos(null);
       return;
     }
     const natW = fullCanvasRef.current ? fullCanvasRef.current.width : (fullImageRef.current?.naturalWidth ?? 0);
     const natH = fullCanvasRef.current ? fullCanvasRef.current.height : (fullImageRef.current?.naturalHeight ?? 0);
     if (!natW || !natH) {
-      setLens(null);
+      setCross(null);
+      setLensPos(null);
       return;
     }
     const natX = (px / rect.width) * natW;
@@ -141,7 +146,13 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, LENS_SIZE, LENS_SIZE);
     ctx.drawImage(source, sx, sy, sw, sw, 0, 0, LENS_SIZE, LENS_SIZE);
-    setLens({ x: e.clientX, y: e.clientY });
+
+    // Décale la loupe en dessous, à gauche ou à droite selon la position horizontale.
+    const margin = 24;
+    const lensX = e.clientX < window.innerWidth / 2 ? e.clientX + LENS_SIZE / 2 + margin : e.clientX - LENS_SIZE / 2 - margin;
+    const lensY = e.clientY + LENS_SIZE / 2 + margin;
+    setLensPos({ x: lensX, y: lensY });
+    setCross({ clientX: e.clientX, clientY: e.clientY, px, py });
   };
 
   const copyPath = async () => {
@@ -239,9 +250,27 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
                 alt={file?.name || "Aperçu de la brute"}
                 className="max-h-[72vh] w-auto cursor-none"
                 onMouseMove={onImageMove}
-                onMouseLeave={() => setLens(null)}
+                onMouseLeave={() => {
+                  setCross(null);
+                  setLensPos(null);
+                }}
               />
             ) : null}
+
+            {cross && src && (
+              <div
+                className="pointer-events-none absolute z-40"
+                style={{
+                  left: cross.px,
+                  top: cross.py,
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                <div className="absolute left-1/2 top-1/2 h-4 w-[1px] -translate-x-1/2 -translate-y-1/2 bg-primary/90" />
+                <div className="absolute left-1/2 top-1/2 h-[1px] w-4 -translate-x-1/2 -translate-y-1/2 bg-primary/90" />
+                <div className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/90 bg-transparent" />
+              </div>
+            )}
           </div>
         </div>
 
@@ -251,9 +280,9 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
           height={LENS_SIZE}
           className="pointer-events-none fixed z-50 rounded-full border-2 border-primary/70 shadow-xl"
           style={{
-            display: lens && src ? "block" : "none",
-            left: (lens?.x ?? 0) - LENS_SIZE / 2,
-            top: (lens?.y ?? 0) - LENS_SIZE / 2,
+            display: lensPos && src ? "block" : "none",
+            left: (lensPos?.x ?? 0) - LENS_SIZE / 2,
+            top: (lensPos?.y ?? 0) - LENS_SIZE / 2,
             width: LENS_SIZE,
             height: LENS_SIZE,
           }}
