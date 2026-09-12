@@ -185,7 +185,22 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     };
   }, [withDates, selectedFilter, activeMetrics, offPanes]);
 
-  // Zoom horizontal à la molette : fenêtre visible [zMin, zMax] sur les indices.
+  // Zoom horizontal : fenêtre continue [x0, x1] en unités d'index (bords à -0.5 / n-0.5).
+  const MIN_SPAN = 2;
+  const fullWindow = (n: number): [number, number] => [-0.5, n - 0.5];
+  const clampZoom = (start: number, end: number, n: number): [number, number] | null => {
+    if (n < 2) return null;
+    const lo = -0.5;
+    const hi = n - 0.5;
+    const span = Math.min(n, Math.max(Math.min(MIN_SPAN, n), end - start));
+    if (span >= n - 1e-6) return null;
+    let s = start;
+    let e = start + span;
+    if (s < lo) { s = lo; e = lo + span; }
+    if (e > hi) { e = hi; s = hi - span; }
+    return [s, e];
+  };
+
   const [zoom, setZoom] = useState<[number, number] | null>(null);
   useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, totalPoints]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
@@ -203,20 +218,16 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       if (n < 2) return;
       e.preventDefault();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
-      const cur = zoomRef.current || [0, n - 1];
-      const span = cur[1] - cur[0] + 1;
+      const cur = zoomRef.current || fullWindow(n);
+      const span = cur[1] - cur[0];
       const factor = Math.exp(dy * 0.002);
-      const nextSpan = Math.min(n, Math.max(5, span * factor));
-      if (nextSpan === span) return;
+      const nextSpan = Math.min(n, Math.max(Math.min(MIN_SPAN, n), span * factor));
+      if (Math.abs(nextSpan - span) < 1e-6) return;
       const rect = el.getBoundingClientRect();
       const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-      const anchor = cur[0] + frac * (span - 1);
-      let z0 = anchor - frac * (nextSpan - 1);
-      let z1 = z0 + nextSpan - 1;
-      if (z0 < 0) { z1 -= z0; z0 = 0; }
-      if (z1 > n - 1) { z0 -= z1 - (n - 1); z1 = n - 1; }
-      z0 = Math.max(0, z0);
-      setZoom(z0 <= 0 && z1 >= n - 1 ? null : [z0, z1]);
+      const anchor = cur[0] + frac * span;
+      const z0 = anchor - frac * nextSpan;
+      setZoom(clampZoom(z0, z0 + nextSpan, n));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
@@ -236,7 +247,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     if (totalPoints < 2) return;
     e.preventDefault();
     e.stopPropagation();
-    const initial: [number, number] = zoom || [0, totalPoints - 1];
+    const initial: [number, number] = zoom || fullWindow(totalPoints);
     dragRef.current = { mode, pointerId: e.pointerId, startX: e.clientX, initial };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -246,27 +257,26 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     const bar = overviewRef.current;
     if (!drag || drag.pointerId !== e.pointerId || !bar || totalPoints < 2) return;
     const delta = ((e.clientX - drag.startX) / Math.max(1, bar.getBoundingClientRect().width)) * totalPoints;
-    const minSpan = Math.min(5, totalPoints);
+    const minSpan = Math.min(MIN_SPAN, totalPoints);
     let [start, end] = drag.initial;
     if (drag.mode === "move") {
-      const span = end - start;
       start += delta;
       end += delta;
-      if (start < 0) { end = span; start = 0; }
-      if (end > totalPoints - 1) { start = totalPoints - 1 - span; end = totalPoints - 1; }
     } else if (drag.mode === "start") {
-      start = Math.max(0, Math.min(end - minSpan + 1, start + delta));
+      start = Math.min(end - minSpan, start + delta);
     } else {
-      end = Math.min(totalPoints - 1, Math.max(start + minSpan - 1, end + delta));
+      end = Math.max(start + minSpan, end + delta);
     }
-    setZoom(start <= 0 && end >= totalPoints - 1 ? null : [start, end]);
+    setZoom(clampZoom(start, end, totalPoints));
   };
 
   const endOverviewDrag = (e: React.PointerEvent<HTMLDivElement>) => {
     if (dragRef.current?.pointerId !== e.pointerId) return;
     dragRef.current = null;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    const target = e.target as HTMLElement;
+    if (target?.hasPointerCapture?.(e.pointerId)) target.releasePointerCapture(e.pointerId);
   };
+
 
   const [preview, setPreview] = useState<{ file: File; path: string } | null>(null);
 
