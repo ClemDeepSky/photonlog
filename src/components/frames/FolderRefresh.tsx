@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   listLocalFiles,
   entriesFromInputFileList,
+  supportsDirectoryPicker,
   type LocalFileEntry,
 } from "@/lib/localFiles";
 import { isAstroFile, parseFrameName } from "@/lib/frameNames";
@@ -43,21 +44,51 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
     // Fichiers déjà indexés : on ne les recompte jamais.
     const { data: known, error: knownError } = await supabase
       .from("project_frames")
-      .select("relative_path")
+      .select("id, relative_path, captured_at, fwhm")
       .eq("project_id", projectId);
     if (knownError) throw knownError;
-    const knownPaths = new Set((known || []).map((k) => k.relative_path));
+    const knownByPath = new Map((known || []).map((k) => [k.relative_path, k]));
 
     const rows: any[] = [];
     let seen = 0;
     let skippedType = 0;
+    let matched = 0;
+    let reparsed = 0;
 
     for (const entry of entries) {
       if (!isAstroFile(entry.name)) continue;
       seen++;
-      if (knownPaths.has(entry.relativePath)) continue;
+      const existing = knownByPath.get(entry.relativePath);
+      if (existing) {
+        // Le modèle de nommage a peut-être été renseigné après l'indexation :
+        // on complète les mesures manquantes.
+        if (existing.captured_at == null || existing.fwhm == null) {
+          const p = parseFrameName(entry.relativePath, pattern);
+          if (p.matchedPattern) {
+            const { error } = await supabase
+              .from("project_frames")
+              .update({
+                filter: p.filter,
+                pane_number: p.paneNumber,
+                captured_at: p.capturedAt,
+                exposure_duration: p.exposureDuration,
+                fwhm: p.fwhm,
+                eccentricity: p.eccentricity,
+                hfr: p.hfr,
+                star_count: p.starCount,
+                sensor_temp: p.sensorTemp,
+                frame_nr: p.frameNr,
+              })
+              .eq("id", existing.id);
+            if (error) throw error;
+            reparsed++;
+          }
+        }
+        continue;
+      }
 
       const parsed = parseFrameName(entry.relativePath, pattern);
+      if (parsed.matchedPattern) matched++;
       if (parsed.imageType && parsed.imageType !== "LIGHT") {
         skippedType++;
         continue;
@@ -115,11 +146,15 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
 
     const unmatched = rows.filter((r) => !r.acquisition_id).length;
     toast({
-      title: rows.length ? `${rows.length} nouvelle(s) image(s)` : "Aucune nouvelle image",
+      title: rows.length || reparsed ? `${rows.length} nouvelle(s) image(s)` : "Aucune nouvelle image",
       description:
         `${seen} fichier(s) dans le dossier, ${rows.length} ajouté(s) à l'index, ${updated} ligne(s) d'acquisition mise(s) à jour.` +
-        (skippedType ? ` ${skippedType} fichier(s) ignoré(s) (calibration).` : "") +
-        (unmatched ? ` ${unmatched} sans filtre/panneau reconnu.` : ""),
+        (reparsed ? ` ${reparsed} image(s) déjà indexée(s) complétée(s) avec les mesures.` : "") +
+        (pattern
+          ? matched
+            ? ` Modèle de nommage reconnu sur ${matched} fichier(s).`
+            : " Le modèle de nommage ne correspond à aucun nom de fichier."
+          : " Aucun modèle de nommage renseigné dans le projet."),
     });
 
     onDone?.();
@@ -137,6 +172,13 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
   };
 
   const handleRefresh = async () => {
+    // Dans l'aperçu (iframe), le sélecteur de dossier natif est bloqué :
+    // on ouvre directement le champ de dossier pendant le clic de l'utilisateur.
+    const inIframe = typeof window !== "undefined" && window.self !== window.top;
+    if (inIframe || !supportsDirectoryPicker()) {
+      inputRef.current?.click();
+      return;
+    }
     setBusy(true);
     try {
       const entries = await listLocalFiles();
