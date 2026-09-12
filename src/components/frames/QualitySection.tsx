@@ -95,11 +95,6 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     () => Array.from(new Set(withDates.map((f) => f.pane_number).filter((p) => p != null) as number[])).sort((a, b) => a - b),
     [withDates]
   );
-  const availableNights = useMemo(
-    () => Array.from(new Set(withDates.map((f) => nightOf(f.captured_at)))).sort(),
-    [withDates]
-  );
-
   useEffect(() => {
     if (availableFilters.length === 0) {
       setSelectedFilter(null);
@@ -605,7 +600,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       aria-valuemin={0}
                       aria-valuemax={Math.max(0, totalPoints - 1)}
                       aria-valuenow={Math.round(zoom?.[0] ?? 0)}
-                      className="absolute inset-y-0 z-10 cursor-grab rounded-sm border-2 border-primary bg-primary/15 active:cursor-grabbing"
+                      className="pointer-events-none absolute inset-y-0 z-30 rounded-sm border-2 border-primary bg-primary/15"
                       style={{ left: `${overviewStart}%`, width: `${overviewWidth}%` }}
                       onPointerDown={(e) => startOverviewDrag(e, "move")}
                       onPointerMove={moveOverviewDrag}
@@ -613,12 +608,16 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       onPointerCancel={endOverviewDrag}
                     >
                       <div
-                        className="absolute inset-y-0 left-0 z-30 w-3 -translate-x-1/2 cursor-ew-resize border-l-2 border-primary"
+                        className="pointer-events-auto absolute inset-x-3 top-0 h-3 cursor-grab bg-primary/30 active:cursor-grabbing"
+                        onPointerDown={(e) => startOverviewDrag(e, "move")}
+                      />
+                      <div
+                        className="pointer-events-auto absolute inset-y-0 left-0 z-30 w-3 -translate-x-1/2 cursor-ew-resize border-l-2 border-primary"
                         aria-label="Redimensionner le début du zoom"
                         onPointerDown={(e) => startOverviewDrag(e, "start")}
                       />
                       <div
-                        className="absolute inset-y-0 right-0 z-30 w-3 translate-x-1/2 cursor-ew-resize border-r-2 border-primary"
+                        className="pointer-events-auto absolute inset-y-0 right-0 z-30 w-3 translate-x-1/2 cursor-ew-resize border-r-2 border-primary"
                         aria-label="Redimensionner la fin du zoom"
                         onPointerDown={(e) => startOverviewDrag(e, "end")}
                       />
