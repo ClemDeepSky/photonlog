@@ -10,7 +10,7 @@ import {
   supportsDirectoryPicker,
   type LocalFileEntry,
 } from "@/lib/localFiles";
-import { saveProjectDirHandle, getProjectDirHandle, ensureReadPermission } from "@/lib/dirHandleStore";
+import { saveProjectDirHandle, getProjectDirHandle, ensureReadPermission, pickerId } from "@/lib/dirHandleStore";
 import { cacheProjectFiles } from "@/lib/localFileCache";
 
 import { isAstroFile, parseFrameName } from "@/lib/frameNames";
@@ -187,7 +187,7 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
       // 2) Sinon on demande le dossier, en rouvrant au même endroit que la
       // dernière fois et avec l'accès écriture (nécessaire pour supprimer).
       setBusy(true);
-      const picked = await pickLocalDirectory({ id: `photonlog-${projectId}`, mode: "readwrite" });
+      const picked = await pickLocalDirectory({ id: pickerId(projectId), mode: "readwrite" });
       setBusy(false);
       if (picked) {
         await saveProjectDirHandle(projectId, picked.handle);
