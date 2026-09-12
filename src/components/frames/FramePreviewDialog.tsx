@@ -105,8 +105,10 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     if (!preview) return;
     const canvas = stretchToCanvas(preview, level);
     setSrc(canvas.toDataURL("image/png"));
+    fullCanvasRef.current = stretchToCanvas(preview, level, Math.max(preview.width, preview.height));
   };
 
+  // Loupe : dessine la zone sous le curseur à 200 % des pixels réels du fichier.
   const onImageMove = (e: React.MouseEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
     const rect = img.getBoundingClientRect();
@@ -116,16 +118,30 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
       setLens(null);
       return;
     }
-    const fx = px / rect.width;
-    const fy = py / rect.height;
-    setLens({
-      x: e.clientX,
-      y: e.clientY,
-      bx: LENS_ZOOM * rect.width * fx - LENS_SIZE / 2,
-      by: LENS_ZOOM * rect.height * fy - LENS_SIZE / 2,
-      iw: rect.width,
-      ih: rect.height,
-    });
+    const source = fullCanvasRef.current ?? fullImageRef.current;
+    const lensCanvas = lensCanvasRef.current;
+    if (!source || !lensCanvas) {
+      setLens(null);
+      return;
+    }
+    const natW = fullCanvasRef.current ? fullCanvasRef.current.width : (fullImageRef.current?.naturalWidth ?? 0);
+    const natH = fullCanvasRef.current ? fullCanvasRef.current.height : (fullImageRef.current?.naturalHeight ?? 0);
+    if (!natW || !natH) {
+      setLens(null);
+      return;
+    }
+    const natX = (px / rect.width) * natW;
+    const natY = (py / rect.height) * natH;
+    const sw = LENS_SIZE / LENS_ZOOM;
+    const sx = natX - sw / 2;
+    const sy = natY - sw / 2;
+    const ctx = lensCanvas.getContext("2d");
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, LENS_SIZE, LENS_SIZE);
+    ctx.drawImage(source, sx, sy, sw, sw, 0, 0, LENS_SIZE, LENS_SIZE);
+    setLens({ x: e.clientX, y: e.clientY });
   };
 
   const copyPath = async () => {
