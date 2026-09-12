@@ -42,58 +42,40 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
   };
 
   const process = async (entries: LocalFileEntry[]) => {
-    // Fichiers déjà indexés : on ne les recompte jamais.
-    const { data: known, error: knownError } = await supabase
-      .from("project_frames")
-      .select("id, relative_path, captured_at, fwhm")
-      .eq("project_id", projectId);
-    if (knownError) throw knownError;
-    const knownByPath = new Map((known || []).map((k) => [k.relative_path, k]));
+    // Réindexation complète : le dossier est la référence. Les images déjà
+    // indexées sont mises à jour (jamais dupliquées), celles qui ont disparu
+    // du dossier sont retirées de l'index.
+    const known: { id: string; relative_path: string }[] = [];
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from("project_frames")
+        .select("id, relative_path")
+        .eq("project_id", projectId)
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      known.push(...(data || []));
+      if (!data || data.length < PAGE) break;
+    }
+    const knownPaths = new Set(known.map((k) => k.relative_path));
 
     const rows: any[] = [];
+    const currentPaths = new Set<string>();
     let seen = 0;
     let skippedType = 0;
     let matched = 0;
-    let reparsed = 0;
 
     for (const entry of entries) {
       if (!isAstroFile(entry.name)) continue;
       seen++;
-      const existing = knownByPath.get(entry.relativePath);
-      if (existing) {
-        // Le modèle de nommage a peut-être été renseigné après l'indexation :
-        // on complète les mesures manquantes.
-        if (existing.captured_at == null || existing.fwhm == null) {
-          const p = parseFrameName(entry.relativePath, pattern);
-          if (p.matchedPattern) {
-            const { error } = await supabase
-              .from("project_frames")
-              .update({
-                filter: p.filter,
-                pane_number: p.paneNumber,
-                captured_at: p.capturedAt,
-                exposure_duration: p.exposureDuration,
-                fwhm: p.fwhm,
-                eccentricity: p.eccentricity,
-                hfr: p.hfr,
-                star_count: p.starCount,
-                sensor_temp: p.sensorTemp,
-                frame_nr: p.frameNr,
-              })
-              .eq("id", existing.id);
-            if (error) throw error;
-            reparsed++;
-          }
-        }
-        continue;
-      }
-
+      if (currentPaths.has(entry.relativePath)) continue; // même chemin listé deux fois
       const parsed = parseFrameName(entry.relativePath, pattern);
       if (parsed.matchedPattern) matched++;
       if (parsed.imageType && parsed.imageType !== "LIGHT") {
         skippedType++;
         continue;
       }
+      currentPaths.add(entry.relativePath);
 
       rows.push({
         project_id: projectId,
@@ -113,8 +95,22 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
       });
     }
 
+    const added = rows.filter((r) => !knownPaths.has(r.relative_path)).length;
+
     for (let i = 0; i < rows.length; i += CHUNK) {
-      const { error } = await supabase.from("project_frames").insert(rows.slice(i, i + CHUNK));
+      const { error } = await supabase
+        .from("project_frames")
+        .upsert(rows.slice(i, i + CHUNK), { onConflict: "project_id,relative_path" });
+      if (error) throw error;
+    }
+
+    // Suppression des images absentes du dossier.
+    const goneIds = known.filter((k) => !currentPaths.has(k.relative_path)).map((k) => k.id);
+    for (let i = 0; i < goneIds.length; i += CHUNK) {
+      const { error } = await supabase
+        .from("project_frames")
+        .delete()
+        .in("id", goneIds.slice(i, i + CHUNK));
       if (error) throw error;
     }
 
