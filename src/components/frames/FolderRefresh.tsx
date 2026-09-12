@@ -171,6 +171,13 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
   };
 
   const handleRefresh = async () => {
+    // Dans l'aperçu (iframe), le sélecteur de dossier natif est bloqué :
+    // on ouvre directement le champ de dossier pendant le clic de l'utilisateur.
+    const inIframe = typeof window !== "undefined" && window.self !== window.top;
+    if (inIframe || !supportsDirectoryPicker()) {
+      inputRef.current?.click();
+      return;
+    }
     setBusy(true);
     try {
       const entries = await listLocalFiles();
