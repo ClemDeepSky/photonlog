@@ -114,15 +114,9 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
       if (error) throw error;
     }
 
-    // Recomptage automatique des acquisitions à partir de l'index complet.
-    const { data: allFrames, error: framesError } = await supabase
-      .from("project_frames")
-      .select("filter, pane_number")
-      .eq("project_id", projectId);
-    if (framesError) throw framesError;
-
+    // Recomptage automatique des acquisitions à partir du contenu réel du dossier.
     const counts = new Map<string, number>();
-    for (const f of allFrames || []) {
+    for (const f of rows) {
       if (!f.filter) continue;
       const key = `${isMosaic ? f.pane_number ?? "none" : "all"}|${f.filter}`;
       counts.set(key, (counts.get(key) || 0) + 1);
