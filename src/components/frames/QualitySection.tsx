@@ -12,6 +12,7 @@ import {
   getFileFromHandle,
   openLocalFile,
 } from "@/lib/dirHandleStore";
+import { getCachedProjectFile } from "@/lib/localFileCache";
 import {
   ScatterChart,
   Scatter,
@@ -184,12 +185,19 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   // Ouverture d'une brute depuis le dossier local mémorisé.
   const openFrame = async (relativePath?: string, fileName?: string) => {
     if (!relativePath) return;
+    // 1) Fichiers gardés en mémoire lors du dernier rafraîchissement.
+    const cached = getCachedProjectFile(projectId, relativePath, fileName);
+    if (cached) {
+      await openLocalFile(cached);
+      return;
+    }
+    // 2) Accès au dossier mémorisé (Chrome/Edge, hors aperçu intégré).
     const handle = await getProjectDirHandle(projectId);
     if (!handle) {
       toast({
         title: "Dossier non mémorisé",
         description:
-          "Cliquez d'abord sur « Rafraîchir le dossier » et choisissez le dossier du projet : l'accès sera mémorisé pour ouvrir les fichiers.",
+          "Cliquez d'abord sur « Rafraîchir le dossier » et choisissez le dossier du projet : les fichiers pourront ensuite être ouverts.",
       });
       return;
     }
