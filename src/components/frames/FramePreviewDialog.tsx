@@ -100,15 +100,6 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file, open]);
 
-  // Réétirement à la demande pour les FITS.
-  const changeStretch = (level: number) => {
-    setStretch(level);
-    const preview = fitsRef.current;
-    if (!preview) return;
-    const canvas = stretchToCanvas(preview, level);
-    setSrc(canvas.toDataURL("image/png"));
-    fullCanvasRef.current = stretchToCanvas(preview, level, Math.max(preview.width, preview.height));
-  };
 
   // Loupe : dessine la zone sous le curseur à 200 % des pixels réels du fichier.
   const onImageMove = (e: React.MouseEvent<HTMLImageElement>) => {
