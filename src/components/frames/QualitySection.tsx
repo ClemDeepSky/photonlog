@@ -262,46 +262,89 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
             </div>
 
             {hasMetricData ? (
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-                    <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                    <XAxis
-                      type="number"
-                      dataKey="x"
-                      domain={["dataMin", "dataMax"]}
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      tickFormatter={(v) => new Date(v).toLocaleDateString("fr-FR")}
-                    />
-                    <YAxis
-                      type="number"
-                      dataKey="y"
-                      name={metricLabel}
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      domain={["auto", "auto"]}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: 8,
-                        fontSize: 12,
-                      }}
-                      formatter={(value: any, name: any) => [value, name === "y" ? metricLabel : name]}
-                      labelFormatter={(v) => new Date(Number(v)).toLocaleString("fr-FR")}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    {series.map((s) => (
-                      <Scatter
-                        key={s.filter}
-                        name={s.filter}
-                        data={s.points}
-                        line={{ strokeWidth: 1 }}
-                        fill={filterColors[s.filter] || "hsl(var(--primary))"}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Molette de la souris : zoom horizontal
+                    {zoom ? ` — ${Math.round(zoom[1] - zoom[0] + 1)} images affichées sur ${totalPoints}` : ""}
+                  </p>
+                  {zoom && (
+                    <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => setZoom(null)}>
+                      Réinitialiser le zoom
+                    </Button>
+                  )}
+                </div>
+                <div ref={chartWrapRef} className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                      <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                      <XAxis
+                        type="number"
+                        dataKey="x"
+                        domain={zoom ? [zoom[0], zoom[1]] : [0, Math.max(0, totalPoints - 1)]}
+                        allowDataOverflow
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        tickFormatter={() => ""}
+                        label={{ value: "Images (ordre chronologique)", position: "insideBottom", offset: -4, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                       />
-                    ))}
-                  </ScatterChart>
-                </ResponsiveContainer>
+                      <YAxis
+                        type="number"
+                        dataKey="y"
+                        name={metricLabel}
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        domain={["auto", "auto"]}
+                      />
+                      <Tooltip
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const p = payload[0].payload;
+                          const row = (label: string, v: any) =>
+                            v != null ? (
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground">{label}</span>
+                                <span className="font-medium">{v}</span>
+                              </div>
+                            ) : null;
+                          return (
+                            <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md max-w-xs space-y-0.5">
+                              {p.fileName && (
+                                <div className="font-medium text-primary break-all mb-1">
+                                  {p.relativePath ? (
+                                    <a
+                                      href={`file://${p.relativePath}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title={p.relativePath}
+                                      className="hover:underline"
+                                    >
+                                      {p.fileName}
+                                    </a>
+                                  ) : (
+                                    p.fileName
+                                  )}
+                                </div>
+                              )}
+                              {row("FWHM", p.fwhm)}
+                              {row("HFR", p.hfr)}
+                              {row("Excentricité", p.eccentricity)}
+                              {row("Étoiles", p.starCount)}
+                            </div>
+                          );
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      {series.map((s) => (
+                        <Scatter
+                          key={s.filter}
+                          name={s.filter}
+                          data={s.points}
+                          line={{ strokeWidth: 1 }}
+                          fill={filterColors[s.filter] || "hsl(var(--primary))"}
+                        />
+                      ))}
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
