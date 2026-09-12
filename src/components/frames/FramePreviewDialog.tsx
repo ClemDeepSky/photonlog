@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Copy, Download, Loader2 } from "lucide-react";
+import { Copy, Download, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { decodeFitsToCanvas, isFitsName } from "@/lib/fitsPreview";
 
@@ -10,13 +20,18 @@ interface FramePreviewDialogProps {
   relativePath: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Suppression définitive du fichier sur le disque (Chrome/Edge uniquement). */
+  onDelete?: () => Promise<void>;
 }
 
-const FramePreviewDialog = ({ file, relativePath, open, onOpenChange }: FramePreviewDialogProps) => {
+const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }: FramePreviewDialogProps) => {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dims, setDims] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const canDelete = !!onDelete && typeof (window as any).showDirectoryPicker === "function";
 
   useEffect(() => {
     let revoke: string | null = null;
@@ -91,6 +106,22 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange }: FramePre
               <Download className="mr-1 h-3.5 w-3.5" />
               Télécharger
             </Button>
+            {canDelete && (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 px-2 text-xs"
+                onClick={() => setConfirmOpen(true)}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                )}
+                Supprimer le fichier
+              </Button>
+            )}
             {dims && <span className="text-xs text-muted-foreground">{dims}</span>}
           </div>
 
@@ -108,6 +139,37 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange }: FramePre
             ) : null}
           </div>
         </div>
+
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Supprimer définitivement ce fichier ?</AlertDialogTitle>
+              <AlertDialogDescription className="break-all">
+                {file?.name} sera supprimé de votre disque (sans passage par la corbeille) et retiré de
+                l'index Photonlog. Cette action est irréversible.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!onDelete) return;
+                  setDeleting(true);
+                  try {
+                    await onDelete();
+                    setConfirmOpen(false);
+                    onOpenChange(false);
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+              >
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );

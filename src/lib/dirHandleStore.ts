@@ -67,6 +67,44 @@ export async function ensureReadPermission(handle: any, request = true): Promise
   return (await handle.requestPermission(opts)) === "granted";
 }
 
+/**
+ * Vérifie (et redemande si besoin) l'autorisation d'écriture sur le dossier,
+ * nécessaire pour supprimer un fichier du disque.
+ */
+export async function ensureWritePermission(handle: any, request = true): Promise<boolean> {
+  if (!handle?.queryPermission) return false;
+  const opts = { mode: "readwrite" as const };
+  if ((await handle.queryPermission(opts)) === "granted") return true;
+  if (!request) return false;
+  return (await handle.requestPermission(opts)) === "granted";
+}
+
+/** Supprime définitivement un fichier du dossier mémorisé (pas de corbeille). */
+export async function deleteFileFromHandle(handle: any, relativePath: string): Promise<boolean> {
+  const parts = relativePath.split("/").filter(Boolean);
+  if (parts.length === 0) return false;
+  const tryRemove = async (segments: string[]) => {
+    let dir = handle;
+    for (const seg of segments.slice(0, -1)) {
+      dir = await dir.getDirectoryHandle(seg);
+    }
+    await dir.removeEntry(segments[segments.length - 1]);
+    return true;
+  };
+  try {
+    return await tryRemove(parts);
+  } catch {
+    if (parts.length > 1 && parts[0] === handle.name) {
+      try {
+        return await tryRemove(parts.slice(1));
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+}
+
 /** Retrouve un fichier dans le dossier mémorisé à partir de son chemin relatif. */
 export async function getFileFromHandle(handle: any, relativePath: string): Promise<File | null> {
   const parts = relativePath.split("/").filter(Boolean);

@@ -3,12 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LineChart } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   getProjectDirHandle,
   ensureReadPermission,
+  ensureWritePermission,
+  deleteFileFromHandle,
   getFileFromHandle,
 } from "@/lib/dirHandleStore";
 import { getCachedProjectFile } from "@/lib/localFileCache";
@@ -66,6 +68,7 @@ const nightOf = (iso: string) => {
 };
 
 const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: boolean }) => {
+  const queryClient = useQueryClient();
   const [metric, setMetric] = useState<MetricKey>("fwhm");
   const [offFilters, setOffFilters] = useState<Set<string>>(new Set());
   const [offPanes, setOffPanes] = useState<Set<string>>(new Set());
@@ -223,6 +226,64 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     }
     setPreview({ file, path: relativePath });
   };
+
+  // Suppression définitive du fichier sur le disque + désindexation.
+  const deleteFrame = async (relativePath: string) => {
+    const handle = await getProjectDirHandle(projectId);
+    if (!handle) {
+      toast({
+        title: "Dossier non mémorisé",
+        description:
+          "Cliquez d'abord sur « Rafraîchir le dossier » et choisissez le dossier du projet pour autoriser la suppression.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const ok = await ensureWritePermission(handle);
+    if (!ok) {
+      toast({
+        title: "Autorisation refusée",
+        description: "La modification du dossier est nécessaire pour supprimer le fichier.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const removed = await deleteFileFromHandle(handle, relativePath);
+    if (!removed) {
+      toast({
+        title: "Suppression impossible",
+        description: "Le fichier n'a pas pu être supprimé (introuvable ou verrouillé).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Désindexation + recomptage de l'acquisition concernée.
+    const { data: rows } = await supabase
+      .from("project_frames")
+      .select("id, acquisition_id")
+      .eq("project_id", projectId)
+      .eq("relative_path", relativePath);
+    const acquisitionIds = Array.from(
+      new Set((rows || []).map((r: any) => r.acquisition_id).filter(Boolean))
+    ) as string[];
+    await supabase.from("project_frames").delete().eq("project_id", projectId).eq("relative_path", relativePath);
+
+    for (const acqId of acquisitionIds) {
+      const { count } = await supabase
+        .from("project_frames")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", projectId)
+        .eq("acquisition_id", acqId);
+      await supabase.from("project_acquisitions").update({ acquired: count || 0 }).eq("id", acqId);
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["project-frames", projectId] });
+    queryClient.invalidateQueries({ queryKey: ["project-acquisitions"] });
+    queryClient.invalidateQueries({ queryKey: ["acquisitions"] });
+    toast({ title: "Fichier supprimé", description: relativePath });
+  };
+
 
   const hasMetricData = series.some((s) => s.points.length > 0);
   const metricLabel = METRICS.find((m) => m.key === metric)!.label;
@@ -402,6 +463,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
         relativePath={preview?.path || ""}
         open={!!preview}
         onOpenChange={(o) => !o && setPreview(null)}
+        onDelete={preview ? () => deleteFrame(preview.path) : undefined}
       />
     </Card>
   );
