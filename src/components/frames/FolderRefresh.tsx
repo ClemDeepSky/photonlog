@@ -198,6 +198,9 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const entries = entriesFromInputFileList(files);
+    // L'accès au dossier n'est pas mémorisable ici : on garde les fichiers en
+    // mémoire pour pouvoir ouvrir une brute au clic pendant la session.
+    cacheProjectFiles(projectId, Array.from(files));
     if (inputRef.current) inputRef.current.value = "";
     await run(entries);
   };
