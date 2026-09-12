@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 interface ScanResult {
   filter: string;
   count: number;
+  files: string[];
 }
 
 interface FolderScannerProps {
