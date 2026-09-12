@@ -264,7 +264,7 @@ const Frames = () => {
           // Acquisition tracking view
           <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={() => setSelectedProjectId(null)}>
                   ← Retour
@@ -277,7 +277,16 @@ const Frames = () => {
                   <p className="text-xs text-muted-foreground">{selectedProject?.teams?.name || "Personnel"}</p>
                 </div>
               </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">Afficher les conservés</span>
+                <Switch
+                  checked={showKept}
+                  onCheckedChange={setShowKept}
+                  aria-label="Afficher les conservés"
+                />
+              </div>
             </div>
+
 
             {/* Global stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
