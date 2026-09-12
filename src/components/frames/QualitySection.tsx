@@ -65,7 +65,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   );
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [offPanes, setOffPanes] = useState<Set<string>>(new Set());
-  const [offNights, setOffNights] = useState<Set<string>>(new Set());
+  
 
   const { data: frames, isLoading } = useQuery({
     queryKey: ["project-frames", projectId],
@@ -135,7 +135,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       (a, b) => new Date(a.f.captured_at).getTime() - new Date(b.f.captured_at).getTime()
     );
     indexed.forEach((item, i) => (item.idx = i));
-    const kept = indexed.filter(({ f }) => !offNights.has(nightOf(f.captured_at)));
+    const kept = indexed;
 
     const metricSeries = METRICS.filter((item) => activeMetrics.has(item.key)).map((item) => {
       const values = kept
@@ -183,11 +183,11 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       totalPoints: indexed.length,
       nightRanges: Array.from(ranges.values()),
     };
-  }, [withDates, selectedFilter, activeMetrics, offPanes, offNights]);
+  }, [withDates, selectedFilter, activeMetrics, offPanes]);
 
   // Zoom horizontal à la molette : fenêtre visible [zMin, zMax] sur les indices.
   const [zoom, setZoom] = useState<[number, number] | null>(null);
-  useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, offNights, totalPoints]);
+  useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, totalPoints]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
@@ -569,22 +569,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                     {nightRanges.map((range, index) => {
                       const left = totalPoints < 2 ? 0 : (range.start / overviewDenominator) * 100;
                       const width = totalPoints < 2 ? 100 : Math.max(0.5, (range.count / overviewDenominator) * 100);
-                      const off = offNights.has(range.night);
                       return (
                         <button
                           key={range.night}
                           type="button"
-                          onClick={() => toggle(offNights, range.night, setOffNights)}
+                          onClick={() => setZoom([range.start, Math.max(range.start, range.end)])}
                           className={
-                            "absolute inset-y-0 border-r border-border/60 text-[9px] leading-none text-foreground transition-opacity hover:opacity-100 " +
-                            (index % 2 === 0 ? "bg-primary/10 " : "bg-accent/10 ") +
-                            (off ? "opacity-30 line-through" : "opacity-100")
+                            "absolute inset-y-0 z-10 border-r border-border/60 text-[9px] leading-none text-foreground transition-opacity hover:opacity-80 " +
+                            (index % 2 === 0 ? "bg-primary/10" : "bg-accent/10")
                           }
                           style={{ left: `${left}%`, width: `${width}%` }}
-                          title={`${new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR")} · ${range.count} image${range.count > 1 ? "s" : ""}`}
+                          title={`${new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR")} · ${range.count} image${range.count > 1 ? "s" : ""} — cliquez pour zoomer sur cette nuit`}
                         >
                           <span className="flex h-full w-full items-center justify-center px-1">
-                            {new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
+                            {new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                           </span>
                         </button>
                       );
