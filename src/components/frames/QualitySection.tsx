@@ -201,6 +201,16 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     return [s, e];
   };
 
+  const frameNight = (start: number, end: number, n: number): [number, number] | null => {
+    if (n < 2) return null;
+    const lo = -0.5;
+    const hi = n - 0.5;
+    const s = Math.max(lo, start - 0.5);
+    const e = Math.min(hi, end + 0.5);
+    if (s <= lo && e >= hi) return null;
+    return [s, e];
+  };
+
   const [zoom, setZoom] = useState<[number, number] | null>(null);
   useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, totalPoints]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
@@ -394,6 +404,9 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   const hasMetricData = series.some((s) => s.points.length > 0);
   const overviewDenominator = Math.max(1, totalPoints);
   const zoomWindow = zoom || fullWindow(Math.max(1, totalPoints));
+  const visibleNightRanges = nightRanges.filter(
+    (range) => range.end + 0.5 > zoomWindow[0] && range.start - 0.5 < zoomWindow[1]
+  );
   const overviewStart = Math.max(0, ((zoomWindow[0] + 0.5) / overviewDenominator) * 100);
   const overviewEnd = Math.min(100, ((zoomWindow[1] + 0.5) / overviewDenominator) * 100);
   const overviewWidth = totalPoints < 2 ? 100 : Math.max(1.5, overviewEnd - overviewStart);
@@ -493,16 +506,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                   <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart margin={{ top: 8, right: 16, bottom: 12, left: 0 }}>
                       <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                      {nightRanges.map((range, index) => (
+                       {visibleNightRanges.map((range) => {
+                         const index = nightRanges.findIndex((item) => item.night === range.night);
+                         return (
                         <ReferenceArea
                           key={range.night}
-                          x1={range.start - 0.5}
-                          x2={range.end + 0.5}
+                           x1={Math.max(range.start - 0.5, zoomWindow[0])}
+                           x2={Math.min(range.end + 0.5, zoomWindow[1])}
                           fill={index % 2 === 0 ? "hsl(var(--primary))" : "hsl(var(--accent))"}
                           fillOpacity={0.055}
                           strokeOpacity={0}
+                           ifOverflow="hidden"
                         />
-                      ))}
+                         );
+                       })}
                       <XAxis
                         type="number"
                         dataKey="x"
@@ -587,7 +604,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                         <button
                           key={range.night}
                           type="button"
-                          onClick={() => setZoom(clampZoom(range.start - 0.5, range.end + 0.5, totalPoints))}
+                          onClick={() => setZoom(frameNight(range.start, range.end, totalPoints))}
                           className={
                             "absolute inset-y-0 z-10 border-r border-border/60 text-[9px] leading-none text-foreground transition-opacity hover:opacity-80 " +
                             (index % 2 === 0 ? "bg-primary/10" : "bg-accent/10")
