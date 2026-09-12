@@ -208,22 +208,6 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
                 Supprimer le fichier
               </Button>
             )}
-            {isFits && (
-              <div className="ml-2 flex items-center gap-1">
-                <span className="text-xs text-muted-foreground mr-1">Étirement :</span>
-                {STRETCH_LEVELS.map((l) => (
-                  <Button
-                    key={l.id}
-                    size="sm"
-                    variant={stretch === l.id ? "default" : "outline"}
-                    className="h-7 px-2 text-xs"
-                    onClick={() => changeStretch(l.id)}
-                  >
-                    {l.label}
-                  </Button>
-                ))}
-              </div>
-            )}
             <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
               <ZoomIn className="h-3.5 w-3.5" />
               Survolez l'image pour la loupe ×2
