@@ -63,7 +63,7 @@ export async function pickLocalDirectory(): Promise<{ handle: any; entries: Loca
   };
 
   await walk(root, "");
-  return entries;
+  return { handle: root, entries };
 }
 
 /** true si le navigateur supporte la File System Access API (Chrome, Edge…). */
