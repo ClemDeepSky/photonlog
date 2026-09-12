@@ -148,7 +148,7 @@ export function stretchToCanvas(preview: FitsPreview, level: number, maxSide = 1
       let v = (px[srcRow + sx] - lo) / range;
       v = v <= 0 ? 0 : v >= 1 ? 1 : v;
       // Léger gamma pour révéler les zones faibles.
-      const g = Math.round(255 * Math.pow(v, 0.45));
+      const g = Math.round(255 * Math.pow(v, spec.gamma));
       const o = (y * dw + x) * 4;
       img.data[o] = g;
       img.data[o + 1] = g;
