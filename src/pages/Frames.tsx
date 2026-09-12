@@ -429,9 +429,7 @@ const Frames = () => {
                       <div className="space-y-2">
                         {acqs.map((acq) => {
                           const acquiredPercent = acq.quantity > 0 ? Math.min(100, Math.round((acq.acquired / acq.quantity) * 100)) : 0;
-                          const keptPercent = acq.quantity > 0 ? Math.min(100, Math.round((acq.kept / acq.quantity) * 100)) : 0;
                           const acquiredSurplus = Math.max(0, acq.acquired - acq.quantity);
-                          const keptOverAcquired = acq.kept > acq.acquired;
                           return (
                             <div
                               key={acq.id}
