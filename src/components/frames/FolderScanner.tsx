@@ -205,29 +205,6 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     }
   };
 
-      if (scanResults.length === 0) {
-        toast({
-          title: "Aucun filtre détecté",
-          description: `${totalFiles} fichier(s) trouvé(s) mais aucun filtre reconnu. Vérifiez la convention de nommage (ex: M42_Panneau1_Ha_300s_001.fit ou sous-dossiers par panneau/filtre).`,
-          variant: "destructive",
-        });
-      } else {
-        const unassigned = hasPanes ? scanResults.filter((r) => r.paneNumber == null).length : 0;
-        toast({
-          title: "Scan terminé",
-          description: `${matchedFiles} fichier(s) détecté(s) sur ${totalFiles}, réparti(s) en ${scanResults.length} groupe(s)${
-            unassigned ? ` — ${unassigned} groupe(s) sans panneau identifié` : ""
-          }.`,
-        });
-      }
-    } catch (err: any) {
-      toast({ title: "Erreur de scan", description: err.message, variant: "destructive" });
-    } finally {
-      setScanning(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  };
-
   const applyResults = () => {
     if (!results) return;
 
@@ -263,7 +240,7 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
         <Button
           variant="outline"
           size="sm"
-          onClick={() => inputRef.current?.click()}
+          onClick={handlePickDirectory}
           disabled={scanning || isPending}
         >
           {scanning ? (
