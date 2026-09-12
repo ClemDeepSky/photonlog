@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3, AlertTriangle } from "lucide-react";
+import FolderRefresh from "@/components/frames/FolderRefresh";
+import QualitySection from "@/components/frames/QualitySection";
 
 
 import { supabase } from "@/integrations/supabase/client";
