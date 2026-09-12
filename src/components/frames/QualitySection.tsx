@@ -12,6 +12,7 @@ import {
   ensureWritePermission,
   deleteFileFromHandle,
   getFileFromHandle,
+  requestProjectDirHandle,
 } from "@/lib/dirHandleStore";
 import { getCachedProjectFile } from "@/lib/localFileCache";
 import FramePreviewDialog from "@/components/frames/FramePreviewDialog";
