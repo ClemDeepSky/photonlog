@@ -2,6 +2,12 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FolderSearch, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  listLocalFiles,
+  supportsDirectoryPicker,
+  entriesFromInputFileList,
+  type LocalFileEntry,
+} from "@/lib/localFiles";
 
 interface ScanResult {
   filter: string;
@@ -120,6 +126,68 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     return sameFilter.filter((a) => a.paneNumber === r.paneNumber);
   };
 
+  const analyzeEntries = (entries: LocalFileEntry[]) => {
+    const counts: Record<string, { filter: string; paneNumber: number | null; count: number; files: string[] }> = {};
+    let totalFiles = 0;
+    let matchedFiles = 0;
+
+    for (const entry of entries) {
+      if (!isAstroFile(entry.name)) continue;
+      totalFiles++;
+
+      const filter = detectFilterFromPath(entry.relativePath);
+      if (!filter) continue;
+      const paneNumber = hasPanes ? detectPaneFromPath(entry.relativePath) : null;
+      const key = `${paneNumber ?? "none"}|${filter}`;
+      if (!counts[key]) counts[key] = { filter, paneNumber, count: 0, files: [] };
+      counts[key].count++;
+      counts[key].files.push(entry.relativePath);
+      matchedFiles++;
+    }
+
+    const scanResults = Object.values(counts).sort(
+      (a, b) => (a.paneNumber ?? 0) - (b.paneNumber ?? 0) || a.filter.localeCompare(b.filter)
+    );
+
+    setResults(scanResults);
+
+    if (scanResults.length === 0) {
+      toast({
+        title: "Aucun filtre détecté",
+        description: `${totalFiles} fichier(s) trouvé(s) mais aucun filtre reconnu. Vérifiez la convention de nommage (ex: M42_Panneau1_Ha_300s_001.fit ou sous-dossiers par panneau/filtre).`,
+        variant: "destructive",
+      });
+    } else {
+      const unassigned = hasPanes ? scanResults.filter((r) => r.paneNumber == null).length : 0;
+      toast({
+        title: "Scan terminé",
+        description: `${matchedFiles} fichier(s) détecté(s) sur ${totalFiles}, réparti(s) en ${scanResults.length} groupe(s)${
+          unassigned ? ` — ${unassigned} groupe(s) sans panneau identifié` : ""
+        }.`,
+      });
+    }
+  };
+
+  // Méthode principale : File System Access API — lit uniquement les NOMS
+  // des fichiers via des handles, sans jamais charger leur contenu.
+  const handlePickDirectory = async () => {
+    setScanning(true);
+    setResults(null);
+    try {
+      const entries = await listLocalFiles();
+      if (entries) analyzeEntries(entries); // null = annulé par l'utilisateur
+    } catch (err: any) {
+      if (err?.message?.includes("non supporté")) {
+        inputRef.current?.click(); // fallback webkitdirectory
+        return;
+      }
+      toast({ title: "Erreur de scan", description: err.message, variant: "destructive" });
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  // Fallback : input webkitdirectory (Firefox, Safari) — noms uniquement.
   const handleScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -128,31 +196,14 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     setResults(null);
 
     try {
-      const counts: Record<string, { filter: string; paneNumber: number | null; count: number; files: string[] }> = {};
-      let totalFiles = 0;
-      let matchedFiles = 0;
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (!isAstroFile(file.name)) continue;
-        totalFiles++;
-
-        const relativePath = (file as any).webkitRelativePath || file.name;
-        const filter = detectFilterFromPath(relativePath);
-        if (!filter) continue;
-        const paneNumber = hasPanes ? detectPaneFromPath(relativePath) : null;
-        const key = `${paneNumber ?? "none"}|${filter}`;
-        if (!counts[key]) counts[key] = { filter, paneNumber, count: 0, files: [] };
-        counts[key].count++;
-        counts[key].files.push(relativePath);
-        matchedFiles++;
-      }
-
-      const scanResults = Object.values(counts).sort(
-        (a, b) => (a.paneNumber ?? 0) - (b.paneNumber ?? 0) || a.filter.localeCompare(b.filter)
-      );
-
-      setResults(scanResults);
+      analyzeEntries(entriesFromInputFileList(files));
+    } catch (err: any) {
+      toast({ title: "Erreur de scan", description: err.message, variant: "destructive" });
+    } finally {
+      setScanning(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
 
       if (scanResults.length === 0) {
         toast({
