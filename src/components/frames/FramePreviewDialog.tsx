@@ -250,9 +250,27 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
                 alt={file?.name || "Aperçu de la brute"}
                 className="max-h-[72vh] w-auto cursor-none"
                 onMouseMove={onImageMove}
-                onMouseLeave={() => setLens(null)}
+                onMouseLeave={() => {
+                  setCross(null);
+                  setLensPos(null);
+                }}
               />
             ) : null}
+
+            {cross && src && (
+              <div
+                className="pointer-events-none absolute z-40"
+                style={{
+                  left: cross.px,
+                  top: cross.py,
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                <div className="absolute left-1/2 top-1/2 h-4 w-[1px] -translate-x-1/2 -translate-y-1/2 bg-primary/90" />
+                <div className="absolute left-1/2 top-1/2 h-[1px] w-4 -translate-x-1/2 -translate-y-1/2 bg-primary/90" />
+                <div className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/90 bg-transparent" />
+              </div>
+            )}
           </div>
         </div>
 
@@ -262,9 +280,9 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
           height={LENS_SIZE}
           className="pointer-events-none fixed z-50 rounded-full border-2 border-primary/70 shadow-xl"
           style={{
-            display: lens && src ? "block" : "none",
-            left: (lens?.x ?? 0) - LENS_SIZE / 2,
-            top: (lens?.y ?? 0) - LENS_SIZE / 2,
+            display: lensPos && src ? "block" : "none",
+            left: (lensPos?.x ?? 0) - LENS_SIZE / 2,
+            top: (lensPos?.y ?? 0) - LENS_SIZE / 2,
             width: LENS_SIZE,
             height: LENS_SIZE,
           }}
