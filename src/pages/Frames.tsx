@@ -384,6 +384,11 @@ const Frames = () => {
 
             </div>
 
+            {selectedProject && (
+              <QualitySection projectId={selectedProject.id} isMosaic={selectedProject.is_mosaic} />
+            )}
+
+
             {/* Acquisitions by pane */}
             {sortedPaneEntries.map(([paneKey, acqs]) => {
               const pane = panes?.find((p) => p.id === paneKey);
