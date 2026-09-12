@@ -42,6 +42,7 @@ interface Project {
   is_mosaic: boolean;
   team_id: string | null;
   status: string;
+  filename_pattern: string | null;
   teams: { name: string } | null;
 }
 
