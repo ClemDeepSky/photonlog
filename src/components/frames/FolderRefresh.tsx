@@ -134,12 +134,10 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
       updated++;
     }
 
-    const unmatched = rows.filter((r) => !r.acquisition_id).length;
     toast({
-      title: rows.length || reparsed ? `${rows.length} nouvelle(s) image(s)` : "Aucune nouvelle image",
+      title: `${rows.length} image(s) indexée(s)`,
       description:
-        `${seen} fichier(s) dans le dossier, ${rows.length} ajouté(s) à l'index, ${updated} ligne(s) d'acquisition mise(s) à jour.` +
-        (reparsed ? ` ${reparsed} image(s) déjà indexée(s) complétée(s) avec les mesures.` : "") +
+        `${seen} fichier(s) dans le dossier, ${added} nouvelle(s), ${goneIds.length} retirée(s) car absente(s), ${updated} ligne(s) d'acquisition mise(s) à jour.` +
         (pattern
           ? matched
             ? ` Modèle de nommage reconnu sur ${matched} fichier(s).`
