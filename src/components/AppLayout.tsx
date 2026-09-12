@@ -55,6 +55,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </nav>
         <div className="p-4 border-t border-border/20">
           <p className="text-xs text-muted-foreground mb-3 truncate">{user?.email}</p>
+          <Link
+            to="/confidentialite"
+            className="block text-xs text-muted-foreground hover:text-foreground mb-2"
+          >
+            Confidentialité & cookies
+          </Link>
           <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" />
             Déconnexion
