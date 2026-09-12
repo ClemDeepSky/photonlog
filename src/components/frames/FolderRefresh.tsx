@@ -43,19 +43,48 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
     // Fichiers déjà indexés : on ne les recompte jamais.
     const { data: known, error: knownError } = await supabase
       .from("project_frames")
-      .select("relative_path")
+      .select("id, relative_path, captured_at, fwhm")
       .eq("project_id", projectId);
     if (knownError) throw knownError;
-    const knownPaths = new Set((known || []).map((k) => k.relative_path));
+    const knownByPath = new Map((known || []).map((k) => [k.relative_path, k]));
 
     const rows: any[] = [];
     let seen = 0;
     let skippedType = 0;
+    let matched = 0;
+    let reparsed = 0;
 
     for (const entry of entries) {
       if (!isAstroFile(entry.name)) continue;
       seen++;
-      if (knownPaths.has(entry.relativePath)) continue;
+      const existing = knownByPath.get(entry.relativePath);
+      if (existing) {
+        // Le modèle de nommage a peut-être été renseigné après l'indexation :
+        // on complète les mesures manquantes.
+        if (existing.captured_at == null || existing.fwhm == null) {
+          const p = parseFrameName(entry.relativePath, pattern);
+          if (p.matchedPattern) {
+            const { error } = await supabase
+              .from("project_frames")
+              .update({
+                filter: p.filter,
+                pane_number: p.paneNumber,
+                captured_at: p.capturedAt,
+                exposure_duration: p.exposureDuration,
+                fwhm: p.fwhm,
+                eccentricity: p.eccentricity,
+                hfr: p.hfr,
+                star_count: p.starCount,
+                sensor_temp: p.sensorTemp,
+                frame_nr: p.frameNr,
+              })
+              .eq("id", existing.id);
+            if (error) throw error;
+            reparsed++;
+          }
+        }
+        continue;
+      }
 
       const parsed = parseFrameName(entry.relativePath, pattern);
       if (parsed.imageType && parsed.imageType !== "LIGHT") {
