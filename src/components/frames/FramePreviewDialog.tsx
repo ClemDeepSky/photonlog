@@ -34,7 +34,7 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
   const [dims, setDims] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [stretch, setStretch] = useState(1);
+  
   const [isFits, setIsFits] = useState(false);
   const [cross, setCross] = useState<{ clientX: number; clientY: number; px: number; py: number } | null>(null);
   const [lensPos, setLensPos] = useState<{ x: number; y: number } | null>(null);
