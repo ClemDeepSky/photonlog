@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 interface ScanResult {
   filter: string;
   count: number;
+  files: string[];
 }
 
 interface FolderScannerProps {
@@ -78,7 +79,7 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
     setResults(null);
 
     try {
-      const counts: Record<string, number> = {};
+      const counts: Record<string, { count: number; files: string[] }> = {};
       let totalFiles = 0;
       let matchedFiles = 0;
 
@@ -90,13 +91,15 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
         const relativePath = (file as any).webkitRelativePath || file.name;
         const filter = detectFilterFromPath(relativePath);
         if (filter) {
-          counts[filter] = (counts[filter] || 0) + 1;
+          if (!counts[filter]) counts[filter] = { count: 0, files: [] };
+          counts[filter].count++;
+          counts[filter].files.push(relativePath);
           matchedFiles++;
         }
       }
 
       const scanResults = Object.entries(counts)
-        .map(([filter, count]) => ({ filter, count }))
+        .map(([filter, v]) => ({ filter, count: v.count, files: v.files }))
         .sort((a, b) => a.filter.localeCompare(b.filter));
 
       setResults(scanResults);
@@ -149,6 +152,9 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
 
   return (
     <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">
+        Seule la liste des noms de fichiers est lue — aucun fichier n'est importé ni envoyé.
+      </p>
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
@@ -161,7 +167,7 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
           ) : (
             <FolderSearch className="h-4 w-4 mr-1" />
           )}
-          {scanning ? "Scan en cours..." : "Sélectionner le dossier local"}
+          {scanning ? "Lecture en cours..." : "Importer la liste des fichiers du dossier"}
         </Button>
         <input
           ref={inputRef}
@@ -182,15 +188,22 @@ const FolderScanner = ({ acquisitions, onApplyResults, isPending }: FolderScanne
             {results.map((r) => {
               const hasMatch = acquisitions.some((a) => a.filter === r.filter);
               return (
-                <div
+                <details
                   key={r.filter}
                   className={`text-xs px-2 py-1 rounded-md border ${
                     hasMatch ? "border-primary/50 bg-primary/10" : "border-border bg-muted"
                   }`}
                 >
-                  <span className="font-semibold">{r.filter}</span>: {r.count} fichier(s)
-                  {!hasMatch && <span className="text-muted-foreground ml-1">(pas configuré)</span>}
-                </div>
+                  <summary className="cursor-pointer select-none">
+                    <span className="font-semibold">{r.filter}</span>: {r.count} fichier(s)
+                    {!hasMatch && <span className="text-muted-foreground ml-1">(pas configuré)</span>}
+                  </summary>
+                  <ul className="mt-1 max-h-32 overflow-y-auto space-y-0.5 text-muted-foreground">
+                    {r.files.map((f) => (
+                      <li key={f} className="truncate" title={f}>{f}</li>
+                    ))}
+                  </ul>
+                </details>
               );
             })}
           </div>
