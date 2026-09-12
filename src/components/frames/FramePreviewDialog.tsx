@@ -116,19 +116,22 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
     if (px < 0 || py < 0 || px > rect.width || py > rect.height) {
-      setLens(null);
+      setCross(null);
+      setLensPos(null);
       return;
     }
     const source = fullCanvasRef.current ?? fullImageRef.current;
     const lensCanvas = lensCanvasRef.current;
     if (!source || !lensCanvas) {
-      setLens(null);
+      setCross(null);
+      setLensPos(null);
       return;
     }
     const natW = fullCanvasRef.current ? fullCanvasRef.current.width : (fullImageRef.current?.naturalWidth ?? 0);
     const natH = fullCanvasRef.current ? fullCanvasRef.current.height : (fullImageRef.current?.naturalHeight ?? 0);
     if (!natW || !natH) {
-      setLens(null);
+      setCross(null);
+      setLensPos(null);
       return;
     }
     const natX = (px / rect.width) * natW;
@@ -142,7 +145,13 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, LENS_SIZE, LENS_SIZE);
     ctx.drawImage(source, sx, sy, sw, sw, 0, 0, LENS_SIZE, LENS_SIZE);
-    setLens({ x: e.clientX, y: e.clientY });
+
+    // Décale la loupe en dessous, à gauche ou à droite selon la position horizontale.
+    const margin = 24;
+    const lensX = e.clientX < window.innerWidth / 2 ? e.clientX + LENS_SIZE / 2 + margin : e.clientX - LENS_SIZE / 2 - margin;
+    const lensY = e.clientY + LENS_SIZE / 2 + margin;
+    setLensPos({ x: lensX, y: lensY });
+    setCross({ clientX: e.clientX, clientY: e.clientY, px, py });
   };
 
   const copyPath = async () => {
