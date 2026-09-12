@@ -127,20 +127,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     });
   };
 
-  // Distribution régulière : chaque image occupe la même place, triée par date+heure.
+  // Distribution régulière : chaque image conserve sa place, même si sa nuit est masquée.
   const { series, totalPoints, nightRanges } = useMemo(() => {
-    const kept: Array<{ idx: number; f: FrameRow & { captured_at: string } }> = [];
+    const indexed: Array<{ idx: number; f: FrameRow & { captured_at: string } }> = [];
     for (const f of withDates) {
       const filter = f.filter || "?";
       if (selectedFilter && filter !== selectedFilter) continue;
       if (f.pane_number != null && offPanes.has(String(f.pane_number))) continue;
-      if (offNights.has(nightOf(f.captured_at))) continue;
-      kept.push({ idx: 0, f });
+      indexed.push({ idx: 0, f });
     }
-    kept.sort(
+    indexed.sort(
       (a, b) => new Date(a.f.captured_at).getTime() - new Date(b.f.captured_at).getTime()
     );
-    kept.forEach((k, i) => (k.idx = i));
+    indexed.forEach((item, i) => (item.idx = i));
+    const kept = indexed.filter(({ f }) => !offNights.has(nightOf(f.captured_at)));
 
     const metricSeries = METRICS.filter((item) => activeMetrics.has(item.key)).map((item) => {
       const values = kept
@@ -172,7 +172,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     });
 
     const ranges = new Map<string, { night: string; start: number; end: number; count: number }>();
-    for (const { idx, f } of kept) {
+    for (const { idx, f } of indexed) {
       const night = nightOf(f.captured_at);
       const existing = ranges.get(night);
       if (existing) {
@@ -185,7 +185,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
     return {
       series: metricSeries,
-      totalPoints: kept.length,
+      totalPoints: indexed.length,
       nightRanges: Array.from(ranges.values()),
     };
   }, [withDates, selectedFilter, activeMetrics, offPanes, offNights]);
@@ -194,6 +194,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   const [zoom, setZoom] = useState<[number, number] | null>(null);
   useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, offNights, totalPoints]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
+  const overviewRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
   const totalRef = useRef(totalPoints);
@@ -225,6 +226,52 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [totalPoints > 0]);
+
+  const dragRef = useRef<{
+    mode: "move" | "start" | "end";
+    pointerId: number;
+    startX: number;
+    initial: [number, number];
+  } | null>(null);
+
+  const startOverviewDrag = (
+    e: React.PointerEvent<HTMLDivElement>,
+    mode: "move" | "start" | "end"
+  ) => {
+    if (totalPoints < 2) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const initial: [number, number] = zoom || [0, totalPoints - 1];
+    dragRef.current = { mode, pointerId: e.pointerId, startX: e.clientX, initial };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const moveOverviewDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    const bar = overviewRef.current;
+    if (!drag || drag.pointerId !== e.pointerId || !bar || totalPoints < 2) return;
+    const delta = ((e.clientX - drag.startX) / Math.max(1, bar.getBoundingClientRect().width)) * totalPoints;
+    const minSpan = Math.min(5, totalPoints);
+    let [start, end] = drag.initial;
+    if (drag.mode === "move") {
+      const span = end - start;
+      start += delta;
+      end += delta;
+      if (start < 0) { end = span; start = 0; }
+      if (end > totalPoints - 1) { start = totalPoints - 1 - span; end = totalPoints - 1; }
+    } else if (drag.mode === "start") {
+      start = Math.max(0, Math.min(end - minSpan + 1, start + delta));
+    } else {
+      end = Math.min(totalPoints - 1, Math.max(start + minSpan - 1, end + delta));
+    }
+    setZoom(start <= 0 && end >= totalPoints - 1 ? null : [start, end]);
+  };
+
+  const endOverviewDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+  };
 
   const [preview, setPreview] = useState<{ file: File; path: string } | null>(null);
 
@@ -340,9 +387,9 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
 
   const hasMetricData = series.some((s) => s.points.length > 0);
-  const overviewDenominator = Math.max(1, totalPoints - 1);
+  const overviewDenominator = Math.max(1, totalPoints);
   const overviewStart = ((zoom?.[0] ?? 0) / overviewDenominator) * 100;
-  const overviewEnd = ((zoom?.[1] ?? Math.max(0, totalPoints - 1)) / overviewDenominator) * 100;
+  const overviewEnd = (((zoom?.[1] ?? Math.max(0, totalPoints - 1)) + 1) / overviewDenominator) * 100;
   const overviewWidth = totalPoints < 2 ? 100 : Math.max(1.5, overviewEnd - overviewStart);
 
   return (
@@ -520,26 +567,66 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                   </ResponsiveContainer>
                 </div>
                 <div className="space-y-2" aria-label="Vue d'ensemble du zoom">
-                  <div className="relative h-2 overflow-hidden rounded-sm bg-muted">
+                  <div
+                    ref={overviewRef}
+                    className="relative h-14 select-none overflow-hidden rounded-sm border border-border bg-muted touch-none"
+                  >
                     {nightRanges.map((range, index) => {
                       const left = totalPoints < 2 ? 0 : (range.start / overviewDenominator) * 100;
-                      const width = totalPoints < 2 ? 100 : Math.max(0.5, ((range.end - range.start) / overviewDenominator) * 100);
+                      const width = totalPoints < 2 ? 100 : Math.max(0.5, (range.count / overviewDenominator) * 100);
+                      const checkboxId = `quality-${projectId}-night-${range.night}`;
                       return (
-                        <span
+                        <div
                           key={range.night}
-                          className={index % 2 === 0 ? "absolute inset-y-0 bg-primary/20" : "absolute inset-y-0 bg-accent/20"}
+                          className={index % 2 === 0 ? "absolute inset-y-0 border-r border-border/60 bg-primary/10" : "absolute inset-y-0 border-r border-border/60 bg-accent/10"}
                           style={{ left: `${left}%`, width: `${width}%` }}
-                        />
+                        >
+                          <label
+                            htmlFor={checkboxId}
+                            className="absolute inset-0 z-20 flex min-w-0 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden px-1 text-[10px] text-foreground"
+                            title={`${new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR")} · ${range.count} image${range.count > 1 ? "s" : ""}`}
+                          >
+                            <Checkbox
+                              id={checkboxId}
+                              checked={!offNights.has(range.night)}
+                              onCheckedChange={() => toggle(offNights, range.night, setOffNights)}
+                              className="h-3.5 w-3.5 bg-background/80"
+                            />
+                            <span className="max-w-full truncate">
+                              {new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
+                            </span>
+                          </label>
+                        </div>
                       );
                     })}
-                    <span
-                      className="absolute inset-y-0 rounded-sm border border-primary bg-primary/20 transition-[left,width]"
+                    <div
+                      role="slider"
+                      aria-label="Déplacer la plage de zoom"
+                      aria-valuemin={0}
+                      aria-valuemax={Math.max(0, totalPoints - 1)}
+                      aria-valuenow={Math.round(zoom?.[0] ?? 0)}
+                      className="absolute inset-y-0 z-10 cursor-grab rounded-sm border-2 border-primary bg-primary/15 active:cursor-grabbing"
                       style={{ left: `${overviewStart}%`, width: `${overviewWidth}%` }}
-                    />
+                      onPointerDown={(e) => startOverviewDrag(e, "move")}
+                      onPointerMove={moveOverviewDrag}
+                      onPointerUp={endOverviewDrag}
+                      onPointerCancel={endOverviewDrag}
+                    >
+                      <div
+                        className="absolute inset-y-0 left-0 z-30 w-3 -translate-x-1/2 cursor-ew-resize border-l-2 border-primary"
+                        aria-label="Redimensionner le début du zoom"
+                        onPointerDown={(e) => startOverviewDrag(e, "start")}
+                      />
+                      <div
+                        className="absolute inset-y-0 right-0 z-30 w-3 translate-x-1/2 cursor-ew-resize border-r-2 border-primary"
+                        aria-label="Redimensionner la fin du zoom"
+                        onPointerDown={(e) => startOverviewDrag(e, "end")}
+                      />
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                     <span>Début</span>
-                    <span>{zoom ? "Vue agrandie" : "Vue complète"}</span>
+                    <span>{zoom ? "Déplacez ou redimensionnez la sélection" : "Vue complète"}</span>
                     <span>Fin</span>
                   </div>
                 </div>
@@ -548,28 +635,6 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
               <p className="text-sm text-muted-foreground">
                 Aucune valeur disponible pour les mesures et sélections actives.
               </p>
-            )}
-
-            {availableNights.length > 0 && (
-              <div className="border-t border-border/70 pt-3">
-                <div className="mb-2 text-xs text-muted-foreground">Nuits affichées</div>
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                  {availableNights.map((night) => {
-                    const checkboxId = `quality-${projectId}-night-${night}`;
-                    return (
-                      <label key={night} htmlFor={checkboxId} className="flex cursor-pointer items-center gap-1.5 text-xs">
-                        <Checkbox
-                          id={checkboxId}
-                          checked={!offNights.has(night)}
-                          onCheckedChange={() => toggle(offNights, night, setOffNights)}
-                          className="h-3.5 w-3.5"
-                        />
-                        {new Date(`${night}T12:00:00`).toLocaleDateString("fr-FR")}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
             )}
           </div>
         )}
