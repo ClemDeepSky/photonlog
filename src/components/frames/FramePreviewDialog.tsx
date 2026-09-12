@@ -106,6 +106,22 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
               <Download className="mr-1 h-3.5 w-3.5" />
               Télécharger
             </Button>
+            {canDelete && (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 px-2 text-xs"
+                onClick={() => setConfirmOpen(true)}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                )}
+                Supprimer le fichier
+              </Button>
+            )}
             {dims && <span className="text-xs text-muted-foreground">{dims}</span>}
           </div>
 
