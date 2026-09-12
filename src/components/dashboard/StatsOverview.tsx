@@ -107,28 +107,20 @@ const StatsOverview = ({ acquisitions, projectCount, activeCount, filterColors }
                     </span>
                     <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden relative">
                       <div
-                        className="h-full rounded-full transition-all absolute left-0 top-0 opacity-40"
+                        className="h-full rounded-full transition-all absolute left-0 top-0"
                         style={{
                           width: `${acquiredPercent}%`,
                           backgroundColor: filterColors[filter] || "hsl(var(--primary))",
                         }}
                       />
-                      <div
-                        className="h-full rounded-full transition-all absolute left-0 top-0"
-                        style={{
-                          width: `${keptPercent}%`,
-                          backgroundColor: filterColors[filter] || "hsl(var(--primary))",
-                        }}
-                      />
                     </div>
                     <span className="w-40 text-right shrink-0 text-muted-foreground">
-                      {formatDuration(kept)} / {formatDuration(planned)}
+                      {formatDuration(acquired)} / {formatDuration(planned)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground pl-12 pr-40">
-                    <span>{formatDuration(acquired)} acquis</span>
                     <span>{exposureDuration > 0 ? `${exposureDuration}s/pose` : "—"}</span>
-                    <span>{keptPercent}% conservé</span>
+                    <span>{acquiredPercent}% acquis</span>
                   </div>
                 </div>
               ))}
