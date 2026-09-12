@@ -326,7 +326,7 @@ const Frames = () => {
             </div>
 
             {/* Acquisitions by pane */}
-            {Object.entries(groupedAcquisitions).map(([paneKey, acqs]) => {
+            {sortedPaneEntries.map(([paneKey, acqs]) => {
               const pane = panes?.find((p) => p.id === paneKey);
               const isExpanded = expandedPanes.has(paneKey);
               const paneProgress = getGroupProgress(acqs);
