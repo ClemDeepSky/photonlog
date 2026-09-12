@@ -481,7 +481,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
                     Molette de la souris : zoom horizontal
-                    {zoom ? ` — ${Math.round(zoom[1] - zoom[0] + 1)} images affichées sur ${totalPoints}` : ""}
+                    {zoom ? ` — ${visibleCount} images affichées sur ${totalPoints}` : ""}
                   </p>
                   {zoom && (
                     <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => setZoom(null)}>
