@@ -561,37 +561,32 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                     </ScatterChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-2" aria-label="Vue d'ensemble du zoom">
+                <div className="space-y-1" aria-label="Vue d'ensemble du zoom">
                   <div
                     ref={overviewRef}
-                    className="relative h-14 select-none overflow-hidden rounded-sm border border-border bg-muted touch-none"
+                    className="relative h-8 select-none overflow-hidden rounded-sm border border-border bg-muted touch-none"
                   >
                     {nightRanges.map((range, index) => {
                       const left = totalPoints < 2 ? 0 : (range.start / overviewDenominator) * 100;
                       const width = totalPoints < 2 ? 100 : Math.max(0.5, (range.count / overviewDenominator) * 100);
-                      const checkboxId = `quality-${projectId}-night-${range.night}`;
+                      const off = offNights.has(range.night);
                       return (
-                        <div
+                        <button
                           key={range.night}
-                          className={index % 2 === 0 ? "absolute inset-y-0 border-r border-border/60 bg-primary/10" : "absolute inset-y-0 border-r border-border/60 bg-accent/10"}
+                          type="button"
+                          onClick={() => toggle(offNights, range.night, setOffNights)}
+                          className={
+                            "absolute inset-y-0 border-r border-border/60 text-[9px] leading-none text-foreground transition-opacity hover:opacity-100 " +
+                            (index % 2 === 0 ? "bg-primary/10 " : "bg-accent/10 ") +
+                            (off ? "opacity-30 line-through" : "opacity-100")
+                          }
                           style={{ left: `${left}%`, width: `${width}%` }}
+                          title={`${new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR")} · ${range.count} image${range.count > 1 ? "s" : ""}`}
                         >
-                          <label
-                            htmlFor={checkboxId}
-                            className="absolute inset-0 z-20 flex min-w-0 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden px-1 text-[10px] text-foreground"
-                            title={`${new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR")} · ${range.count} image${range.count > 1 ? "s" : ""}`}
-                          >
-                            <Checkbox
-                              id={checkboxId}
-                              checked={!offNights.has(range.night)}
-                              onCheckedChange={() => toggle(offNights, range.night, setOffNights)}
-                              className="h-3.5 w-3.5 bg-background/80"
-                            />
-                            <span className="max-w-full truncate">
-                              {new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-                            </span>
-                          </label>
-                        </div>
+                          <span className="flex h-full w-full items-center justify-center px-1">
+                            {new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
+                          </span>
+                        </button>
                       );
                     })}
                     <div
@@ -607,7 +602,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       onPointerCancel={endOverviewDrag}
                     >
                       <div
-                        className="pointer-events-auto absolute inset-x-3 top-0 h-3 cursor-grab bg-primary/30 active:cursor-grabbing"
+                        className="pointer-events-auto absolute inset-x-3 top-0 h-2 cursor-grab bg-primary/30 active:cursor-grabbing"
                         onPointerDown={(e) => startOverviewDrag(e, "move")}
                       />
                       <div
