@@ -16,7 +16,6 @@ interface Acquisition {
   filter: string;
   quantity: number;
   acquired: number;
-  kept: number;
   exposure_duration: number;
 }
 
@@ -49,7 +48,7 @@ const Dashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, team_id, status, teams(name), project_acquisitions(filter, quantity, acquired, kept, exposure_duration)")
+        .select("id, name, team_id, status, teams(name), project_acquisitions(filter, quantity, acquired, exposure_duration)")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as ProjectWithAcquisitions[];
@@ -58,42 +57,35 @@ const Dashboard = () => {
   });
 
   const getGlobalProgress = (acqs: Acquisition[]) => {
-    if (!acqs.length) return { acquired: 0, kept: 0 };
+    if (!acqs.length) return { acquired: 0 };
     const totalTarget = acqs.reduce((s, a) => s + a.quantity * Number(a.exposure_duration || 0), 0);
-    if (totalTarget === 0) return { acquired: 0, kept: 0 };
+    if (totalTarget === 0) return { acquired: 0 };
     const totalAcquired = acqs.reduce((s, a) => s + a.acquired * Number(a.exposure_duration || 0), 0);
-    const totalKept = acqs.reduce((s, a) => s + a.kept * Number(a.exposure_duration || 0), 0);
     return {
       acquired: Math.min(100, Math.round((totalAcquired / totalTarget) * 100)),
-      kept: Math.min(100, Math.round((totalKept / totalTarget) * 100)),
     };
   };
 
   const getFilterProgress = (acqs: Acquisition[]) => {
-    const map: Record<string, { acquired: number; kept: number; quantity: number; acquiredSeconds: number; keptSeconds: number; plannedSeconds: number; durationCount: number; durationSum: number }> = {};
+    const map: Record<string, { acquired: number; quantity: number; acquiredSeconds: number; plannedSeconds: number; durationCount: number; durationSum: number }> = {};
     for (const a of acqs) {
       const dur = Number(a.exposure_duration || 0);
-      if (!map[a.filter]) map[a.filter] = { acquired: 0, kept: 0, quantity: 0, acquiredSeconds: 0, keptSeconds: 0, plannedSeconds: 0, durationCount: 0, durationSum: 0 };
+      if (!map[a.filter]) map[a.filter] = { acquired: 0, quantity: 0, acquiredSeconds: 0, plannedSeconds: 0, durationCount: 0, durationSum: 0 };
       map[a.filter].acquired += a.acquired;
-      map[a.filter].kept += a.kept;
       map[a.filter].quantity += a.quantity;
       map[a.filter].acquiredSeconds += a.acquired * dur;
-      map[a.filter].keptSeconds += a.kept * dur;
       map[a.filter].plannedSeconds += a.quantity * dur;
       map[a.filter].durationCount += a.quantity;
       map[a.filter].durationSum += a.quantity * dur;
     }
-    return Object.entries(map).map(([filter, { acquired, kept, quantity, acquiredSeconds, keptSeconds, plannedSeconds, durationCount, durationSum }]) => ({
+    return Object.entries(map).map(([filter, { acquired, quantity, acquiredSeconds, plannedSeconds, durationCount, durationSum }]) => ({
       filter,
       acquired,
-      kept,
       quantity,
       acquiredSeconds,
-      keptSeconds,
       plannedSeconds,
       exposureDuration: durationCount > 0 ? Math.round(durationSum / durationCount) : 0,
       acquiredPercent: quantity > 0 ? Math.min(100, Math.round((acquired / quantity) * 100)) : 0,
-      percent: quantity > 0 ? Math.min(100, Math.round((kept / quantity) * 100)) : 0,
     }));
   };
 
