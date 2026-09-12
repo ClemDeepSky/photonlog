@@ -298,87 +298,38 @@ const Frames = () => {
                     }}
                   />
                 )}
-                <span className="text-sm text-muted-foreground">Afficher les conservés</span>
-                <Switch
-                  checked={showKept}
-                  onCheckedChange={setShowKept}
-                  aria-label="Afficher les conservés"
-                />
               </div>
             </div>
 
 
             {/* Global stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {showKept ? "Progression conservée" : "Progression acquise"}
-                  </p>
+                  <p className="text-xs text-muted-foreground mb-1">Progression acquise</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-gradient">{showKept ? globalProgress : globalAcquiredProgress}%</span>
+                    <span className="text-3xl font-bold text-gradient">{globalAcquiredProgress}%</span>
                   </div>
-                  <Progress value={showKept ? globalProgress : globalAcquiredProgress} className="h-2 mt-2" />
-                  {showKept && (
-                    <p className="text-[11px] text-muted-foreground mt-1.5">{globalAcquiredProgress}% acquis bruts</p>
-                  )}
+                  <Progress value={globalAcquiredProgress} className="h-2 mt-2" />
                 </CardContent>
               </Card>
 
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {showKept ? "Frames conservées" : "Frames acquises"}
-                  </p>
+                  <p className="text-xs text-muted-foreground mb-1">Frames acquises</p>
                   <span className="text-3xl font-bold">
-                    {showKept
-                      ? acquisitions?.reduce((s, a) => s + a.kept, 0) || 0
-                      : acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0}
+                    {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0}
                     <span className="text-base font-normal text-muted-foreground">
                       /{acquisitions?.reduce((s, a) => s + a.quantity, 0) || 0}
                     </span>
                   </span>
-                  {showKept && (
-                    <p className="text-[11px] text-muted-foreground mt-1.5">
-                      {acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0} acquises
-                    </p>
-                  )}
                 </CardContent>
               </Card>
 
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {showKept ? "Temps d'exposition conservé" : "Temps d'exposition acquis"}
-                  </p>
-                  <span className="text-3xl font-bold">{showKept ? formatExposure(totalExposure) : formatExposure(totalAcquiredExposure)}</span>
-                  {showKept && (
-                    <p className="text-[11px] text-muted-foreground mt-1.5">{formatExposure(totalAcquiredExposure)} acquis</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/50">
-                <CardContent className="pt-4 pb-4">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {showKept ? "Taux de conservation" : "Surplus d'acquisition"}
-                  </p>
-                  <span className="text-3xl font-bold">
-                    {showKept
-                      ? (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0) > 0
-                        ? Math.round(
-                            ((acquisitions?.reduce((s, a) => s + a.kept, 0) || 0) /
-                              (acquisitions?.reduce((s, a) => s + a.acquired, 0) || 1)) *
-                              100
-                          )
-                        : 0
-                      : (() => {
-                          const total = acquisitions?.reduce((s, a) => s + a.quantity, 0) || 0;
-                          const acquired = acquisitions?.reduce((s, a) => s + a.acquired, 0) || 0;
-                          return total > 0 ? Math.round(((acquired - total) / total) * 100) : 0;
-                        })()}
-                    %
-                  </span>
+                  <p className="text-xs text-muted-foreground mb-1">Temps d'exposition acquis</p>
+                  <span className="text-3xl font-bold">{formatExposure(totalAcquiredExposure)}</span>
                 </CardContent>
               </Card>
 
