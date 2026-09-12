@@ -308,20 +308,11 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           return (
                             <div className="rounded-lg border border-border bg-card p-2 text-xs shadow-md max-w-xs space-y-0.5">
                               {p.fileName && (
-                                <div className="font-medium text-primary break-all mb-1">
-                                  {p.relativePath ? (
-                                    <a
-                                      href={`file://${p.relativePath}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      title={p.relativePath}
-                                      className="hover:underline"
-                                    >
-                                      {p.fileName}
-                                    </a>
-                                  ) : (
-                                    p.fileName
-                                  )}
+                                <div className="mb-1">
+                                  <div className="font-medium text-primary break-all" title={p.relativePath}>
+                                    {p.fileName}
+                                  </div>
+                                  <div className="text-muted-foreground">Cliquez sur le point pour ouvrir le fichier</div>
                                 </div>
                               )}
                               {row("FWHM", p.fwhm)}
@@ -340,6 +331,8 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           data={s.points}
                           line={{ strokeWidth: 1 }}
                           fill={filterColors[s.filter] || "hsl(var(--primary))"}
+                          cursor="pointer"
+                          onClick={(p: any) => openFrame(p?.relativePath, p?.fileName)}
                         />
                       ))}
                     </ScatterChart>
