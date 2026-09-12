@@ -157,5 +157,5 @@ export function stretchToCanvas(preview: FitsPreview, level: number, maxSide = 1
     }
   }
   ctx.putImageData(img, 0, 0);
-  return { canvas, width: w, height: h, header };
+  return canvas;
 }
