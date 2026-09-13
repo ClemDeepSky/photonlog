@@ -15,8 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen } from "lucide-react";
 import { requestProjectDirHandle } from "@/lib/dirHandleStore";
-import { entriesFromInputFileList } from "@/lib/localFiles";
-import { cacheProjectFiles, cacheProjectEntries } from "@/lib/localFileCache";
 import SkyViewer from "@/components/projects/SkyViewer";
 
 import ProjectImageField from "@/components/projects/ProjectImageField";
