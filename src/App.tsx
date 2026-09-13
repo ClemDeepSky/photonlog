@@ -38,6 +38,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <AppVersionProvider>
           <CookieConsentProvider>
           <DemoTourProvider>
           <Routes>
