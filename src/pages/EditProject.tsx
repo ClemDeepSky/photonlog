@@ -488,14 +488,23 @@ const EditProject = () => {
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
               </div>
               <div>
-                <Label>Chemin du dossier local</Label>
+                <Label>Dossier racine du projet</Label>
                 <div className="flex gap-2">
-                  <Input ref={folderInputRef} value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
-                  <Button type="button" variant="outline" size="icon" onClick={() => folderInputRef.current?.focus()} title="Renseigner le chemin">
+                  <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: M31 ou D:\Astro\M31" className="flex-1" />
+                  <Button type="button" variant="outline" size="icon" onClick={pickRootFolder} title="Choisir le dossier racine">
                     <FolderOpen className="h-4 w-4" />
                   </Button>
+                  <input
+                    ref={folderPickerInputRef}
+                    type="file"
+                    // @ts-ignore attribut non standard mais supporté par les navigateurs
+                    webkitdirectory=""
+                    multiple
+                    className="hidden"
+                    onChange={onFolderPicked}
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Ce champ enregistre uniquement le chemin du dossier. Aucun fichier n'est sélectionné, lu ou importé.</p>
+                <p className="text-xs text-muted-foreground mt-1">Cliquez sur l'icône pour désigner le dossier racine du projet : seul son emplacement est enregistré, aucun fichier n'est lu ni importé.</p>
               </div>
               <div>
                 <Label>Structure des noms de fichiers (optionnel)</Label>
