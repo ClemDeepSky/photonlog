@@ -54,7 +54,7 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
-  const folderInputRef = useRef<HTMLInputElement>(null);
+  const folderPickerInputRef = useRef<HTMLInputElement>(null);
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -332,6 +332,35 @@ const EditProject = () => {
 
   const canSubmit = name && (!isTeamProject || selectedTeamId);
 
+  // Ouvre le sélecteur de dossier pour définir la racine du projet.
+  // On ne fait que mémoriser le dossier : aucun fichier n'est lu ni importé.
+  const pickRootFolder = async () => {
+    try {
+      const { requestProjectDirHandle } = await import("@/lib/dirHandleStore");
+      const handle = await requestProjectDirHandle(id!, { mode: "read" });
+      setFolderPath((prev) => (prev.trim() ? prev : handle.name));
+      toast({ title: "Dossier racine enregistré", description: `« ${handle.name} » sera utilisé pour l'actualisation des acquisitions.` });
+    } catch (e: any) {
+      if (e?.name === "AbortError") return; // l'utilisateur a annulé
+      // Sélecteur natif indisponible (cadre intégré, navigateur non compatible) :
+      // repli sur le champ de dossier classique, on ne retient que le nom du dossier.
+      folderPickerInputRef.current?.click();
+    }
+  };
+
+  const onFolderPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const first: any = files[0];
+      const root = (first.webkitRelativePath || "").split("/")[0];
+      if (root) {
+        setFolderPath((prev) => (prev.trim() ? prev : root));
+        toast({ title: "Dossier racine enregistré", description: `« ${root} » sera utilisé pour l'actualisation des acquisitions.` });
+      }
+    }
+    e.target.value = "";
+  };
+
   const updateProject = useMutation({
     mutationFn: async () => {
       // Update project
@@ -459,14 +488,23 @@ const EditProject = () => {
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
               </div>
               <div>
-                <Label>Chemin du dossier local</Label>
+                <Label>Dossier racine du projet</Label>
                 <div className="flex gap-2">
-                  <Input ref={folderInputRef} value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
-                  <Button type="button" variant="outline" size="icon" onClick={() => folderInputRef.current?.focus()} title="Renseigner le chemin">
+                  <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: M31 ou D:\Astro\M31" className="flex-1" />
+                  <Button type="button" variant="outline" size="icon" onClick={pickRootFolder} title="Choisir le dossier racine">
                     <FolderOpen className="h-4 w-4" />
                   </Button>
+                  <input
+                    ref={folderPickerInputRef}
+                    type="file"
+                    // @ts-ignore attribut non standard mais supporté par les navigateurs
+                    webkitdirectory=""
+                    multiple
+                    className="hidden"
+                    onChange={onFolderPicked}
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Ce champ enregistre uniquement le chemin du dossier. Aucun fichier n'est sélectionné, lu ou importé.</p>
+                <p className="text-xs text-muted-foreground mt-1">Cliquez sur l'icône pour désigner le dossier racine du projet : seul son emplacement est enregistré, aucun fichier n'est lu ni importé.</p>
               </div>
               <div>
                 <Label>Structure des noms de fichiers (optionnel)</Label>
