@@ -38,3 +38,15 @@ export function getCachedProjectFile(projectId: string, relativePath: string, fi
 export function hasCachedProjectFiles(projectId: string): boolean {
   return (cache.get(projectId)?.size ?? 0) > 0;
 }
+
+// Liste des entrées (noms + chemins relatifs) associée au cache de fichiers,
+// pour relancer un indexage sans repasser par le sélecteur de dossier.
+const entriesCache = new Map<string, { name: string; relativePath: string }[]>();
+
+export function cacheProjectEntries(projectId: string, entries: { name: string; relativePath: string }[]): void {
+  entriesCache.set(projectId, entries);
+}
+
+export function getCachedProjectEntries(projectId: string): { name: string; relativePath: string }[] | null {
+  return entriesCache.get(projectId) ?? null;
+}

@@ -1,17 +1,11 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  pickLocalDirectory,
-  entriesFromInputFileList,
-  entriesFromDirHandle,
-  supportsDirectoryPicker,
-  type LocalFileEntry,
-} from "@/lib/localFiles";
-import { saveProjectDirHandle, getProjectDirHandle, ensureReadPermission, pickerId } from "@/lib/dirHandleStore";
-import { cacheProjectFiles } from "@/lib/localFileCache";
+import { entriesFromDirHandle, type LocalFileEntry } from "@/lib/localFiles";
+import { getProjectDirHandle, ensureReadPermission } from "@/lib/dirHandleStore";
+import { getCachedProjectEntries } from "@/lib/localFileCache";
 
 import { isAstroFile, parseFrameName } from "@/lib/frameNames";
 
@@ -33,7 +27,6 @@ interface FolderRefreshProps {
 const CHUNK = 400;
 
 const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: FolderRefreshProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
   const findAcquisitionId = (filter: string | null, paneNumber: number | null) => {
@@ -163,16 +156,9 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
   };
 
   const handleRefresh = async () => {
-    // Dans l'aperçu (iframe), le sélecteur de dossier natif est bloqué :
-    // on ouvre directement le champ de dossier pendant le clic de l'utilisateur.
-    const inIframe = typeof window !== "undefined" && window.self !== window.top;
-    if (inIframe || !supportsDirectoryPicker()) {
-      inputRef.current?.click();
-      return;
-    }
+    // Le dossier est défini une fois pour toutes dans la configuration du
+    // projet : on relit le dossier mémorisé, sans rien redemander.
     try {
-      // 1) Dossier déjà mémorisé : on le relit sans redemander (sauf si
-      // l'autorisation a expiré, auquel cas le navigateur la redemande).
       const saved = await getProjectDirHandle(projectId);
       if (saved) {
         const allowed = await ensureReadPermission(saved);
@@ -184,62 +170,29 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
           return;
         }
       }
-      // 2) Sinon on demande le dossier, en rouvrant au même endroit que la
-      // dernière fois et avec l'accès écriture (nécessaire pour supprimer).
-      setBusy(true);
-      const picked = await pickLocalDirectory({ id: pickerId(projectId), mode: "readwrite" });
-      setBusy(false);
-      if (picked) {
-        await saveProjectDirHandle(projectId, picked.handle);
-        await run(picked.entries);
-      }
-    } catch (err: any) {
-
-      setBusy(false);
-      const msg = String(err?.message || "");
-      const unavailable =
-        msg.includes("non supporté") ||
-        err?.name === "SecurityError" ||
-        err?.name === "NotAllowedError" ||
-        msg.includes("Cross origin") ||
-        msg.includes("cross-origin") ||
-        msg.includes("sub frames");
-      if (unavailable) {
-        inputRef.current?.click();
+      // Secours : dossier chargé via le champ classique (aperçu intégré) —
+      // la liste des noms est conservée en mémoire pour la session.
+      const cached = getCachedProjectEntries(projectId);
+      if (cached && cached.length > 0) {
+        await run(cached);
         return;
       }
+      toast({
+        title: "Aucun dossier mémorisé",
+        description: "Définissez le dossier local dans la configuration du projet (bouton dossier à côté du champ « Dossier local »).",
+        variant: "destructive",
+      });
+    } catch (err: any) {
+      setBusy(false);
       toast({ title: "Erreur", description: err.message, variant: "destructive" });
     }
   };
 
-  const handleInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const entries = entriesFromInputFileList(files);
-    // L'accès au dossier n'est pas mémorisable ici : on garde les fichiers en
-    // mémoire pour pouvoir ouvrir une brute au clic pendant la session.
-    cacheProjectFiles(projectId, Array.from(files));
-    if (inputRef.current) inputRef.current.value = "";
-    await run(entries);
-  };
-
   return (
-    <>
-      <Button variant="outline" size="sm" onClick={handleRefresh} disabled={busy}>
-        {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-        {busy ? "Analyse..." : "Rafraîchir le dossier"}
-      </Button>
-      <input
-        ref={inputRef}
-        type="file"
-        /* @ts-ignore */
-        webkitdirectory=""
-        directory=""
-        multiple
-        className="hidden"
-        onChange={handleInput}
-      />
-    </>
+    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={busy}>
+      {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+      {busy ? "Analyse..." : "Actualiser les acquisitions"}
+    </Button>
   );
 };
 

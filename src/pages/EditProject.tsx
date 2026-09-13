@@ -16,7 +16,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen, FolderCheck, Loader2 } from "lucide-react";
 import { pickLocalDirectory, supportsDirectoryPicker } from "@/lib/localFiles";
 import { saveProjectDirHandle, getProjectDirHandle, pickerId } from "@/lib/dirHandleStore";
-import { cacheProjectFiles } from "@/lib/localFileCache";
+import { cacheProjectFiles, cacheProjectEntries } from "@/lib/localFileCache";
+import { entriesFromInputFileList } from "@/lib/localFiles";
 import SkyViewer from "@/components/projects/SkyViewer";
 import FolderScanner from "@/components/frames/FolderScanner";
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -103,6 +104,7 @@ const EditProject = () => {
     // L'accès n'est pas mémorisable ici : on garde les fichiers en mémoire
     // pour la session (ouverture des brutes, rafraîchissement).
     cacheProjectFiles(id, Array.from(files));
+    cacheProjectEntries(id, entriesFromInputFileList(files));
     const rel = (files[0] as any).webkitRelativePath as string | undefined;
     if (!folderPath && rel?.includes("/")) setFolderPath(rel.split("/")[0]);
     setDirSaved(true);
