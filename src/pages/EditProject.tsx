@@ -54,7 +54,7 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
-  const folderInputRef = useRef<HTMLInputElement>(null);
+  const folderPickerInputRef = useRef<HTMLInputElement>(null);
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
