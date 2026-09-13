@@ -27,7 +27,6 @@ interface FolderRefreshProps {
 const CHUNK = 400;
 
 const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: FolderRefreshProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
   const findAcquisitionId = (filter: string | null, paneNumber: number | null) => {
