@@ -59,6 +59,56 @@ const EditProject = () => {
   const [folderPath, setFolderPath] = useState("");
   const [dirSaved, setDirSaved] = useState(false);
   const [dirBusy, setDirBusy] = useState(false);
+  const dirInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePickDir = async () => {
+    if (!id) return;
+    // Dans l'aperçu (iframe), le sélecteur natif est bloqué : champ dossier classique.
+    const inIframe = typeof window !== "undefined" && window.self !== window.top;
+    if (inIframe || !supportsDirectoryPicker()) {
+      dirInputRef.current?.click();
+      return;
+    }
+    setDirBusy(true);
+    try {
+      const picked = await pickLocalDirectory({ id: pickerId(id), mode: "readwrite" });
+      if (picked) {
+        await saveProjectDirHandle(id, picked.handle);
+        setDirSaved(true);
+        if (!folderPath) setFolderPath(picked.handle.name);
+        toast({ title: "Dossier mémorisé", description: "Le rafraîchissement des frames utilisera ce dossier sans le redemander." });
+      }
+    } catch (err: any) {
+      const msg = String(err?.message || "");
+      const unavailable =
+        msg.includes("non supporté") ||
+        err?.name === "SecurityError" ||
+        err?.name === "NotAllowedError" ||
+        msg.includes("Cross origin") ||
+        msg.includes("cross-origin") ||
+        msg.includes("sub frames");
+      if (unavailable) {
+        dirInputRef.current?.click();
+        return;
+      }
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    } finally {
+      setDirBusy(false);
+    }
+  };
+
+  const handleDirInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !id) return;
+    // L'accès n'est pas mémorisable ici : on garde les fichiers en mémoire
+    // pour la session (ouverture des brutes, rafraîchissement).
+    cacheProjectFiles(id, Array.from(files));
+    const rel = (files[0] as any).webkitRelativePath as string | undefined;
+    if (!folderPath && rel?.includes("/")) setFolderPath(rel.split("/")[0]);
+    setDirSaved(true);
+    if (dirInputRef.current) dirInputRef.current.value = "";
+    toast({ title: "Dossier chargé", description: "Accès valable pour cette session ; hors aperçu intégré, il sera mémorisé durablement." });
+  };
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
