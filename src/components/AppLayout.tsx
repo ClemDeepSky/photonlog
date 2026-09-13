@@ -85,6 +85,19 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           ))}
         </nav>
         <div className="p-4 border-t border-border/20">
+          <Button variant="outline" size="sm" className="w-full justify-start mb-3" onClick={switchVersion}>
+            {version === "v2" ? (
+              <>
+                <Undo2 className="h-4 w-4 mr-2" />
+                Revenir à la version 1
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Essayer la version 2
+              </>
+            )}
+          </Button>
           <p className="text-xs text-muted-foreground mb-3 truncate">{user?.email}</p>
           <Link
             to="/guide"
