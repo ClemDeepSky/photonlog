@@ -57,6 +57,34 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  // Icône dossier : sélectionne le dossier et remplit le champ avec son nom.
+  // Le handle est mémorisé pour que « Actualiser les acquisitions » le relise.
+  const pickFolder = async () => {
+    if (!id) return;
+    try {
+      const handle = await requestProjectDirHandle(id);
+      setFolderPath((prev) => handle.name || prev);
+      toast({ title: "Dossier mémorisé", description: handle.name });
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      // Sélecteur natif indisponible (aperçu intégré) : champ classique.
+      folderInputRef.current?.click();
+    }
+  };
+
+  const onFolderInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length || !id) return;
+    const first = (files[0] as any).webkitRelativePath as string | undefined;
+    const root = first?.includes("/") ? first.split("/")[0] : "";
+    if (root) setFolderPath(root);
+    const entries = entriesFromInputFileList(files);
+    cacheProjectEntries(id, entries);
+    cacheProjectFiles(id, Array.from(files));
+    e.target.value = "";
+  };
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
