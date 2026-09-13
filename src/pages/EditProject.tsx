@@ -1,5 +1,5 @@
 import CoordinateInputs from "@/components/CoordinateInputs";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
