@@ -1,5 +1,5 @@
 import CoordinateInputs from "@/components/CoordinateInputs";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
@@ -13,7 +13,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
+import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen } from "lucide-react";
+import { requestProjectDirHandle } from "@/lib/dirHandleStore";
+import { entriesFromInputFileList } from "@/lib/localFiles";
+import { cacheProjectFiles, cacheProjectEntries } from "@/lib/localFileCache";
 import SkyViewer from "@/components/projects/SkyViewer";
 
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -54,6 +57,34 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  // Icône dossier : sélectionne le dossier et remplit le champ avec son nom.
+  // Le handle est mémorisé pour que « Actualiser les acquisitions » le relise.
+  const pickFolder = async () => {
+    if (!id) return;
+    try {
+      const handle = await requestProjectDirHandle(id);
+      setFolderPath((prev) => handle.name || prev);
+      toast({ title: "Dossier mémorisé", description: handle.name });
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      // Sélecteur natif indisponible (aperçu intégré) : champ classique.
+      folderInputRef.current?.click();
+    }
+  };
+
+  const onFolderInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length || !id) return;
+    const first = (files[0] as any).webkitRelativePath as string | undefined;
+    const root = first?.includes("/") ? first.split("/")[0] : "";
+    if (root) setFolderPath(root);
+    const entries = entriesFromInputFileList(files);
+    cacheProjectEntries(id, entries);
+    cacheProjectFiles(id, Array.from(files));
+    e.target.value = "";
+  };
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -459,8 +490,22 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Chemin du dossier local</Label>
-                <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" />
-                <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition (utilisé pour le scan automatique)</p>
+                <div className="flex gap-2">
+                  <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
+                  <Button type="button" variant="outline" size="icon" onClick={pickFolder} title="Sélectionner le dossier">
+                    <FolderOpen className="h-4 w-4" />
+                  </Button>
+                  <input
+                    ref={folderInputRef}
+                    type="file"
+                    className="hidden"
+                    // @ts-expect-error attribut non standard mais supporté par tous les navigateurs
+                    webkitdirectory=""
+                    multiple
+                    onChange={onFolderInputChange}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition. L'icône dossier sélectionne le dossier et mémorise l'accès pour le bouton « Actualiser les acquisitions ».</p>
               </div>
               <div>
                 <Label>Structure des noms de fichiers (optionnel)</Label>
