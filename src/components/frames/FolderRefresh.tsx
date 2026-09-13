@@ -190,22 +190,10 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
   };
 
   return (
-    <>
-      <Button variant="outline" size="sm" onClick={handleRefresh} disabled={busy}>
-        {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-        {busy ? "Analyse..." : "Rafraîchir le dossier"}
-      </Button>
-      <input
-        ref={inputRef}
-        type="file"
-        /* @ts-ignore */
-        webkitdirectory=""
-        directory=""
-        multiple
-        className="hidden"
-        onChange={handleInput}
-      />
-    </>
+    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={busy}>
+      {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+      {busy ? "Analyse..." : "Actualiser les acquisitions"}
+    </Button>
   );
 };
 
