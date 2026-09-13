@@ -50,7 +50,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     : baseNavItems;
 
   const switchVersion = () => {
-    const next = version === "v2" ? "v1" : "v2";
+    const next = inV2 ? "v1" : "v2";
     setVersion(next);
     setMobileOpen(false);
     navigate(next === "v2" ? "/v2/dashboard" : "/dashboard");
@@ -87,7 +87,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </nav>
         <div className="p-4 border-t border-border/20">
           <Button variant="outline" size="sm" className="w-full justify-start mb-3" onClick={switchVersion}>
-            {version === "v2" ? (
+            {inV2 ? (
               <>
                 <Undo2 className="h-4 w-4 mr-2" />
                 Revenir à la version 1
@@ -160,7 +160,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               Guide d’utilisation
             </Link>
             <Button variant="outline" size="sm" className="w-full justify-start mt-4" onClick={switchVersion}>
-              {version === "v2" ? (
+              {inV2 ? (
                 <>
                   <Undo2 className="h-4 w-4 mr-2" />
                   Revenir à la version 1
