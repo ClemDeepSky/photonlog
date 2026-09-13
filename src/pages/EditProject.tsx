@@ -16,6 +16,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen, FolderCheck, Loader2 } from "lucide-react";
 import { pickLocalDirectory, supportsDirectoryPicker } from "@/lib/localFiles";
 import { saveProjectDirHandle, getProjectDirHandle, pickerId } from "@/lib/dirHandleStore";
+import { cacheProjectFiles } from "@/lib/localFileCache";
+import { useRef } from "react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import FolderScanner from "@/components/frames/FolderScanner";
 import ProjectImageField from "@/components/projects/ProjectImageField";
