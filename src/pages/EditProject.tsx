@@ -1,5 +1,5 @@
 import CoordinateInputs from "@/components/CoordinateInputs";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
@@ -13,11 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen, FolderCheck, Loader2 } from "lucide-react";
-import { pickLocalDirectory, supportsDirectoryPicker } from "@/lib/localFiles";
-import { saveProjectDirHandle, getProjectDirHandle, pickerId } from "@/lib/dirHandleStore";
-import { cacheProjectFiles, cacheProjectEntries } from "@/lib/localFileCache";
-import { entriesFromInputFileList } from "@/lib/localFiles";
+import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -58,59 +54,6 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
-  const [dirSaved, setDirSaved] = useState(false);
-  const [dirBusy, setDirBusy] = useState(false);
-  const dirInputRef = useRef<HTMLInputElement>(null);
-
-  const handlePickDir = async () => {
-    if (!id) return;
-    // Dans l'aperçu (iframe), le sélecteur natif est bloqué : champ dossier classique.
-    const inIframe = typeof window !== "undefined" && window.self !== window.top;
-    if (inIframe || !supportsDirectoryPicker()) {
-      dirInputRef.current?.click();
-      return;
-    }
-    setDirBusy(true);
-    try {
-      const picked = await pickLocalDirectory({ id: pickerId(id), mode: "readwrite" });
-      if (picked) {
-        await saveProjectDirHandle(id, picked.handle);
-        setDirSaved(true);
-        if (!folderPath) setFolderPath(picked.handle.name);
-        toast({ title: "Dossier mémorisé", description: "Le rafraîchissement des frames utilisera ce dossier sans le redemander." });
-      }
-    } catch (err: any) {
-      const msg = String(err?.message || "");
-      const unavailable =
-        msg.includes("non supporté") ||
-        err?.name === "SecurityError" ||
-        err?.name === "NotAllowedError" ||
-        msg.includes("Cross origin") ||
-        msg.includes("cross-origin") ||
-        msg.includes("sub frames");
-      if (unavailable) {
-        dirInputRef.current?.click();
-        return;
-      }
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
-    } finally {
-      setDirBusy(false);
-    }
-  };
-
-  const handleDirInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !id) return;
-    // L'accès n'est pas mémorisable ici : on garde les fichiers en mémoire
-    // pour la session (ouverture des brutes, rafraîchissement).
-    cacheProjectFiles(id, Array.from(files));
-    cacheProjectEntries(id, entriesFromInputFileList(files));
-    const rel = (files[0] as any).webkitRelativePath as string | undefined;
-    if (!folderPath && rel?.includes("/")) setFolderPath(rel.split("/")[0]);
-    setDirSaved(true);
-    if (dirInputRef.current) dirInputRef.current.value = "";
-    toast({ title: "Dossier chargé", description: "Accès valable pour cette session ; hors aperçu intégré, il sera mémorisé durablement." });
-  };
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -195,7 +138,6 @@ const EditProject = () => {
 
     setName(project.name);
     setFolderPath((project as any).folder_path || "");
-    if (id) getProjectDirHandle(id).then((h) => setDirSaved(!!h));
     setFilenamePattern((project as any).filename_pattern || "");
     setDescription(project.description || "");
     setImageUrl((project as any).image_url || null);
@@ -516,34 +458,9 @@ const EditProject = () => {
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
               </div>
               <div>
-                <Label>Dossier local</Label>
-                <div className="flex items-center gap-2">
-                  <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={dirBusy || !id}
-                    title="Mémoriser l'accès au dossier pour les rafraîchissements"
-                    onClick={handlePickDir}
-                  >
-                    {dirBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : dirSaved ? <FolderCheck className="h-4 w-4 text-green-500" /> : <FolderOpen className="h-4 w-4" />}
-                  </Button>
-                  <input
-                    ref={dirInputRef}
-                    type="file"
-                    /* @ts-ignore */
-                    webkitdirectory=""
-                    directory=""
-                    multiple
-                    className="hidden"
-                    onChange={handleDirInput}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Chemin du dossier contenant vos brutes. Utilisez le bouton dossier pour mémoriser l'accès :
-                  le bouton « Actualiser les acquisitions » de la page Frames l'utilisera sans rien vous redemander.
-                </p>
+                <Label>Chemin du dossier local</Label>
+                <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" />
+                <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition (utilisé pour le scan automatique)</p>
               </div>
               <div>
                 <Label>Structure des noms de fichiers (optionnel)</Label>
