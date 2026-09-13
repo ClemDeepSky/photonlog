@@ -142,6 +142,7 @@ const EditProject = () => {
 
     setName(project.name);
     setFolderPath((project as any).folder_path || "");
+    if (id) getProjectDirHandle(id).then((h) => setDirSaved(!!h));
     setFilenamePattern((project as any).filename_pattern || "");
     setDescription(project.description || "");
     setImageUrl((project as any).image_url || null);
