@@ -54,7 +54,6 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
-  const folderPickerInputRef = useRef<HTMLInputElement>(null);
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -343,22 +342,14 @@ const EditProject = () => {
     } catch (e: any) {
       if (e?.name === "AbortError") return; // l'utilisateur a annulé
       // Sélecteur natif indisponible (cadre intégré, navigateur non compatible) :
-      // repli sur le champ de dossier classique, on ne retient que le nom du dossier.
-      folderPickerInputRef.current?.click();
+      // on n'utilise PAS le champ de dossier classique (il déclenche une fenêtre
+      // « Importer N fichiers » du navigateur). On propose d'ouvrir l'app dans un onglet.
+      toast({
+        title: "Sélecteur de dossier indisponible ici",
+        description: "Ouvrez Photonlog dans un onglet complet (icône en haut à droite de l'aperçu) pour choisir le dossier, ou saisissez son chemin à la main.",
+        variant: "destructive",
+      });
     }
-  };
-
-  const onFolderPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const first: any = files[0];
-      const root = (first.webkitRelativePath || "").split("/")[0];
-      if (root) {
-        setFolderPath((prev) => (prev.trim() ? prev : root));
-        toast({ title: "Dossier racine enregistré", description: `« ${root} » sera utilisé pour l'actualisation des acquisitions.` });
-      }
-    }
-    e.target.value = "";
   };
 
   const updateProject = useMutation({
@@ -494,15 +485,6 @@ const EditProject = () => {
                   <Button type="button" variant="outline" size="icon" onClick={pickRootFolder} title="Choisir le dossier racine">
                     <FolderOpen className="h-4 w-4" />
                   </Button>
-                  <input
-                    ref={folderPickerInputRef}
-                    type="file"
-                    // @ts-ignore attribut non standard mais supporté par les navigateurs
-                    webkitdirectory=""
-                    multiple
-                    className="hidden"
-                    onChange={onFolderPicked}
-                  />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Cliquez sur l'icône pour désigner le dossier racine du projet : seul son emplacement est enregistré, aucun fichier n'est lu ni importé.</p>
               </div>
