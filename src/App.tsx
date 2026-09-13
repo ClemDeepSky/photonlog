@@ -22,6 +22,7 @@ import Frames from "./pages/Frames";
 import AcceptInvite from "./pages/AcceptInvite";
 import Admin from "./pages/Admin";
 import Privacy from "./pages/Privacy";
+import Guide from "./pages/Guide";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/confidentialite" element={<Privacy />} />
             <Route path="/rgpd" element={<Privacy />} />
+            <Route path="/guide" element={<Guide />} />
             <Route path="/invite/:token" element={<AcceptInvite />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
