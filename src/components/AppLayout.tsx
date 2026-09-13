@@ -158,7 +158,20 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               <CircleHelp className="h-4 w-4" />
               Guide d’utilisation
             </Link>
-            <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground mt-4" onClick={signOut}>
+            <Button variant="outline" size="sm" className="w-full justify-start mt-4" onClick={switchVersion}>
+              {version === "v2" ? (
+                <>
+                  <Undo2 className="h-4 w-4 mr-2" />
+                  Revenir à la version 1
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Essayer la version 2
+                </>
+              )}
+            </Button>
+            <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground mt-2" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Déconnexion
             </Button>
