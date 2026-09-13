@@ -161,18 +161,24 @@ export function pickerId(projectId: string): string {
 }
 
 /**
- * Demande à l'utilisateur de désigner le dossier du projet (accès lecture+écriture)
- * et mémorise le handle. Lève une erreur si l'API n'est pas disponible
- * (navigateur non compatible ou page affichée dans un cadre intégré).
+ * Demande à l'utilisateur de désigner le dossier du projet et mémorise le handle.
+ * Par défaut en accès lecture simple : il ne s'agit pas d'une importation, on
+ * ne fait que retenir l'emplacement du dossier. Passer mode: "readwrite"
+ * uniquement si la suppression de fichiers doit être possible ensuite.
+ * Lève une erreur si l'API n'est pas disponible (navigateur non compatible ou
+ * page affichée dans un cadre intégré).
  */
-export async function requestProjectDirHandle(projectId: string): Promise<any> {
+export async function requestProjectDirHandle(
+  projectId: string,
+  options?: { mode?: "read" | "readwrite" }
+): Promise<any> {
   const picker = (window as any).showDirectoryPicker;
   if (typeof picker !== "function") {
     const e: any = new Error("unsupported");
     e.name = "NotSupportedError";
     throw e;
   }
-  const handle = await picker.call(window, { mode: "readwrite", id: pickerId(projectId) });
+  const handle = await picker.call(window, { mode: options?.mode ?? "read", id: pickerId(projectId) });
   await saveProjectDirHandle(projectId, handle);
   return handle;
 }
