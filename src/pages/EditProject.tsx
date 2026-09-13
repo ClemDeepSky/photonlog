@@ -490,8 +490,22 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Chemin du dossier local</Label>
-                <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" />
-                <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition (utilisé pour le scan automatique)</p>
+                <div className="flex gap-2">
+                  <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
+                  <Button type="button" variant="outline" size="icon" onClick={pickFolder} title="Sélectionner le dossier">
+                    <FolderOpen className="h-4 w-4" />
+                  </Button>
+                  <input
+                    ref={folderInputRef}
+                    type="file"
+                    className="hidden"
+                    // @ts-expect-error attribut non standard mais supporté par tous les navigateurs
+                    webkitdirectory=""
+                    multiple
+                    onChange={onFolderInputChange}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition. L'icône dossier sélectionne le dossier et mémorise l'accès pour le bouton « Actualiser les acquisitions ».</p>
               </div>
               <div>
                 <Label>Structure des noms de fichiers (optionnel)</Label>
