@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,14 @@ import {
   X,
   Shield,
   CircleHelp,
+  Sparkles,
+  Undo2,
 } from "lucide-react";
 import { useState } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAppVersion } from "@/hooks/useAppVersion";
 
-const baseNavItems = [
+const v1NavItems = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { to: "/teams", label: "Teams", icon: Users },
   { to: "/equipment", label: "Matériel", icon: Wrench },
@@ -26,14 +29,33 @@ const baseNavItems = [
   { to: "/frames", label: "Frames", icon: ImagePlus },
 ];
 
+const v2NavItems = [
+  { to: "/v2/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { to: "/v2/projects", label: "Projets", icon: FolderOpen },
+  { to: "/equipment", label: "Matériel", icon: Wrench },
+  { to: "/teams", label: "Équipes", icon: Users },
+];
+
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { signOut, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
+  const { version, setVersion } = useAppVersion();
+  const baseNavItems = version === "v2" ? v2NavItems : v1NavItems;
   const navItems = isAdmin
     ? [...baseNavItems, { to: "/admin", label: "Administration", icon: Shield }]
     : baseNavItems;
+
+  const switchVersion = () => {
+    const next = version === "v2" ? "v1" : "v2";
+    setVersion(next);
+    setMobileOpen(false);
+    navigate(next === "v2" ? "/v2/dashboard" : "/dashboard");
+  };
+
+
 
 
   return (
