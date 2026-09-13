@@ -13,7 +13,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
+import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen, FolderCheck, Loader2 } from "lucide-react";
+import { pickLocalDirectory, supportsDirectoryPicker } from "@/lib/localFiles";
+import { saveProjectDirHandle, getProjectDirHandle, pickerId } from "@/lib/dirHandleStore";
 import SkyViewer from "@/components/projects/SkyViewer";
 import FolderScanner from "@/components/frames/FolderScanner";
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -54,6 +56,8 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
+  const [dirSaved, setDirSaved] = useState(false);
+  const [dirBusy, setDirBusy] = useState(false);
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -138,6 +142,7 @@ const EditProject = () => {
 
     setName(project.name);
     setFolderPath((project as any).folder_path || "");
+    if (id) getProjectDirHandle(id).then((h) => setDirSaved(!!h));
     setFilenamePattern((project as any).filename_pattern || "");
     setDescription(project.description || "");
     setImageUrl((project as any).image_url || null);
@@ -461,6 +466,32 @@ const EditProject = () => {
                 <Label>Dossier local</Label>
                 <div className="flex items-center gap-2">
                   <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={dirBusy || !supportsDirectoryPicker() || !id}
+                    title={supportsDirectoryPicker() ? "Mémoriser l'accès au dossier pour les rafraîchissements" : "Non supporté par ce navigateur"}
+                    onClick={async () => {
+                      if (!id) return;
+                      setDirBusy(true);
+                      try {
+                        const picked = await pickLocalDirectory({ id: pickerId(id), mode: "readwrite" });
+                        if (picked) {
+                          await saveProjectDirHandle(id, picked.handle);
+                          setDirSaved(true);
+                          if (!folderPath) setFolderPath(picked.handle.name);
+                          toast({ title: "Dossier mémorisé", description: "Le rafraîchissement des frames utilisera ce dossier sans le redemander." });
+                        }
+                      } catch (err: any) {
+                        toast({ title: "Erreur", description: err.message, variant: "destructive" });
+                      } finally {
+                        setDirBusy(false);
+                      }
+                    }}
+                  >
+                    {dirBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : dirSaved ? <FolderCheck className="h-4 w-4 text-green-500" /> : <FolderOpen className="h-4 w-4" />}
+                  </Button>
                   <FolderScanner
                     pattern={filenamePattern}
                     acquisitions={(projectAcquisitions || []).map(a => ({
