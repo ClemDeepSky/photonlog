@@ -19,7 +19,7 @@ import { saveProjectDirHandle, getProjectDirHandle, pickerId } from "@/lib/dirHa
 import { cacheProjectFiles, cacheProjectEntries } from "@/lib/localFileCache";
 import { entriesFromInputFileList } from "@/lib/localFiles";
 import SkyViewer from "@/components/projects/SkyViewer";
-import FolderScanner from "@/components/frames/FolderScanner";
+
 import ProjectImageField from "@/components/projects/ProjectImageField";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -539,34 +539,11 @@ const EditProject = () => {
                     className="hidden"
                     onChange={handleDirInput}
                   />
-                  <FolderScanner
-                    pattern={filenamePattern}
-                    acquisitions={(projectAcquisitions || []).map(a => ({
-                      id: a.id,
-                      filter: a.filter,
-                      quantity: a.quantity,
-                      acquired: a.acquired,
-                      paneNumber: a.pane_id ? (projectPanes?.find((p) => p.id === a.pane_id)?.pane_number ?? null) : null,
-                    }))}
-                    onApplyResults={(updates) => {
-                      const doUpdate = async () => {
-                        for (const u of updates) {
-                          const { error } = await supabase
-                            .from("project_acquisitions")
-                            .update({ acquired: Math.max(0, u.acquired) })
-                            .eq("id", u.id);
-                          if (error) throw error;
-                        }
-                        queryClient.invalidateQueries({ queryKey: ["project-acquisitions", id] });
-                        queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", id] });
-                        queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
-                        toast({ title: "Acquisitions mises à jour depuis le scan" });
-                      };
-                      doUpdate().catch((e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }));
-                    }}
-                  />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Chemin de référence. Utilisez le bouton pour scanner et compter les fichiers par filtre.</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Chemin du dossier contenant vos brutes. Utilisez le bouton dossier pour mémoriser l'accès :
+                  le bouton « Actualiser les acquisitions » de la page Frames l'utilisera sans rien vous redemander.
+                </p>
               </div>
               <div>
                 <Label>Structure des noms de fichiers (optionnel)</Label>
