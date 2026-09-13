@@ -14,7 +14,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen } from "lucide-react";
-import { requestProjectDirHandle } from "@/lib/dirHandleStore";
 import SkyViewer from "@/components/projects/SkyViewer";
 
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -56,32 +55,6 @@ const EditProject = () => {
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
   const folderInputRef = useRef<HTMLInputElement>(null);
-
-  // Icône dossier : sélectionne le dossier et remplit le champ avec son nom.
-  // Le handle est mémorisé (lecture simple) pour que « Actualiser les
-  // acquisitions » le relise. Aucun fichier n'est lu ni importé ici.
-  const pickFolder = async () => {
-    if (!id) return;
-    try {
-      const handle = await requestProjectDirHandle(id, { mode: "read" });
-      setFolderPath(handle.name || "");
-      toast({ title: "Dossier mémorisé", description: handle.name });
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      // Sélecteur natif bloqué (aperçu intégré) : on ne demande que le nom
-      // du dossier via le champ classique, sans indexer les fichiers.
-      folderInputRef.current?.click();
-    }
-  };
-
-  const onFolderInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length) return;
-    const first = (files[0] as any).webkitRelativePath as string | undefined;
-    const root = first?.includes("/") ? first.split("/")[0] : "";
-    if (root) setFolderPath(root);
-    e.target.value = "";
-  };
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -488,21 +461,12 @@ const EditProject = () => {
               <div>
                 <Label>Chemin du dossier local</Label>
                 <div className="flex gap-2">
-                  <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
-                  <Button type="button" variant="outline" size="icon" onClick={pickFolder} title="Sélectionner le dossier">
+                  <Input ref={folderInputRef} value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
+                  <Button type="button" variant="outline" size="icon" onClick={() => folderInputRef.current?.focus()} title="Renseigner le chemin">
                     <FolderOpen className="h-4 w-4" />
                   </Button>
-                  <input
-                    ref={folderInputRef}
-                    type="file"
-                    className="hidden"
-                    // @ts-expect-error attribut non standard mais supporté par tous les navigateurs
-                    webkitdirectory=""
-                    multiple
-                    onChange={onFolderInputChange}
-                  />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition. L'icône dossier sélectionne le dossier et mémorise l'accès pour le bouton « Actualiser les acquisitions ».</p>
+                <p className="text-xs text-muted-foreground mt-1">Ce champ enregistre uniquement le chemin du dossier. Aucun fichier n'est sélectionné, lu ou importé.</p>
               </div>
               <div>
                 <Label>Structure des noms de fichiers (optionnel)</Label>
