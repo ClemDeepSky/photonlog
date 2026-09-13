@@ -206,6 +206,7 @@ export type Database = {
           pane_id: string | null
           project_id: string
           quantity: number
+          target_seconds: number | null
         }
         Insert: {
           acquired?: number
@@ -218,6 +219,7 @@ export type Database = {
           pane_id?: string | null
           project_id: string
           quantity?: number
+          target_seconds?: number | null
         }
         Update: {
           acquired?: number
@@ -230,6 +232,7 @@ export type Database = {
           pane_id?: string | null
           project_id?: string
           quantity?: number
+          target_seconds?: number | null
         }
         Relationships: [
           {
@@ -241,6 +244,60 @@ export type Database = {
           },
           {
             foreignKeyName: "project_acquisitions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_contributions: {
+        Row: {
+          created_at: string
+          equipment_profile_id: string | null
+          filename_pattern: string | null
+          folder_path: string | null
+          id: string
+          project_id: string
+          setup: string | null
+          tracking_mode: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          equipment_profile_id?: string | null
+          filename_pattern?: string | null
+          folder_path?: string | null
+          id?: string
+          project_id: string
+          setup?: string | null
+          tracking_mode?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          equipment_profile_id?: string | null
+          filename_pattern?: string | null
+          folder_path?: string | null
+          id?: string
+          project_id?: string
+          setup?: string | null
+          tracking_mode?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_contributions_equipment_profile_id_fkey"
+            columns: ["equipment_profile_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_contributions_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -265,6 +322,7 @@ export type Database = {
           project_id: string
           relative_path: string
           sensor_temp: number | null
+          session_id: string | null
           star_count: number | null
         }
         Insert: {
@@ -283,6 +341,7 @@ export type Database = {
           project_id: string
           relative_path: string
           sensor_temp?: number | null
+          session_id?: string | null
           star_count?: number | null
         }
         Update: {
@@ -301,6 +360,7 @@ export type Database = {
           project_id?: string
           relative_path?: string
           sensor_temp?: number | null
+          session_id?: string | null
           star_count?: number | null
         }
         Relationships: [
@@ -316,6 +376,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_frames_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "project_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -373,6 +440,60 @@ export type Database = {
           },
         ]
       }
+      project_sessions: {
+        Row: {
+          contribution_id: string | null
+          created_at: string
+          created_by: string
+          ended_at: string | null
+          id: string
+          note: string | null
+          project_id: string
+          source: string
+          started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          contribution_id?: string | null
+          created_at?: string
+          created_by?: string
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          project_id: string
+          source?: string
+          started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contribution_id?: string | null
+          created_at?: string
+          created_by?: string
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          project_id?: string
+          source?: string
+          started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_sessions_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "project_contributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_sessions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string
@@ -387,10 +508,12 @@ export type Database = {
           name: string
           position_angle: number | null
           ra: string | null
+          schema_version: number
           setup: string | null
           status: string
           target_object: string | null
           team_id: string | null
+          tracking_mode: string
           updated_at: string
         }
         Insert: {
@@ -406,10 +529,12 @@ export type Database = {
           name: string
           position_angle?: number | null
           ra?: string | null
+          schema_version?: number
           setup?: string | null
           status?: string
           target_object?: string | null
           team_id?: string | null
+          tracking_mode?: string
           updated_at?: string
         }
         Update: {
@@ -425,10 +550,12 @@ export type Database = {
           name?: string
           position_angle?: number | null
           ra?: string | null
+          schema_version?: number
           setup?: string | null
           status?: string
           target_object?: string | null
           team_id?: string | null
+          tracking_mode?: string
           updated_at?: string
         }
         Relationships: [
@@ -437,6 +564,77 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_batches: {
+        Row: {
+          acquisition_id: string | null
+          bin: number
+          created_at: string
+          exposure_duration: number
+          filter: string
+          id: string
+          pane_id: string | null
+          project_id: string
+          session_id: string
+          source: string
+          sub_count: number
+        }
+        Insert: {
+          acquisition_id?: string | null
+          bin?: number
+          created_at?: string
+          exposure_duration?: number
+          filter?: string
+          id?: string
+          pane_id?: string | null
+          project_id: string
+          session_id: string
+          source?: string
+          sub_count?: number
+        }
+        Update: {
+          acquisition_id?: string | null
+          bin?: number
+          created_at?: string
+          exposure_duration?: number
+          filter?: string
+          id?: string
+          pane_id?: string | null
+          project_id?: string
+          session_id?: string
+          source?: string
+          sub_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_batches_acquisition_id_fkey"
+            columns: ["acquisition_id"]
+            isOneToOne: false
+            referencedRelation: "project_acquisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_batches_pane_id_fkey"
+            columns: ["pane_id"]
+            isOneToOne: false
+            referencedRelation: "project_panes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_batches_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_batches_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "project_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -594,6 +792,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_project: { Args: { _project_id: string }; Returns: boolean }
+      can_edit_project: { Args: { _project_id: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

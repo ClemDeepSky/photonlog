@@ -24,6 +24,10 @@ import Admin from "./pages/Admin";
 import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
 import NotFound from "./pages/NotFound";
+import { AppVersionProvider } from "@/hooks/useAppVersion";
+import DashboardV2 from "./pages/v2/DashboardV2";
+import ProjectsV2 from "./pages/v2/ProjectsV2";
+import ProjectWorkspace from "./pages/v2/ProjectWorkspace";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +38,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <AppVersionProvider>
           <CookieConsentProvider>
           <DemoTourProvider>
           <Routes>
@@ -54,12 +59,18 @@ const App = () => (
               <Route path="/projects/:id/edit" element={<EditProject />} />
               <Route path="/frames" element={<Frames />} />
               <Route path="/admin" element={<Admin />} />
+              {/* V2 — coexiste avec la V1, qui reste inchangée */}
+              <Route path="/v2" element={<DashboardV2 />} />
+              <Route path="/v2/dashboard" element={<DashboardV2 />} />
+              <Route path="/v2/projects" element={<ProjectsV2 />} />
+              <Route path="/v2/projects/:id" element={<ProjectWorkspace />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CookieBanner />
           </DemoTourProvider>
           </CookieConsentProvider>
+          </AppVersionProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

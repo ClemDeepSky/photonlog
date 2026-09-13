@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,14 @@ import {
   X,
   Shield,
   CircleHelp,
+  Sparkles,
+  Undo2,
 } from "lucide-react";
 import { useState } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAppVersion } from "@/hooks/useAppVersion";
 
-const baseNavItems = [
+const v1NavItems = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { to: "/teams", label: "Teams", icon: Users },
   { to: "/equipment", label: "Matériel", icon: Wrench },
@@ -26,14 +29,34 @@ const baseNavItems = [
   { to: "/frames", label: "Frames", icon: ImagePlus },
 ];
 
+const v2NavItems = [
+  { to: "/v2/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { to: "/v2/projects", label: "Projets", icon: FolderOpen },
+  { to: "/equipment", label: "Matériel", icon: Wrench },
+  { to: "/teams", label: "Équipes", icon: Users },
+];
+
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { signOut, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
+  const { version, setVersion } = useAppVersion();
+  const inV2 = version === "v2" || location.pathname.startsWith("/v2");
+  const baseNavItems = inV2 ? v2NavItems : v1NavItems;
   const navItems = isAdmin
     ? [...baseNavItems, { to: "/admin", label: "Administration", icon: Shield }]
     : baseNavItems;
+
+  const switchVersion = () => {
+    const next = inV2 ? "v1" : "v2";
+    setVersion(next);
+    setMobileOpen(false);
+    navigate(next === "v2" ? "/v2/dashboard" : "/dashboard");
+  };
+
+
 
 
   return (
@@ -63,6 +86,19 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           ))}
         </nav>
         <div className="p-4 border-t border-border/20">
+          <Button variant="outline" size="sm" className="w-full justify-start mb-3" onClick={switchVersion}>
+            {inV2 ? (
+              <>
+                <Undo2 className="h-4 w-4 mr-2" />
+                Revenir à la version 1
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Essayer la version 2
+              </>
+            )}
+          </Button>
           <p className="text-xs text-muted-foreground mb-3 truncate">{user?.email}</p>
           <Link
             to="/guide"
@@ -123,7 +159,20 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               <CircleHelp className="h-4 w-4" />
               Guide d’utilisation
             </Link>
-            <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground mt-4" onClick={signOut}>
+            <Button variant="outline" size="sm" className="w-full justify-start mt-4" onClick={switchVersion}>
+              {inV2 ? (
+                <>
+                  <Undo2 className="h-4 w-4 mr-2" />
+                  Revenir à la version 1
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Essayer la version 2
+                </>
+              )}
+            </Button>
+            <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground mt-2" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Déconnexion
             </Button>
