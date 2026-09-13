@@ -458,34 +458,9 @@ const EditProject = () => {
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
               </div>
               <div>
-                <Label>Dossier local</Label>
-                <div className="flex items-center gap-2">
-                  <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={dirBusy || !id}
-                    title="Mémoriser l'accès au dossier pour les rafraîchissements"
-                    onClick={handlePickDir}
-                  >
-                    {dirBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : dirSaved ? <FolderCheck className="h-4 w-4 text-green-500" /> : <FolderOpen className="h-4 w-4" />}
-                  </Button>
-                  <input
-                    ref={dirInputRef}
-                    type="file"
-                    /* @ts-ignore */
-                    webkitdirectory=""
-                    directory=""
-                    multiple
-                    className="hidden"
-                    onChange={handleDirInput}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Chemin du dossier contenant vos brutes. Utilisez le bouton dossier pour mémoriser l'accès :
-                  le bouton « Actualiser les acquisitions » de la page Frames l'utilisera sans rien vous redemander.
-                </p>
+                <Label>Chemin du dossier local</Label>
+                <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" />
+                <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition (utilisé pour le scan automatique)</p>
               </div>
               <div>
                 <Label>Structure des noms de fichiers (optionnel)</Label>
