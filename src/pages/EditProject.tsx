@@ -1,5 +1,5 @@
 import CoordinateInputs from "@/components/CoordinateInputs";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
@@ -17,7 +17,6 @@ import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen, FolderChec
 import { pickLocalDirectory, supportsDirectoryPicker } from "@/lib/localFiles";
 import { saveProjectDirHandle, getProjectDirHandle, pickerId } from "@/lib/dirHandleStore";
 import { cacheProjectFiles } from "@/lib/localFileCache";
-import { useRef } from "react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import FolderScanner from "@/components/frames/FolderScanner";
 import ProjectImageField from "@/components/projects/ProjectImageField";
