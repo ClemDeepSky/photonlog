@@ -43,7 +43,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
   const { version, setVersion } = useAppVersion();
-  const baseNavItems = version === "v2" ? v2NavItems : v1NavItems;
+  const inV2 = version === "v2" || location.pathname.startsWith("/v2");
+  const baseNavItems = inV2 ? v2NavItems : v1NavItems;
   const navItems = isAdmin
     ? [...baseNavItems, { to: "/admin", label: "Administration", icon: Shield }]
     : baseNavItems;
