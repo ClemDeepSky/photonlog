@@ -59,12 +59,18 @@ const App = () => (
               <Route path="/projects/:id/edit" element={<EditProject />} />
               <Route path="/frames" element={<Frames />} />
               <Route path="/admin" element={<Admin />} />
+              {/* V2 — coexiste avec la V1, qui reste inchangée */}
+              <Route path="/v2" element={<DashboardV2 />} />
+              <Route path="/v2/dashboard" element={<DashboardV2 />} />
+              <Route path="/v2/projects" element={<ProjectsV2 />} />
+              <Route path="/v2/projects/:id" element={<ProjectWorkspace />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CookieBanner />
           </DemoTourProvider>
           </CookieConsentProvider>
+          </AppVersionProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
