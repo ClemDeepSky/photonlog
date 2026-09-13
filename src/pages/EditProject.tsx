@@ -15,8 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen } from "lucide-react";
 import { requestProjectDirHandle } from "@/lib/dirHandleStore";
-import { entriesFromInputFileList } from "@/lib/localFiles";
-import { cacheProjectFiles, cacheProjectEntries } from "@/lib/localFileCache";
 import SkyViewer from "@/components/projects/SkyViewer";
 
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -60,29 +58,28 @@ const EditProject = () => {
   const folderInputRef = useRef<HTMLInputElement>(null);
 
   // Icône dossier : sélectionne le dossier et remplit le champ avec son nom.
-  // Le handle est mémorisé pour que « Actualiser les acquisitions » le relise.
+  // Le handle est mémorisé (lecture simple) pour que « Actualiser les
+  // acquisitions » le relise. Aucun fichier n'est lu ni importé ici.
   const pickFolder = async () => {
     if (!id) return;
     try {
-      const handle = await requestProjectDirHandle(id);
-      setFolderPath((prev) => handle.name || prev);
+      const handle = await requestProjectDirHandle(id, { mode: "read" });
+      setFolderPath(handle.name || "");
       toast({ title: "Dossier mémorisé", description: handle.name });
     } catch (err: any) {
       if (err?.name === "AbortError") return;
-      // Sélecteur natif indisponible (aperçu intégré) : champ classique.
+      // Sélecteur natif bloqué (aperçu intégré) : on ne demande que le nom
+      // du dossier via le champ classique, sans indexer les fichiers.
       folderInputRef.current?.click();
     }
   };
 
   const onFolderInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files?.length || !id) return;
+    if (!files?.length) return;
     const first = (files[0] as any).webkitRelativePath as string | undefined;
     const root = first?.includes("/") ? first.split("/")[0] : "";
     if (root) setFolderPath(root);
-    const entries = entriesFromInputFileList(files);
-    cacheProjectEntries(id, entries);
-    cacheProjectFiles(id, Array.from(files));
     e.target.value = "";
   };
   const [filenamePattern, setFilenamePattern] = useState("");
