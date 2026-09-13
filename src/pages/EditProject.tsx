@@ -56,6 +56,8 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
+  const [dirSaved, setDirSaved] = useState(false);
+  const [dirBusy, setDirBusy] = useState(false);
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
