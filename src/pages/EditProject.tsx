@@ -466,6 +466,32 @@ const EditProject = () => {
                 <Label>Dossier local</Label>
                 <div className="flex items-center gap-2">
                   <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="flex-1" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={dirBusy || !supportsDirectoryPicker() || !id}
+                    title={supportsDirectoryPicker() ? "Mémoriser l'accès au dossier pour les rafraîchissements" : "Non supporté par ce navigateur"}
+                    onClick={async () => {
+                      if (!id) return;
+                      setDirBusy(true);
+                      try {
+                        const picked = await pickLocalDirectory({ id: pickerId(id), mode: "readwrite" });
+                        if (picked) {
+                          await saveProjectDirHandle(id, picked.handle);
+                          setDirSaved(true);
+                          if (!folderPath) setFolderPath(picked.handle.name);
+                          toast({ title: "Dossier mémorisé", description: "Le rafraîchissement des frames utilisera ce dossier sans le redemander." });
+                        }
+                      } catch (err: any) {
+                        toast({ title: "Erreur", description: err.message, variant: "destructive" });
+                      } finally {
+                        setDirBusy(false);
+                      }
+                    }}
+                  >
+                    {dirBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : dirSaved ? <FolderCheck className="h-4 w-4 text-green-500" /> : <FolderOpen className="h-4 w-4" />}
+                  </Button>
                   <FolderScanner
                     pattern={filenamePattern}
                     acquisitions={(projectAcquisitions || []).map(a => ({
