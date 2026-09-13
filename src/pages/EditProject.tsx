@@ -13,11 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen, FolderCheck, Loader2 } from "lucide-react";
-import { pickLocalDirectory, supportsDirectoryPicker } from "@/lib/localFiles";
-import { saveProjectDirHandle, getProjectDirHandle, pickerId } from "@/lib/dirHandleStore";
-import { cacheProjectFiles, cacheProjectEntries } from "@/lib/localFileCache";
-import { entriesFromInputFileList } from "@/lib/localFiles";
+import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 
 import ProjectImageField from "@/components/projects/ProjectImageField";
