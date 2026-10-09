@@ -445,14 +445,29 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   };
   const activeRangeMetrics = METRICS.filter((m) => activeMetrics.has(m.key) && metricRanges[m.key]);
   const multiMetric = activeRangeMetrics.length > 1;
-  const axisLabels = {
-    top: activeRangeMetrics.map((m) => fmtMetric(m.key, metricRanges[m.key]!.max)).join(" / "),
-    bottom: activeRangeMetrics.map((m) => fmtMetric(m.key, metricRanges[m.key]!.min)).join(" / "),
-  };
+  const minLabels = activeRangeMetrics.map((m) => fmtMetric(m.key, metricRanges[m.key]!.min));
+  const maxLabels = activeRangeMetrics.map((m) => fmtMetric(m.key, metricRanges[m.key]!.max));
   const axisWidth = Math.max(
     42,
-    Math.min(120, Math.max(axisLabels.top.length, axisLabels.bottom.length) * 6.2 + 10)
+    Math.min(72, Math.max(...minLabels.map((l) => l.length), ...maxLabels.map((l) => l.length)) * 6.2 + 10)
   );
+  // Étiquette empilée (une ligne par mesure) pour plusieurs mesures cochées.
+  const MultiMetricTick = ({ x, y, payload }: any) => {
+    const isTop = payload.value === 100;
+    const arr = isTop ? maxLabels : payload.value === 0 ? minLabels : null;
+    if (!arr) return null;
+    const lineH = 11;
+    const startY = isTop ? y : y - (arr.length - 1) * lineH;
+    return (
+      <text x={x} y={startY} textAnchor="end" fontSize={10}>
+        {arr.map((t, i) => (
+          <tspan key={i} x={x} dy={i === 0 ? 0 : lineH} fill={activeRangeMetrics[i].color}>
+            {t}
+          </tspan>
+        ))}
+      </text>
+    );
+  };
 
   const overviewDenominator = Math.max(1, totalPoints);
   const zoomWindow = zoom || fullWindow(Math.max(1, totalPoints));
