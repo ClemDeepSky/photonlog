@@ -151,7 +151,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   };
 
   // Distribution régulière : chaque image conserve sa place, même si sa nuit est masquée.
-  const { series, totalPoints, nightRanges } = useMemo(() => {
+  const { series, metricRanges, totalPoints, nightRanges } = useMemo(() => {
     const indexed: Array<{ idx: number; f: FrameRow & { captured_at: string } }> = [];
     for (const f of withDates) {
       const filter = f.filter || "?";
@@ -165,12 +165,14 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     indexed.forEach((item, i) => (item.idx = i));
     const kept = indexed;
 
+    const metricRanges: Partial<Record<MetricKey, { min: number; max: number }>> = {};
     const metricSeries = METRICS.filter((item) => activeMetrics.has(item.key)).map((item) => {
       const values = kept
         .map(({ f }) => f[item.key])
         .filter((value): value is number => value != null && Number.isFinite(value));
       const min = values.length ? Math.min(...values) : 0;
       const max = values.length ? Math.max(...values) : 0;
+      metricRanges[item.key] = { min, max };
       const spread = max - min;
       const points = kept.flatMap(({ idx, f }) => {
         const value = f[item.key];
@@ -208,6 +210,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
     return {
       series: metricSeries,
+      metricRanges,
       totalPoints: indexed.length,
       nightRanges: Array.from(ranges.values()),
     };
@@ -433,6 +436,39 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
 
   const hasMetricData = series.some((s) => s.points.length > 0);
+
+  // Axe Y : valeurs réelles (min/max) des mesures cochées au lieu de pourcentages.
+  const fmtMetric = (key: MetricKey, v: number) => {
+    if (key === "star_count") return String(Math.round(v));
+    if (key === "eccentricity") return v.toFixed(2);
+    return v.toFixed(1);
+  };
+  const activeRangeMetrics = METRICS.filter((m) => activeMetrics.has(m.key) && metricRanges[m.key]);
+  const multiMetric = activeRangeMetrics.length > 1;
+  const minLabels = activeRangeMetrics.map((m) => fmtMetric(m.key, metricRanges[m.key]!.min));
+  const maxLabels = activeRangeMetrics.map((m) => fmtMetric(m.key, metricRanges[m.key]!.max));
+  const axisWidth = Math.max(
+    42,
+    Math.min(72, Math.max(...minLabels.map((l) => l.length), ...maxLabels.map((l) => l.length)) * 6.2 + 10)
+  );
+  // Étiquette empilée (une ligne par mesure) pour plusieurs mesures cochées.
+  const MultiMetricTick = ({ x, y, payload }: any) => {
+    const isTop = payload.value === 100;
+    const arr = isTop ? maxLabels : payload.value === 0 ? minLabels : null;
+    if (!arr) return null;
+    const lineH = 11;
+    const startY = isTop ? y : y - (arr.length - 1) * lineH;
+    return (
+      <text x={x} y={startY} textAnchor="end" fontSize={10}>
+        {arr.map((t, i) => (
+          <tspan key={i} x={x} dy={i === 0 ? 0 : lineH} fill={activeRangeMetrics[i].color}>
+            {t}
+          </tspan>
+        ))}
+      </text>
+    );
+  };
+
   const overviewDenominator = Math.max(1, totalPoints);
   const zoomWindow = zoom || fullWindow(Math.max(1, totalPoints));
   const visibleNightRanges = nightRanges.filter(
@@ -445,20 +481,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     ? Math.max(1, Math.round(Math.min(totalPoints, zoom[1]) - Math.max(-0.5, zoom[0])))
     : totalPoints;
 
-  // Plot area: YAxis width 42 on the left, margin right 16
+  // Plot area: YAxis width axisWidth on the left, margin right 16
   const pxToX = (px: number) => {
     const w = chartWrapRef.current?.clientWidth || 1;
-    const plotW = Math.max(1, w - 42 - 16);
-    const ratio = Math.min(1, Math.max(0, (px - 42) / plotW));
+    const plotW = Math.max(1, w - axisWidth - 16);
+    const ratio = Math.min(1, Math.max(0, (px - axisWidth) / plotW));
     return zoomWindow[0] + ratio * (zoomWindow[1] - zoomWindow[0]);
   };
   const localX = (e: React.PointerEvent) => e.clientX - (chartWrapRef.current?.getBoundingClientRect().left || 0);
   const localY = (e: React.PointerEvent) => e.clientY - (chartWrapRef.current?.getBoundingClientRect().top || 0);
   const xToPx = (x: number) => {
     const w = chartWrapRef.current?.clientWidth || 1;
-    const plotW = Math.max(1, w - 42 - 16);
+    const plotW = Math.max(1, w - axisWidth - 16);
     const ratio = (x - zoomWindow[0]) / (zoomWindow[1] - zoomWindow[0]);
-    return 42 + ratio * plotW;
+    return axisWidth + ratio * plotW;
   };
   // Hauteur du graphique : h-80 (320px), marges top 8 / bottom 12, domaine Y [0, 100].
   const yToPx = (y: number) => 8 + (1 - y / 100) * 300;
@@ -643,10 +679,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       <YAxis
                         type="number"
                         dataKey="y"
-                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        tick={multiMetric ? MultiMetricTick : { fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                         domain={[0, 100]}
-                        tickFormatter={(value) => `${value}%`}
-                        width={42}
+                        ticks={multiMetric ? [0, 100] : undefined}
+                        tickFormatter={
+                          multiMetric
+                            ? () => ""
+                            : (value) => {
+                                const m = activeRangeMetrics[0];
+                                if (!m) return "";
+                                const range = metricRanges[m.key]!;
+                                return fmtMetric(m.key, range.min + (value / 100) * (range.max - range.min));
+                              }
+                        }
+                        width={axisWidth}
                       />
                       <Tooltip
                         content={({ active, payload }: any) => {
