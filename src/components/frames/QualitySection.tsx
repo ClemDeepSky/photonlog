@@ -95,7 +95,11 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   );
 
   const availableFilters = useMemo(
-    () => Array.from(new Set(withDates.map((f) => f.filter).filter(Boolean) as string[])).sort(),
+    () =>
+      Array.from(new Set(withDates.map((f) => f.filter).filter(Boolean) as string[])).sort((a, b) => {
+        const d = filterBand(a).order - filterBand(b).order;
+        return d !== 0 ? d : a.localeCompare(b);
+      }),
     [withDates]
   );
   const availablePanes = useMemo(
@@ -431,19 +435,25 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
           </CardTitle>
           {availableFilters.length > 0 && (
             <div className="flex max-w-full flex-wrap justify-end gap-1" role="tablist" aria-label="Filtre affiché">
-              {availableFilters.map((filter) => (
-                <Button
-                  key={filter}
-                  role="tab"
-                  aria-selected={selectedFilter === filter}
-                  size="sm"
-                  variant={selectedFilter === filter ? "default" : "ghost"}
-                  className="h-7 min-w-8 px-2 text-xs"
-                  onClick={() => setSelectedFilter(filter)}
-                >
-                  {filter}
-                </Button>
-              ))}
+              {availableFilters.map((filter) => {
+                const band = filterBand(filter);
+                const active = selectedFilter === filter;
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    className={`h-7 min-w-8 rounded-md px-2 text-xs font-semibold transition-all ${
+                      active ? "ring-2 ring-ring ring-offset-1 ring-offset-background" : "opacity-50 hover:opacity-80"
+                    }`}
+                    style={{ backgroundColor: band.bg, color: band.fg }}
+                    onClick={() => setSelectedFilter(filter)}
+                  >
+                    {filter}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
