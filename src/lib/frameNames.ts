@@ -78,7 +78,7 @@ export function detectFilterFromPath(filePath: string): string | null {
 /* ------------------------------------------------------------------ */
 
 const PANE_PATTERNS = [
-  /\b(?:panneau|panel|pane|tile|tuile|mosaic|mosaique)[\s_\-]*0*(\d{1,3})\b/i,
+  /\b(?:panneau|panel|pane|tile|tuile|mosaic|mosaique)[\s_\-]*0*(\d{1,3})(?!\d)/i,
   /\b[pt]0*(\d{1,3})\b/i,
 ];
 
@@ -100,6 +100,11 @@ export function detectPaneFromPath(filePath: string): number | null {
     if (found !== null) return found;
   }
   const nameWithoutExt = parts[parts.length - 1].replace(/\.[^.]+$/, "");
+  const whole = nameWithoutExt.match(PANE_PATTERNS[0]);
+  if (whole) {
+    const n = parseInt(whole[1], 10);
+    if (n > 0) return n;
+  }
   for (const seg of nameWithoutExt.split(/[_\-\s]+/)) {
     const found = detectPaneFromSegment(seg);
     if (found !== null) return found;
@@ -146,7 +151,7 @@ export function detectExposureFromPath(filePath: string): number | null {
 /* Modèle de nommage                                                  */
 /* ------------------------------------------------------------------ */
 
-const NUMBER = "[-+]?\\d+(?:[.,]\\d+)?";
+const NUMBER = "(?:[-+]?\\d+(?:[.,]\\d+)?|NaN|nan)";
 
 const TOKEN_REGEX: Record<string, string> = {
   DATE: "\\d{4}[-_/]\\d{2}[-_/]\\d{2}",
