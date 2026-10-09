@@ -32,7 +32,7 @@ Module d'ajout de frame
 
 This project was built with [Lovable](https://lovable.dev).
 
-**Live app**: https://astro-quest-keeper.lovable.app
+**Live app**: https://photonlog.app
 
 ## Build with Lovable
 
