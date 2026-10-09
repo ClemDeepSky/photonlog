@@ -27,6 +27,23 @@ import {
   ReferenceArea,
 } from "recharts";
 
+// Ordre L R V B S H O, couleur de fond = bande passante du filtre
+const DARK = "hsl(222, 47%, 8%)";
+const LIGHT = "hsl(0, 0%, 100%)";
+const BANDS: { keys: string[]; order: number; bg: string; fg: string }[] = [
+  { keys: ["L", "LUM", "LUMINANCE", "CLEAR", "C"], order: 0, bg: "hsl(0, 0%, 92%)", fg: DARK },
+  { keys: ["R", "RED"], order: 1, bg: "hsl(0, 75%, 50%)", fg: LIGHT },
+  { keys: ["V", "G", "GREEN", "VERT"], order: 2, bg: "hsl(130, 65%, 40%)", fg: LIGHT },
+  { keys: ["B", "BLUE", "BLEU"], order: 3, bg: "hsl(220, 85%, 55%)", fg: LIGHT },
+  { keys: ["S", "SII", "S2", "SULFUR"], order: 4, bg: "hsl(350, 80%, 32%)", fg: LIGHT },
+  { keys: ["H", "HA", "HALPHA", "H-ALPHA"], order: 5, bg: "hsl(355, 85%, 45%)", fg: LIGHT },
+  { keys: ["O", "OIII", "O3", "OXYGEN"], order: 6, bg: "hsl(180, 75%, 45%)", fg: DARK },
+];
+const filterBand = (name: string) => {
+  const k = name.trim().toUpperCase();
+  return BANDS.find((b) => b.keys.includes(k)) ?? { order: 99, bg: "hsl(var(--secondary))", fg: "hsl(var(--foreground))" };
+};
+
 interface FrameRow {
   id: string;
   filter: string | null;
@@ -95,7 +112,11 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   );
 
   const availableFilters = useMemo(
-    () => Array.from(new Set(withDates.map((f) => f.filter).filter(Boolean) as string[])).sort(),
+    () =>
+      Array.from(new Set(withDates.map((f) => f.filter).filter(Boolean) as string[])).sort((a, b) => {
+        const d = filterBand(a).order - filterBand(b).order;
+        return d !== 0 ? d : a.localeCompare(b);
+      }),
     [withDates]
   );
   const availablePanes = useMemo(
@@ -431,19 +452,25 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
           </CardTitle>
           {availableFilters.length > 0 && (
             <div className="flex max-w-full flex-wrap justify-end gap-1" role="tablist" aria-label="Filtre affiché">
-              {availableFilters.map((filter) => (
-                <Button
-                  key={filter}
-                  role="tab"
-                  aria-selected={selectedFilter === filter}
-                  size="sm"
-                  variant={selectedFilter === filter ? "default" : "ghost"}
-                  className="h-7 min-w-8 px-2 text-xs"
-                  onClick={() => setSelectedFilter(filter)}
-                >
-                  {filter}
-                </Button>
-              ))}
+              {availableFilters.map((filter) => {
+                const band = filterBand(filter);
+                const active = selectedFilter === filter;
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    className={`h-7 min-w-8 rounded-md px-2 text-xs font-semibold transition-all ${
+                      active ? "ring-2 ring-ring ring-offset-1 ring-offset-background" : "opacity-50 hover:opacity-80"
+                    }`}
+                    style={{ backgroundColor: band.bg, color: band.fg }}
+                    onClick={() => setSelectedFilter(filter)}
+                  >
+                    {filter}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
