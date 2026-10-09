@@ -151,7 +151,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   };
 
   // Distribution régulière : chaque image conserve sa place, même si sa nuit est masquée.
-  const { series, totalPoints, nightRanges } = useMemo(() => {
+  const { series, metricRanges, totalPoints, nightRanges } = useMemo(() => {
     const indexed: Array<{ idx: number; f: FrameRow & { captured_at: string } }> = [];
     for (const f of withDates) {
       const filter = f.filter || "?";
