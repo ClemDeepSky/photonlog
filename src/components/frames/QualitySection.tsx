@@ -243,7 +243,6 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, totalPoints]);
   const [drag, setDrag] = useState<{ start: number; cur: number } | null>(null);
   const [selection, setSelection] = useState<[number, number] | null>(null);
-  const suppressClickRef = useRef(false);
   useEffect(() => setSelection(null), [selectedFilter, offPanes, totalPoints]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
@@ -454,6 +453,16 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     return zoomWindow[0] + ratio * (zoomWindow[1] - zoomWindow[0]);
   };
   const localX = (e: React.PointerEvent) => e.clientX - (chartWrapRef.current?.getBoundingClientRect().left || 0);
+  const localY = (e: React.PointerEvent) => e.clientY - (chartWrapRef.current?.getBoundingClientRect().top || 0);
+  const xToPx = (x: number) => {
+    const w = chartWrapRef.current?.clientWidth || 1;
+    const plotW = Math.max(1, w - 42 - 16);
+    const ratio = (x - zoomWindow[0]) / (zoomWindow[1] - zoomWindow[0]);
+    return 42 + ratio * plotW;
+  };
+  // Hauteur du graphique : h-80 (320px), marges top 8 / bottom 12, domaine Y [0, 100].
+  const yToPx = (y: number) => 8 + (1 - y / 100) * 300;
+
   const onDragStart = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
     const x = localX(e);
@@ -469,8 +478,21 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       const a = pxToX(Math.min(drag.start, end));
       const b = pxToX(Math.max(drag.start, end));
       setSelection([a, b]);
-      suppressClickRef.current = true;
-      setTimeout(() => (suppressClickRef.current = false), 0);
+    } else {
+      // Clic simple (déplacement ≤ 4px) : ouvre la brute du point le plus proche.
+      const cx = end;
+      const cy = localY(e);
+      let best: { path: string; name: string; dist: number } | null = null;
+      for (const s of series) {
+        for (const p of s.points) {
+          if (p.x < zoomWindow[0] || p.x > zoomWindow[1]) continue;
+          const dist = Math.hypot(xToPx(p.x) - cx, yToPx(p.y) - cy);
+          if (!best || dist < best.dist) {
+            best = { path: p.relativePath, name: p.fileName, dist };
+          }
+        }
+      }
+      if (best && best.dist <= 15) openFrame(best.path, best.name);
     }
     setDrag(null);
   };
@@ -675,10 +697,6 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           line={{ stroke: s.color, strokeWidth: 1.5 }}
                           fill={s.color}
                           cursor="pointer"
-                          onClick={(p: any) => {
-                            if (suppressClickRef.current) return;
-                            openFrame(p?.relativePath, p?.fileName);
-                          }}
                         />
                       ))}
                       {selection && (
