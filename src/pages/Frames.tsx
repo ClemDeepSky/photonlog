@@ -170,6 +170,10 @@ const Frames = () => {
     ? acquisitions.reduce((s, a) => s + a.acquired * a.exposure_duration, 0)
     : 0;
 
+  const totalRemainingFrames = acquisitions
+    ? acquisitions.reduce((s, a) => s + Math.max(0, a.quantity - a.acquired), 0)
+    : 0;
+
   const formatExposure = (seconds: number) => {
     if (seconds < 3600) return `${Math.round(seconds / 60)} min`;
     const h = Math.floor(seconds / 3600);
