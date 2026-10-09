@@ -466,20 +466,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     ? Math.max(1, Math.round(Math.min(totalPoints, zoom[1]) - Math.max(-0.5, zoom[0])))
     : totalPoints;
 
-  // Plot area: YAxis width 42 on the left, margin right 16
+  // Plot area: YAxis width axisWidth on the left, margin right 16
   const pxToX = (px: number) => {
     const w = chartWrapRef.current?.clientWidth || 1;
-    const plotW = Math.max(1, w - 42 - 16);
-    const ratio = Math.min(1, Math.max(0, (px - 42) / plotW));
+    const plotW = Math.max(1, w - axisWidth - 16);
+    const ratio = Math.min(1, Math.max(0, (px - axisWidth) / plotW));
     return zoomWindow[0] + ratio * (zoomWindow[1] - zoomWindow[0]);
   };
   const localX = (e: React.PointerEvent) => e.clientX - (chartWrapRef.current?.getBoundingClientRect().left || 0);
   const localY = (e: React.PointerEvent) => e.clientY - (chartWrapRef.current?.getBoundingClientRect().top || 0);
   const xToPx = (x: number) => {
     const w = chartWrapRef.current?.clientWidth || 1;
-    const plotW = Math.max(1, w - 42 - 16);
+    const plotW = Math.max(1, w - axisWidth - 16);
     const ratio = (x - zoomWindow[0]) / (zoomWindow[1] - zoomWindow[0]);
-    return 42 + ratio * plotW;
+    return axisWidth + ratio * plotW;
   };
   // Hauteur du graphique : h-80 (320px), marges top 8 / bottom 12, domaine Y [0, 100].
   const yToPx = (y: number) => 8 + (1 - y / 100) * 300;
