@@ -78,7 +78,7 @@ export function detectFilterFromPath(filePath: string): string | null {
 /* ------------------------------------------------------------------ */
 
 const PANE_PATTERNS = [
-  /\b(?:panneau|panel|pane|tile|tuile|mosaic|mosaique)[\s_\-]*0*(\d{1,3})\b/i,
+  /\b(?:panneau|panel|pane|tile|tuile|mosaic|mosaique)[\s_\-]*0*(\d{1,3})(?!\d)/i,
   /\b[pt]0*(\d{1,3})\b/i,
 ];
 
