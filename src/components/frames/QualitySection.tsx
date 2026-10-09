@@ -70,14 +70,21 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   const { data: frames, isLoading } = useQuery({
     queryKey: ["project-frames", projectId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("project_frames")
-        .select("id, filter, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp, file_name, relative_path")
-        .eq("project_id", projectId)
-        .order("captured_at", { ascending: true })
-        .limit(20000);
-      if (error) throw error;
-      return data as FrameRow[];
+      const all: FrameRow[] = [];
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("project_frames")
+          .select("id, filter, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp, file_name, relative_path")
+          .eq("project_id", projectId)
+          .order("captured_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        all.push(...((data || []) as FrameRow[]));
+        if (!data || data.length < PAGE) break;
+      }
+      return all;
     },
     enabled: !!projectId,
   });
