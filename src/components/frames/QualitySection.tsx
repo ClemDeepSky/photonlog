@@ -241,6 +241,10 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
   const [zoom, setZoom] = useState<[number, number] | null>(null);
   useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, totalPoints]);
+  const [drag, setDrag] = useState<{ start: number; cur: number } | null>(null);
+  const [selection, setSelection] = useState<[number, number] | null>(null);
+  const suppressClickRef = useRef(false);
+  useEffect(() => setSelection(null), [selectedFilter, offPanes, totalPoints]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
@@ -442,6 +446,44 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     ? Math.max(1, Math.round(Math.min(totalPoints, zoom[1]) - Math.max(-0.5, zoom[0])))
     : totalPoints;
 
+  // Plot area: YAxis width 42 on the left, margin right 16
+  const pxToX = (px: number) => {
+    const w = chartWrapRef.current?.clientWidth || 1;
+    const plotW = Math.max(1, w - 42 - 16);
+    const ratio = Math.min(1, Math.max(0, (px - 42) / plotW));
+    return zoomWindow[0] + ratio * (zoomWindow[1] - zoomWindow[0]);
+  };
+  const localX = (e: React.PointerEvent) => e.clientX - (chartWrapRef.current?.getBoundingClientRect().left || 0);
+  const onDragStart = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    const x = localX(e);
+    setDrag({ start: x, cur: x });
+  };
+  const onDragMove = (e: React.PointerEvent) => {
+    if (drag) setDrag({ ...drag, cur: localX(e) });
+  };
+  const onDragEnd = (e: React.PointerEvent) => {
+    if (!drag) return;
+    const end = localX(e);
+    if (Math.abs(end - drag.start) > 4) {
+      const a = pxToX(Math.min(drag.start, end));
+      const b = pxToX(Math.max(drag.start, end));
+      setSelection([a, b]);
+      suppressClickRef.current = true;
+      setTimeout(() => (suppressClickRef.current = false), 0);
+    }
+    setDrag(null);
+  };
+
+  const selectedFrames = (() => {
+    if (!selection) return [];
+    const byX = new Map<number, (typeof series)[number]["points"][number]>();
+    for (const s of series) for (const p of s.points) {
+      if (p.x >= selection[0] && p.x <= selection[1] && !byX.has(p.x)) byX.set(p.x, p);
+    }
+    return Array.from(byX.values()).sort((a, b) => a.x - b.x);
+  })();
+
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-3 space-y-4">
@@ -527,7 +569,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
-                    Molette de la souris : zoom horizontal
+                    Molette : zoom horizontal · Glisser : sélectionner des images
                     {zoom ? ` — ${visibleCount} images affichées sur ${totalPoints}` : ""}
                   </p>
                   {zoom && (
@@ -536,7 +578,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                     </Button>
                   )}
                 </div>
-                <div ref={chartWrapRef} className="h-80 w-full">
+                <div
+                  ref={chartWrapRef}
+                  className="relative h-80 w-full select-none"
+                  onPointerDown={onDragStart}
+                  onPointerMove={onDragMove}
+                  onPointerUp={onDragEnd}
+                  onPointerLeave={() => setDrag(null)}
+                >
+                  {drag && Math.abs(drag.cur - drag.start) > 4 && (
+                    <div
+                      className="pointer-events-none absolute bottom-[42px] top-2 z-10 border border-primary/60 bg-primary/15"
+                      style={{ left: Math.min(drag.start, drag.cur), width: Math.abs(drag.cur - drag.start) }}
+                    />
+                  )}
                   <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart margin={{ top: 8, right: 16, bottom: 12, left: 0 }}>
                       <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
@@ -620,9 +675,23 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           line={{ stroke: s.color, strokeWidth: 1.5 }}
                           fill={s.color}
                           cursor="pointer"
-                          onClick={(p: any) => openFrame(p?.relativePath, p?.fileName)}
+                          onClick={(p: any) => {
+                            if (suppressClickRef.current) return;
+                            openFrame(p?.relativePath, p?.fileName);
+                          }}
                         />
                       ))}
+                      {selection && (
+                        <ReferenceArea
+                          x1={Math.max(selection[0], zoomWindow[0])}
+                          x2={Math.min(selection[1], zoomWindow[1])}
+                          fill="hsl(var(--primary))"
+                          fillOpacity={0.15}
+                          stroke="hsl(var(--primary))"
+                          strokeOpacity={0.6}
+                          ifOverflow="hidden"
+                        />
+                      )}
                     </ScatterChart>
                   </ResponsiveContainer>
                 </div>
@@ -686,6 +755,53 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                     <span>Fin</span>
                   </div>
                 </div>
+                {selection && (
+                  <div className="rounded-md border border-border/60 bg-secondary/20 p-2">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium">
+                        {selectedFrames.length} image{selectedFrames.length > 1 ? "s" : ""} sélectionnée{selectedFrames.length > 1 ? "s" : ""}
+                      </p>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setSelection(null)}>
+                        Effacer la sélection
+                      </Button>
+                    </div>
+                    <div className="max-h-64 overflow-auto">
+                      <table className="w-full text-xs">
+                        <thead className="sticky top-0 bg-card text-muted-foreground">
+                          <tr className="text-left">
+                            <th className="px-2 py-1 font-normal">Fichier</th>
+                            <th className="px-2 py-1 font-normal">Date</th>
+                            <th className="px-2 py-1 text-right font-normal">FWHM</th>
+                            <th className="px-2 py-1 text-right font-normal">HFR</th>
+                            <th className="px-2 py-1 text-right font-normal">Exc.</th>
+                            <th className="px-2 py-1 text-right font-normal">Étoiles</th>
+                            <th className="px-2 py-1 text-right font-normal">Temp.</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedFrames.map((p) => (
+                            <tr
+                              key={p.x}
+                              className="cursor-pointer border-t border-border/40 hover:bg-secondary/40"
+                              onClick={() => openFrame(p.relativePath, p.fileName)}
+                              title="Ouvrir l'aperçu"
+                            >
+                              <td className="max-w-[18rem] truncate px-2 py-1 text-primary">{p.fileName}</td>
+                              <td className="whitespace-nowrap px-2 py-1 text-muted-foreground">
+                                {p.capturedAt ? new Date(p.capturedAt).toLocaleString("fr-FR") : ""}
+                              </td>
+                              <td className="px-2 py-1 text-right tabular-nums">{p.fwhm ?? "—"}</td>
+                              <td className="px-2 py-1 text-right tabular-nums">{p.hfr ?? "—"}</td>
+                              <td className="px-2 py-1 text-right tabular-nums">{p.eccentricity ?? "—"}</td>
+                              <td className="px-2 py-1 text-right tabular-nums">{p.starCount ?? "—"}</td>
+                              <td className="px-2 py-1 text-right tabular-nums">{p.sensorTemp ?? "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
