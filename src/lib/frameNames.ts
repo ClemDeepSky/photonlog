@@ -108,6 +108,41 @@ export function detectPaneFromPath(filePath: string): number | null {
 }
 
 /* ------------------------------------------------------------------ */
+/* Durée d'exposition (dossiers ou segments du nom)                   */
+/* ------------------------------------------------------------------ */
+
+// Ex. "300s", "300sec", "300.0s", "EXP_300", "exposure300", "5min", "120s_Ha"
+const EXPO_PATTERNS: [RegExp, number][] = [
+  [/(?:^|[^a-z0-9.])(\d+(?:[.,]\d+)?)\s*(?:s|sec|secs|seconds?|secondes?)(?![a-z])/i, 1],
+  [/(?:^|[^a-z0-9.])(\d+(?:[.,]\d+)?)\s*(?:m|min|mins|minutes?)(?![a-z])/i, 60],
+  [/(?:exp|expo|exposure|exptime|pose)[\s_\-=]*(\d+(?:[.,]\d+)?)/i, 1],
+];
+
+function detectExposureFromSegment(seg: string): number | null {
+  for (const [re, mult] of EXPO_PATTERNS) {
+    const m = seg.match(re);
+    if (m) {
+      const n = parseFloat(m[1].replace(",", ".")) * mult;
+      if (!isNaN(n) && n > 0 && n <= 7200) return n;
+    }
+  }
+  return null;
+}
+
+/** Cherche la durée dans le nom du fichier, puis dans les dossiers parents. */
+export function detectExposureFromPath(filePath: string): number | null {
+  const parts = filePath.replace(/\\/g, "/").split("/");
+  const name = parts[parts.length - 1].replace(/\.[^.]+$/, "");
+  const fromName = detectExposureFromSegment(name);
+  if (fromName !== null) return fromName;
+  for (let i = parts.length - 2; i >= 0; i--) {
+    const found = detectExposureFromSegment(parts[i]);
+    if (found !== null) return found;
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
 /* Modèle de nommage                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -240,6 +275,7 @@ export function parseFrameName(relativePath: string, pattern?: string | null): P
   }
 
   if (!result.filter) result.filter = detectFilterFromPath(relativePath);
+  if (result.exposureDuration == null) result.exposureDuration = detectExposureFromPath(relativePath);
   result.paneNumber = detectPaneFromPath(relativePath);
   return result;
 }

@@ -13,6 +13,8 @@ export interface RefreshAcquisition {
   id: string;
   filter: string;
   paneNumber: number | null;
+  /** Durée d'exposition prévue (s) — permet plusieurs expositions par filtre */
+  exposure?: number | null;
 }
 
 interface FolderRefreshProps {
@@ -29,12 +31,27 @@ const CHUNK = 400;
 const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: FolderRefreshProps) => {
   const [busy, setBusy] = useState(false);
 
-  const findAcquisitionId = (filter: string | null, paneNumber: number | null) => {
+  const sameExpo = (a: number | null | undefined, b: number | null) =>
+    a != null && b != null && Math.abs(Number(a) - b) < 0.5;
+
+  // Rattachement : filtre (+ panneau) puis, s'il existe plusieurs durées
+  // pour ce filtre, la durée lue sur la brute. Durée inconnue ou non prévue :
+  // durée la plus proche, à défaut la première ligne du filtre.
+  const findAcquisitionId = (filter: string | null, paneNumber: number | null, exposure: number | null) => {
     if (!filter) return null;
-    const sameFilter = acquisitions.filter((a) => a.filter === filter);
-    if (!isMosaic) return sameFilter[0]?.id ?? null;
-    if (paneNumber == null) return null;
-    return sameFilter.find((a) => a.paneNumber === paneNumber)?.id ?? null;
+    let candidates = acquisitions.filter((a) => a.filter === filter);
+    if (isMosaic) {
+      if (paneNumber == null) return null;
+      candidates = candidates.filter((a) => a.paneNumber === paneNumber);
+    }
+    if (candidates.length <= 1 || exposure == null) return candidates[0]?.id ?? null;
+    const exact = candidates.find((a) => sameExpo(a.exposure, exposure));
+    if (exact) return exact.id;
+    const withExpo = candidates.filter((a) => a.exposure != null);
+    if (!withExpo.length) return candidates[0].id;
+    return withExpo.reduce((best, a) =>
+      Math.abs(Number(a.exposure) - exposure) < Math.abs(Number(best.exposure) - exposure) ? a : best,
+    ).id;
   };
 
   const process = async (entries: LocalFileEntry[]) => {
@@ -75,7 +92,7 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
 
       rows.push({
         project_id: projectId,
-        acquisition_id: findAcquisitionId(parsed.filter, parsed.paneNumber),
+        acquisition_id: findAcquisitionId(parsed.filter, parsed.paneNumber, parsed.exposureDuration),
         relative_path: entry.relativePath,
         file_name: entry.name,
         filter: parsed.filter,
@@ -111,17 +128,16 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
     }
 
     // Recomptage automatique des acquisitions à partir du contenu réel du dossier.
+    // Comptage par ligne d'acquisition rattachée (gère plusieurs durées par filtre).
     const counts = new Map<string, number>();
     for (const f of rows) {
-      if (!f.filter) continue;
-      const key = `${isMosaic ? f.pane_number ?? "none" : "all"}|${f.filter}`;
-      counts.set(key, (counts.get(key) || 0) + 1);
+      if (!f.acquisition_id) continue;
+      counts.set(f.acquisition_id, (counts.get(f.acquisition_id) || 0) + 1);
     }
 
     let updated = 0;
     for (const acq of acquisitions) {
-      const key = `${isMosaic ? acq.paneNumber ?? "none" : "all"}|${acq.filter}`;
-      const count = counts.get(key) ?? 0;
+      const count = counts.get(acq.id) ?? 0;
       const { error } = await supabase
         .from("project_acquisitions")
         .update({ acquired: count })

@@ -264,6 +264,7 @@ const Frames = () => {
                     acquisitions={(acquisitions || []).map((a) => ({
                       id: a.id,
                       filter: a.filter,
+                      exposure: a.exposure_duration != null ? Number(a.exposure_duration) : null,
                       paneNumber: a.pane_id ? panes?.find((p) => p.id === a.pane_id)?.pane_number ?? null : null,
                     }))}
                     onDone={() => {
