@@ -308,6 +308,18 @@ const Frames = () => {
                 </CardContent>
               </Card>
 
+              <Card className="border-border/50">
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-xs text-muted-foreground mb-1">Brutes restantes</p>
+                  <span className="text-3xl font-bold">
+                    {totalRemainingFrames}
+                    {totalRemainingFrames > 0 && (
+                      <span className="text-base font-normal text-muted-foreground"> pour atteindre l'objectif</span>
+                    )}
+                  </span>
+                </CardContent>
+              </Card>
+
             </div>
 
             {selectedProject && (
