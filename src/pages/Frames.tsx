@@ -170,6 +170,10 @@ const Frames = () => {
     ? acquisitions.reduce((s, a) => s + a.acquired * a.exposure_duration, 0)
     : 0;
 
+  const totalRemainingFrames = acquisitions
+    ? acquisitions.reduce((s, a) => s + Math.max(0, a.quantity - a.acquired), 0)
+    : 0;
+
   const formatExposure = (seconds: number) => {
     if (seconds < 3600) return `${Math.round(seconds / 60)} min`;
     const h = Math.floor(seconds / 3600);
@@ -274,7 +278,7 @@ const Frames = () => {
 
 
             {/* Global stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
                   <p className="text-xs text-muted-foreground mb-1">Progression acquise</p>
@@ -301,6 +305,18 @@ const Frames = () => {
                 <CardContent className="pt-4 pb-4">
                   <p className="text-xs text-muted-foreground mb-1">Temps d'exposition acquis</p>
                   <span className="text-3xl font-bold">{formatExposure(totalAcquiredExposure)}</span>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/50">
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-xs text-muted-foreground mb-1">Brutes restantes</p>
+                  <span className="text-3xl font-bold">
+                    {totalRemainingFrames}
+                    {totalRemainingFrames > 0 && (
+                      <span className="text-base font-normal text-muted-foreground"> pour atteindre l'objectif</span>
+                    )}
+                  </span>
                 </CardContent>
               </Card>
 
@@ -386,6 +402,11 @@ const Frames = () => {
                                   </div>
                                   <div className="text-xs text-muted-foreground">
                                     {acq.exposure_duration}s · Bin {acq.bin}
+                                    {acq.quantity - acq.acquired > 0 && (
+                                      <span className="ml-2 font-medium">
+                                        Restante : {acq.quantity - acq.acquired} brutes
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
