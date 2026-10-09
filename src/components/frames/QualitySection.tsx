@@ -680,19 +680,19 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                         type="number"
                         dataKey="y"
                         tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        tickComponent={multiMetric ? <MultiMetricTick /> : undefined}
                         domain={[0, 100]}
                         ticks={multiMetric ? [0, 100] : undefined}
-                        tickFormatter={(value) => {
-                          if (multiMetric) {
-                            if (value === 0) return axisLabels.bottom;
-                            if (value === 100) return axisLabels.top;
-                            return "";
-                          }
-                          const m = activeRangeMetrics[0];
-                          if (!m) return "";
-                          const range = metricRanges[m.key]!;
-                          return fmtMetric(m.key, range.min + (value / 100) * (range.max - range.min));
-                        }}
+                        tickFormatter={
+                          multiMetric
+                            ? () => ""
+                            : (value) => {
+                                const m = activeRangeMetrics[0];
+                                if (!m) return "";
+                                const range = metricRanges[m.key]!;
+                                return fmtMetric(m.key, range.min + (value / 100) * (range.max - range.min));
+                              }
+                        }
                         width={axisWidth}
                       />
                       <Tooltip
