@@ -478,8 +478,21 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       const a = pxToX(Math.min(drag.start, end));
       const b = pxToX(Math.max(drag.start, end));
       setSelection([a, b]);
-      suppressClickRef.current = true;
-      setTimeout(() => (suppressClickRef.current = false), 0);
+    } else {
+      // Clic simple (déplacement ≤ 4px) : ouvre la brute du point le plus proche.
+      const cx = end;
+      const cy = localY(e);
+      let best: { path: string; name: string; dist: number } | null = null;
+      for (const s of series) {
+        for (const p of s.points) {
+          if (p.x < zoomWindow[0] || p.x > zoomWindow[1]) continue;
+          const dist = Math.hypot(xToPx(p.x) - cx, yToPx(p.y) - cy);
+          if (!best || dist < best.dist) {
+            best = { path: p.relativePath, name: p.fileName, dist };
+          }
+        }
+      }
+      if (best && best.dist <= 15) openFrame(best.path, best.name);
     }
     setDrag(null);
   };
@@ -684,10 +697,6 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           line={{ stroke: s.color, strokeWidth: 1.5 }}
                           fill={s.color}
                           cursor="pointer"
-                          onClick={(p: any) => {
-                            if (suppressClickRef.current) return;
-                            openFrame(p?.relativePath, p?.fileName);
-                          }}
                         />
                       ))}
                       {selection && (
