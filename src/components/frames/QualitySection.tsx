@@ -243,7 +243,6 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, totalPoints]);
   const [drag, setDrag] = useState<{ start: number; cur: number } | null>(null);
   const [selection, setSelection] = useState<[number, number] | null>(null);
-  const suppressClickRef = useRef(false);
   useEffect(() => setSelection(null), [selectedFilter, offPanes, totalPoints]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
@@ -454,6 +453,16 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     return zoomWindow[0] + ratio * (zoomWindow[1] - zoomWindow[0]);
   };
   const localX = (e: React.PointerEvent) => e.clientX - (chartWrapRef.current?.getBoundingClientRect().left || 0);
+  const localY = (e: React.PointerEvent) => e.clientY - (chartWrapRef.current?.getBoundingClientRect().top || 0);
+  const xToPx = (x: number) => {
+    const w = chartWrapRef.current?.clientWidth || 1;
+    const plotW = Math.max(1, w - 42 - 16);
+    const ratio = (x - zoomWindow[0]) / (zoomWindow[1] - zoomWindow[0]);
+    return 42 + ratio * plotW;
+  };
+  // Hauteur du graphique : h-80 (320px), marges top 8 / bottom 12, domaine Y [0, 100].
+  const yToPx = (y: number) => 8 + (1 - y / 100) * 300;
+
   const onDragStart = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
     const x = localX(e);
