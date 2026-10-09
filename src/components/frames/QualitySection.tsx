@@ -165,12 +165,14 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     indexed.forEach((item, i) => (item.idx = i));
     const kept = indexed;
 
+    const metricRanges: Partial<Record<MetricKey, { min: number; max: number }>> = {};
     const metricSeries = METRICS.filter((item) => activeMetrics.has(item.key)).map((item) => {
       const values = kept
         .map(({ f }) => f[item.key])
         .filter((value): value is number => value != null && Number.isFinite(value));
       const min = values.length ? Math.min(...values) : 0;
       const max = values.length ? Math.max(...values) : 0;
+      metricRanges[item.key] = { min, max };
       const spread = max - min;
       const points = kept.flatMap(({ idx, f }) => {
         const value = f[item.key];
