@@ -100,6 +100,11 @@ export function detectPaneFromPath(filePath: string): number | null {
     if (found !== null) return found;
   }
   const nameWithoutExt = parts[parts.length - 1].replace(/\.[^.]+$/, "");
+  const whole = nameWithoutExt.match(PANE_PATTERNS[0]);
+  if (whole) {
+    const n = parseInt(whole[1], 10);
+    if (n > 0) return n;
+  }
   for (const seg of nameWithoutExt.split(/[_\-\s]+/)) {
     const found = detectPaneFromSegment(seg);
     if (found !== null) return found;
