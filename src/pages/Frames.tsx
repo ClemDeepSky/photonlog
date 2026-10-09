@@ -396,17 +396,18 @@ const Frames = () => {
                                       {acquiredPercent}%
                                     </span>
 
+                                    {acq.quantity - acq.acquired > 0 && (
+                                      <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
+                                        Restante : {acq.quantity - acq.acquired} brutes
+                                      </span>
+                                    )}
+
                                     {acquiredSurplus > 0 && (
                                       <Badge variant="outline" className="h-5 px-1.5 text-[10px] shrink-0">+{acquiredSurplus}</Badge>
                                     )}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
                                     {acq.exposure_duration}s · Bin {acq.bin}
-                                    {acq.quantity - acq.acquired > 0 && (
-                                      <span className="ml-2 font-medium">
-                                        Restante : {acq.quantity - acq.acquired} brutes
-                                      </span>
-                                    )}
                                   </div>
                                 </div>
                               </div>
