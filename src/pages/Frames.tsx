@@ -278,7 +278,7 @@ const Frames = () => {
 
 
             {/* Global stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
                   <p className="text-xs text-muted-foreground mb-1">Progression acquise</p>
