@@ -436,6 +436,24 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
 
   const hasMetricData = series.some((s) => s.points.length > 0);
+
+  // Axe Y : valeurs réelles (min/max) des mesures cochées au lieu de pourcentages.
+  const fmtMetric = (key: MetricKey, v: number) => {
+    if (key === "star_count") return String(Math.round(v));
+    if (key === "eccentricity") return v.toFixed(2);
+    return v.toFixed(1);
+  };
+  const activeRangeMetrics = METRICS.filter((m) => activeMetrics.has(m.key) && metricRanges[m.key]);
+  const multiMetric = activeRangeMetrics.length > 1;
+  const axisLabels = {
+    top: activeRangeMetrics.map((m) => fmtMetric(m.key, metricRanges[m.key]!.max)).join(" / "),
+    bottom: activeRangeMetrics.map((m) => fmtMetric(m.key, metricRanges[m.key]!.min)).join(" / "),
+  };
+  const axisWidth = Math.max(
+    42,
+    Math.min(120, Math.max(axisLabels.top.length, axisLabels.bottom.length) * 6.2 + 10)
+  );
+
   const overviewDenominator = Math.max(1, totalPoints);
   const zoomWindow = zoom || fullWindow(Math.max(1, totalPoints));
   const visibleNightRanges = nightRanges.filter(
