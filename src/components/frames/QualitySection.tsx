@@ -679,8 +679,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       <YAxis
                         type="number"
                         dataKey="y"
-                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                        tickComponent={multiMetric ? <MultiMetricTick /> : undefined}
+                        tick={multiMetric ? MultiMetricTick : { fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                         domain={[0, 100]}
                         ticks={multiMetric ? [0, 100] : undefined}
                         tickFormatter={
