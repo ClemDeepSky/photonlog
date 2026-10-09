@@ -146,7 +146,7 @@ export function detectExposureFromPath(filePath: string): number | null {
 /* Modèle de nommage                                                  */
 /* ------------------------------------------------------------------ */
 
-const NUMBER = "[-+]?\\d+(?:[.,]\\d+)?";
+const NUMBER = "(?:[-+]?\\d+(?:[.,]\\d+)?|NaN|nan)";
 
 const TOKEN_REGEX: Record<string, string> = {
   DATE: "\\d{4}[-_/]\\d{2}[-_/]\\d{2}",
