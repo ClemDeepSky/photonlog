@@ -210,6 +210,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
 
     return {
       series: metricSeries,
+      metricRanges,
       totalPoints: indexed.length,
       nightRanges: Array.from(ranges.values()),
     };
