@@ -47,6 +47,7 @@ const filterBand = (name: string) => {
 interface FrameRow {
   id: string;
   filter: string | null;
+  exposure_duration: number | null;
   pane_number: number | null;
   captured_at: string | null;
   fwhm: number | null;
@@ -92,7 +93,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
           .from("project_frames")
-          .select("id, filter, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp, file_name, relative_path")
+          .select("id, filter, exposure_duration, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp, file_name, relative_path")
           .eq("project_id", projectId)
           .order("captured_at", { ascending: true })
           .order("id", { ascending: true })
@@ -111,14 +112,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     [frames]
   );
 
-  const availableFilters = useMemo(
-    () =>
-      Array.from(new Set(withDates.map((f) => f.filter).filter(Boolean) as string[])).sort((a, b) => {
-        const d = filterBand(a).order - filterBand(b).order;
-        return d !== 0 ? d : a.localeCompare(b);
-      }),
-    [withDates]
-  );
+  const frameGroupKey = (f: FrameRow) => JSON.stringify([f.filter, f.exposure_duration]);
+  const availableFilters = useMemo(() => {
+    const groups = new Map<string, { key: string; filter: string; exposure: number | null }>();
+    for (const f of withDates) {
+      if (!f.filter) continue;
+      const key = frameGroupKey(f);
+      groups.set(key, { key, filter: f.filter, exposure: f.exposure_duration });
+    }
+    return Array.from(groups.values()).sort((a, b) =>
+      filterBand(a.filter).order - filterBand(b.filter).order ||
+      a.filter.localeCompare(b.filter) ||
+      (a.exposure ?? Infinity) - (b.exposure ?? Infinity)
+    );
+  }, [withDates]);
   const availablePanes = useMemo(
     () => Array.from(new Set(withDates.map((f) => f.pane_number).filter((p) => p != null) as number[])).sort((a, b) => a - b),
     [withDates]
@@ -128,8 +135,8 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       setSelectedFilter(null);
       return;
     }
-    if (!selectedFilter || !availableFilters.includes(selectedFilter)) {
-      setSelectedFilter(availableFilters[0]);
+    if (!selectedFilter || !availableFilters.some((group) => group.key === selectedFilter)) {
+      setSelectedFilter(availableFilters[0].key);
     }
   }, [availableFilters, selectedFilter]);
 
@@ -154,8 +161,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   const { series, metricRanges, totalPoints, nightRanges } = useMemo(() => {
     const indexed: Array<{ idx: number; f: FrameRow & { captured_at: string } }> = [];
     for (const f of withDates) {
-      const filter = f.filter || "?";
-      if (selectedFilter && filter !== selectedFilter) continue;
+      if (selectedFilter && frameGroupKey(f) !== selectedFilter) continue;
       if (f.pane_number != null && offPanes.has(String(f.pane_number))) continue;
       indexed.push({ idx: 0, f });
     }
@@ -552,12 +558,14 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
           </CardTitle>
           {availableFilters.length > 0 && (
             <div className="flex max-w-full flex-wrap justify-end gap-1" role="tablist" aria-label="Filtre affiché">
-              {availableFilters.map((filter) => {
-                const band = filterBand(filter);
-                const active = selectedFilter === filter;
+              {availableFilters.map((group) => {
+                const band = filterBand(group.filter);
+                const active = selectedFilter === group.key;
                 return (
-                  <button
-                    key={filter}
+                  <Button
+                    key={group.key}
+                    variant="ghost"
+                    size="sm"
                     type="button"
                     role="tab"
                     aria-selected={active}
@@ -565,10 +573,10 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       active ? "ring-2 ring-ring ring-offset-1 ring-offset-background" : "opacity-50 hover:opacity-80"
                     }`}
                     style={{ backgroundColor: band.bg, color: band.fg }}
-                    onClick={() => setSelectedFilter(filter)}
+                    onClick={() => setSelectedFilter(group.key)}
                   >
-                    {filter}
-                  </button>
+                    {group.filter} · {group.exposure == null ? "durée inconnue" : `${group.exposure.toLocaleString("fr-FR")} s`}
+                  </Button>
                 );
               })}
             </div>
