@@ -1,4 +1,28 @@
 import { useEffect, useRef, useState } from "react";
+import { MapPin } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const SKY_SURVEYS = [
+  { id: "P/DSS2/color", label: "DSS2 · Couleur" },
+  { id: "P/DSS2/red", label: "DSS2 · Rouge" },
+  { id: "P/PanSTARRS/DR1/color-z-zg-g", label: "PanSTARRS · Couleur" },
+  { id: "P/PanSTARRS/DR1/g", label: "PanSTARRS · Bande g" },
+  { id: "P/SDSS9/color", label: "SDSS9 · Couleur" },
+  { id: "P/SDSS9/g", label: "SDSS9 · Bande g" },
+  { id: "P/2MASS/color", label: "2MASS · Infrarouge" },
+  { id: "P/allWISE/color", label: "AllWISE · Infrarouge" },
+  { id: "P/Finkbeiner", label: "Hα · Finkbeiner" },
+  { id: "P/VTSS/Ha", label: "Hα · VTSS" },
+  { id: "P/GALEXGR6_7/NUV", label: "GALEX · Ultraviolet" },
+  { id: "P/Mellinger/color", label: "Mellinger · Couleur" },
+  { id: "P/DECaPS/DR2/color", label: "DECaPS DR2 · Couleur" },
+  { id: "P/SPITZER/color", label: "Spitzer · Infrarouge" },
+  { id: "P/GLIMPSE360", label: "GLIMPSE360 · Infrarouge" },
+  { id: "P/IRIS/color", label: "IRIS · Infrarouge" },
+  { id: "P/DM/I/350/gaiaedr3", label: "Gaia EDR3 · Densité" },
+  { id: "erosita/dr1/rate/rgb", label: "eROSITA · Rayons X" },
+  { id: "P/Fermi/color", label: "Fermi · Rayons gamma" },
+];
 
 declare global {
   interface Window {
@@ -138,6 +162,18 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
   }, []);
   const aladinRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
+  const [survey, setSurvey] = useState("P/DSS2/color");
+  const [surveyError, setSurveyError] = useState(false);
+  const changeSurvey = (value: string) => {
+    if (!aladinRef.current) return;
+    try {
+      aladinRef.current.setImageSurvey(value);
+      setSurvey(value);
+      setSurveyError(false);
+    } catch {
+      setSurveyError(true);
+    }
+  };
   const [focalLength, setFocalLength] = useState(450);
   const [sensor, setSensor] = useState("apsc");
   const [shapes, setShapes] = useState<{ pts: [number, number][]; color: string; interactive: boolean; handle?: [number, number]; center?: [number, number] }[]>([]);
@@ -201,7 +237,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
           showShareControl: false,
           showSettingsControl: false,
           showFullscreenControl: true,
-          showLayersControl: true,
+          showLayersControl: false,
           showGotoControl: false,
           showFrame: false,
           showZoomControl: true,
@@ -338,6 +374,18 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="flex items-center gap-2 text-base font-semibold"><MapPin className="h-4 w-4" />Cadrage</h3>
+        <Select value={survey} onValueChange={changeSurvey} disabled={!ready}>
+          <SelectTrigger aria-label="Carte du ciel" className="w-full sm:w-72">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SKY_SURVEYS.map((item) => <SelectItem key={item.id} value={item.id}>{item.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      {surveyError && <p role="alert" className="text-sm text-destructive">Cette carte n’a pas pu être chargée. Choisissez un autre relevé.</p>}
       {!isMosaic && (ra || dec) && (
         <p className="text-xs text-muted-foreground font-mono">
           RA {ra || "—"} · Dec {dec || "—"} · Rotation {positionAngle || 0}°

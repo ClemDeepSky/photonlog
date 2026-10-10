@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 type Pane = { id?: string; pane_number: number; ra: string; dec: string; position_angle: number | null };
 type Props = {
@@ -80,7 +80,6 @@ export default function ProjectCoordinates(props: Props) {
             )}
           </div>
           <div className="min-w-0 space-y-3">
-            <h3 className="flex items-center gap-2 text-base font-semibold"><MapPin className="h-4 w-4" />Cadrage</h3>
             {props.viewer}
           </div>
         </div>
