@@ -105,16 +105,34 @@ const TeamDetail = () => {
       team_id: team.id,
       email: inviteEmail.trim(),
       invited_by: user.id,
-    }).select("token").single();
+    }).select("id, token").single();
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    } else {
-      const inviteLink = `${window.location.origin}/invite/${data.token}`;
-      navigator.clipboard.writeText(inviteLink);
-      toast({ title: "Invitation créée !", description: "Le lien d'invitation a été copié dans le presse-papier." });
-      setInviteEmail("");
-      setInviteDialogOpen(false);
+      return;
     }
+    const inviteLink = `${window.location.origin}/invite/${data.token}`;
+    navigator.clipboard.writeText(inviteLink);
+
+    // Send the invitation link by email
+    const { error: sendError } = await supabase.functions.invoke("send-team-invite", {
+      body: { invitation_id: data.id },
+    });
+
+    if (sendError) {
+      console.error("Team invite email failed", sendError);
+      toast({
+        title: "Lien copié, envoi impossible",
+        description: "Le lien d'invitation a été copié dans le presse-papier, mais l'email n'a pas pu être envoyé.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Invitation envoyée !",
+        description: `Un email a été envoyé à ${inviteEmail.trim()}. Le lien est aussi copié dans le presse-papier.`,
+      });
+    }
+    setInviteEmail("");
+    setInviteDialogOpen(false);
   };
 
   const openSettings = () => {
