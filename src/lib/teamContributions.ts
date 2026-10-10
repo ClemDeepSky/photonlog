@@ -14,6 +14,7 @@ export interface TeamContribution {
   focal_length: number | null;
   sensor_width_mm: number | null;
   sensor_height_mm: number | null;
+  observing_site_id?: string | null;
   username: string;
   color: string;
 }
@@ -28,7 +29,7 @@ export const useProjectContributions = (projectId: string | null | undefined, en
     queryFn: async (): Promise<TeamContribution[]> => {
       const { data, error } = await supabase
         .from("project_contributions")
-        .select("id, project_id, user_id, tracking_mode, setup, equipment_profile_id, folder_path, filename_pattern, focal_length, sensor_width_mm, sensor_height_mm, created_at")
+        .select("id, project_id, user_id, tracking_mode, setup, equipment_profile_id, folder_path, filename_pattern, focal_length, sensor_width_mm, sensor_height_mm, observing_site_id, created_at")
         .eq("project_id", projectId!)
         .order("created_at", { ascending: true });
       if (error) throw error;

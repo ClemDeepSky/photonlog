@@ -78,6 +78,13 @@
       "when": 1791658780193,
       "tag": "0010_contribution_panes",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791662802490,
+      "tag": "0011_contribution_observing_site",
+      "breakpoints": true
     }
   ]
 }

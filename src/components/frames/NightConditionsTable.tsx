@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { computeNight, parseDecDeg, parseRaDeg, type ObservingSite } from "@/lib/nightConditions";
 
 type NightRange = { night: string; firstAt: string; lastAt: string };
@@ -33,8 +34,9 @@ const MoonCurve = ({ curve, firstAt, lastAt }: { curve: { t: number; alt: number
 };
 
 const NightConditionsTable = ({ projectId, nights }: { projectId: string; nights: NightRange[] }) => {
+  const { user } = useAuth();
   const { data } = useQuery({
-    queryKey: ["project-site-target", projectId],
+    queryKey: ["project-site-target", projectId, user?.id],
     queryFn: async () => {
       const { data: p, error } = await supabase
         .from("projects")
@@ -43,14 +45,23 @@ const NightConditionsTable = ({ projectId, nights }: { projectId: string; nights
         .single();
       if (error) throw error;
       let site: ObservingSite | null = null;
-      if (p.observing_site_id) {
-        const { data: s } = await supabase.from("observing_sites").select("*").eq("id", p.observing_site_id).maybeSingle();
+      // Projet Team : le site est propre à chaque membre (sa contribution), sinon celui du projet.
+      const { data: mine } = user
+        ? await supabase.from("project_contributions").select("id, observing_site_id").eq("project_id", projectId).eq("user_id", user.id).maybeSingle()
+        : { data: null };
+      const siteId = mine?.observing_site_id || p.observing_site_id;
+      if (siteId) {
+        const { data: s } = await supabase.from("observing_sites").select("*").eq("id", siteId).maybeSingle();
         site = (s as ObservingSite) ?? null;
       }
       let ra = p.ra, dec = p.dec;
       if (p.is_mosaic) {
         const { data: panes } = await supabase.from("project_panes").select("ra, dec").eq("project_id", projectId).is("contribution_id", null).order("pane_number").limit(1);
         ra = panes?.[0]?.ra ?? null; dec = panes?.[0]?.dec ?? null;
+      }
+      if ((!ra || !dec) && mine) {
+        const { data: own } = await supabase.from("project_panes").select("ra, dec").eq("contribution_id", mine.id).order("pane_number").limit(1);
+        ra = own?.[0]?.ra ?? ra; dec = own?.[0]?.dec ?? dec;
       }
       return { site, ra: parseRaDeg(ra), dec: parseDecDeg(dec) };
     },

@@ -220,6 +220,7 @@ const EditProject = () => {
         setFolderPath(mine?.folder_path || "");
         setFilenamePattern(mine?.filename_pattern || "");
         setSetup(mine?.setup || "");
+        setSiteId((mine as any)?.observing_site_id || "");
         setIsMosaic(scopeMosaic);
       }
       if (ownScope && projectPanes.length === 1) {
@@ -428,7 +429,7 @@ const EditProject = () => {
         // Réglages du projet : administrateur de la team uniquement.
         if (isProjectAdmin) {
           const { error } = await supabase.from("projects").update({
-            name, description: description || null, observing_site_id: siteId || null, image_url: imageUrl,
+            name, description: description || null, image_url: imageUrl,
             team_id: isTeamProject ? selectedTeamId : null,
           }).eq("id", id!);
           if (error) throw error;
@@ -442,6 +443,7 @@ const EditProject = () => {
           setup: setup || null, equipment_profile_id: s?.id ?? null,
           focal_length: s?.focal_length ?? null, sensor_width_mm: mm(s?.sensor_width_px), sensor_height_mm: mm(s?.sensor_height_px),
           folder_path: folderPath || null, filename_pattern: filenamePattern || null,
+          observing_site_id: siteId || null,
         }).eq("id", cid);
         if (cErr) throw cErr;
       }
@@ -608,7 +610,7 @@ const EditProject = () => {
           {isTeam && (
             <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 px-3 py-2">
               Projet d'équipe : votre setup, votre dossier, votre cadrage et vos acquisitions ne concernent que votre contribution.
-              {!isProjectAdmin && " Le nom, la team et le site du projet sont réglés par l'administrateur."}
+              {!isProjectAdmin && " Le nom et la team du projet sont réglés par l'administrateur."}
             </p>
           )}
           {/* General info */}
@@ -689,7 +691,7 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Site d'observation</Label>
-                {foreignSite || !isProjectAdmin || (!isTeam && !canEditCommon) ? (
+                {foreignSite || (!isTeam && !canEditCommon) ? (
                   <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
                     {foreignSite ? (projectSite?.name ?? "Site d'un autre membre") : (sites?.find((s) => s.id === siteId)?.name ?? "Aucun site")}
                     {foreignSite && <span className="block text-xs text-muted-foreground">Site d'un autre membre — visible, non sélectionnable.</span>}

@@ -353,7 +353,14 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
             const r = parseRA(pane.ra), d = parseDEC(pane.dec);
             if (r !== null && d !== null) own.push([r, d, pane.position_angle ?? 0]);
           }
-          for (const [r, d, a] of own.length ? own : centers) {
+          // Sans cadrage propre : un seul champ au centre du projet, jamais un par panneau
+          // (un membre à grand champ fait souvent un panneau simple quand un autre fait une mosaïque).
+          let fallback: [number, number, number][] = [];
+          if (!own.length && centers.length) {
+            const v = centers.reduce((acc, [r, d]) => [acc[0] + Math.cos(d * radians) * Math.cos(r * radians), acc[1] + Math.cos(d * radians) * Math.sin(r * radians), acc[2] + Math.sin(d * radians)], [0, 0, 0]);
+            fallback = [[((Math.atan2(v[1], v[0]) / radians) + 360) % 360, Math.atan2(v[2], Math.hypot(v[0], v[1])) / radians, centers[0][2]]];
+          }
+          for (const [r, d, a] of own.length ? own : fallback) {
             const pts = cornersFor(r, d, a, pf.w, pf.h);
             if (pts) next.push({ pts, color: pf.color, interactive: false, dashed: true });
           }
