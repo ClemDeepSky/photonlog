@@ -71,7 +71,7 @@ const NightConditionsTable = ({ projectId, nights }: { projectId: string; nights
   }
 
   return (
-    <details open className="rounded-md border border-border/60">
+    <details className="rounded-md border border-border/60">
       <summary className="cursor-pointer px-3 py-2 text-sm font-medium">
         Conditions par nuit — {data.site.name}
       </summary>
