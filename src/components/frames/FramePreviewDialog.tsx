@@ -20,7 +20,7 @@ interface FramePreviewDialogProps {
   relativePath: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Suppression définitive du fichier sur le disque (Chrome/Edge uniquement). */
+  /** Rejet du fichier : déplacement vers le sous-dossier « _rejetées » (Chrome/Edge uniquement). */
   onDelete?: () => Promise<void>;
 }
 
@@ -205,7 +205,7 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
                 ) : (
                   <Trash2 className="mr-1 h-3.5 w-3.5" />
                 )}
-                Supprimer le fichier
+                Rejeter le fichier
               </Button>
             )}
             <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
@@ -274,10 +274,10 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Supprimer définitivement ce fichier ?</AlertDialogTitle>
+              <AlertDialogTitle>Rejeter cette brute ?</AlertDialogTitle>
               <AlertDialogDescription className="break-all">
-                {file?.name} sera supprimé de votre disque (sans passage par la corbeille) et retiré de
-                l'index Photonlog. Cette action est irréversible.
+                {file?.name} sera déplacé dans le sous-dossier « _rejetées » du dossier du projet et retiré de
+                l'index Photonlog. Rien n'est supprimé : vous pourrez le récupérer à la main.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -296,7 +296,7 @@ const FramePreviewDialog = ({ file, relativePath, open, onOpenChange, onDelete }
                   }
                 }}
               >
-                Supprimer
+                Rejeter
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
