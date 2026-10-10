@@ -1,4 +1,5 @@
 import CoordinateInputs, { parseRa, formatRa, parseDec, formatDec } from "@/components/CoordinateInputs";
+import { raHmsToDeg, decDmsToDeg, degToRaHms, degToDecDms, precessDateToJ2000 } from "@/lib/coords";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -69,6 +70,7 @@ const EditProject = () => {
   const [positionAngle, setPositionAngle] = useState("");
 
   const [panes, setPanes] = useState<Pane[]>([]);
+  const [paneEpoch, setPaneEpoch] = useState<"J2000" | "JNow">("J2000");
   const [acquisitions, setAcquisitions] = useState<Acquisition[]>([]);
   const [disabledAcquisitions, setDisabledAcquisitions] = useState<Record<number, Set<number>>>({});
   const [loaded, setLoaded] = useState(false);
