@@ -152,7 +152,7 @@ interface CardProps {
   onDeleteLine: (id: string) => void;
 }
 
-const ContributionCard = ({ c, isMine, editable, isMosaic, panes, setups, lines, onSetup, onUpdate, onAddLine, onUpdateLine, onDeleteLine }: CardProps) => {
+export const ContributionCard = ({ c, isMine, editable, isMosaic, panes, setups, lines, onSetup, onUpdate, onAddLine, onUpdateLine, onDeleteLine }: CardProps) => {
   const [filter, setFilter] = useState("L");
   const [expo, setExpo] = useState("300");
   const [qty, setQty] = useState("20");
