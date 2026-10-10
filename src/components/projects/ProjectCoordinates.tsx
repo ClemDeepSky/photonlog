@@ -35,7 +35,7 @@ export default function ProjectCoordinates(props: Props) {
     <Card data-testid="project-coordinates">
       <CardContent className="pt-6">
         <h2 className="mb-4 text-lg font-semibold">Coordonnées et cadrage</h2>
-        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(320px,2fr)_minmax(0,3fr)]">
+        <div className="flex min-w-0 flex-col gap-6">
           <div className="min-w-0 space-y-4">
             <div className="flex items-center gap-3">
               <Switch id="mosaic" checked={props.isMosaic} onCheckedChange={props.onMosaicChange} />
@@ -60,23 +60,23 @@ export default function ProjectCoordinates(props: Props) {
             {props.isMosaic ? (
               <div className="space-y-4">
                 {props.panes.map((pane, index) => (
-                  <section key={pane.id ?? index} aria-label={`Panneau ${pane.pane_number}`} className="border-b border-border pb-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">P{pane.pane_number}</h3>
-                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Retirer le panneau" aria-label={`Retirer le panneau ${pane.pane_number}`} onClick={() => props.onRemovePane(index)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <section key={pane.id ?? index} aria-label={`Panneau ${pane.pane_number}`} className="flex items-center gap-4 border-b border-border pb-4">
+                    <h3 className="shrink-0 text-sm font-semibold">P{pane.pane_number}</h3>
+                    <div className="min-w-0 flex-1 overflow-x-auto">
                     <CoordinateInputs onCoordinatesChange={(ra, dec) => props.onPaneCoordinatesChange(index, ra, dec)} epoch={props.epoch} ra={pane.ra} dec={pane.dec} rotation={pane.position_angle?.toString() ?? ""}
                       onRaChange={(ra) => props.onPaneCoordinatesChange(index, ra, pane.dec)}
                       onDecChange={(dec) => props.onPaneCoordinatesChange(index, pane.ra, dec)}
                       onRotationChange={(angle) => props.onPaneAngleChange(index, angle)} />
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-destructive" title="Retirer le panneau" aria-label={`Retirer le panneau ${pane.pane_number}`} onClick={() => props.onRemovePane(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </section>
                 ))}
                 <Button type="button" variant="outline" onClick={props.onAddPane}><Plus className="mr-2 h-4 w-4" />Ajouter un panneau</Button>
               </div>
             ) : (
-              <CoordinateInputs epoch={props.epoch} ra={props.ra} dec={props.dec} rotation={props.angle} onRaChange={props.onRaChange} onDecChange={props.onDecChange} onRotationChange={props.onAngleChange} />
+              <div className="overflow-x-auto"><CoordinateInputs epoch={props.epoch} ra={props.ra} dec={props.dec} rotation={props.angle} onRaChange={props.onRaChange} onDecChange={props.onDecChange} onRotationChange={props.onAngleChange} /></div>
             )}
           </div>
           <div className="min-w-0 space-y-3">
