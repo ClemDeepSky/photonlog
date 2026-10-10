@@ -13,7 +13,6 @@ import {
   Menu,
   X,
   Shield,
-  CircleHelp,
 } from "lucide-react";
 import { useState } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -128,14 +127,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 {item.label}
               </Link>
             ))}
-            <Link
-              to="/guide"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3 px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <CircleHelp className="h-4 w-4" />
-              Guide d’utilisation
-            </Link>
             <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground mt-2" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Déconnexion
