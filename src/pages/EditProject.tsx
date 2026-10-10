@@ -1,4 +1,4 @@
-import CoordinateInputs from "@/components/CoordinateInputs";
+import CoordinateInputs, { parseRa, formatRa, parseDec, formatDec } from "@/components/CoordinateInputs";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
