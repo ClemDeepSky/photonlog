@@ -141,9 +141,10 @@ const Frames = () => {
   const myContribution = contributions?.find((c) => c.user_id === user?.id) ?? null;
   const team = selectedProject?.teams ?? null;
   const canEditCommon = !isTeam || (team?.management_mode === "single_admin" ? team.owner_id === user?.id : true);
-  // Filtre par participant : "all", "common" (lignes sans participant) ou id de contribution.
+  // Filtre par participant : "all" ou id de contribution. Les lignes sans
+  // participant (ancien plan commun) ne sont plus affichées.
   const acquisitions = (allAcquisitions || []).filter((a) =>
-    participant === "all" ? true : participant === "common" ? !a.contribution_id : a.contribution_id === participant,
+    isTeam ? !!a.contribution_id && (participant === "all" || a.contribution_id === participant) : true,
   );
   const refreshAll = () => {
     queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", selectedProjectId] });
@@ -360,7 +361,6 @@ const Frames = () => {
                           {c.username}{c.user_id === user?.id ? " (moi)" : ""}
                         </SelectItem>
                       ))}
-                      {(allAcquisitions || []).some((a) => !a.contribution_id) && <SelectItem value="common">Plan commun</SelectItem>}
                     </SelectContent>
                   </Select>
                 </div>
@@ -429,7 +429,7 @@ const Frames = () => {
               const contribution = contributions?.find((c) => c.id === acqs[0]?.contribution_id);
               const ownerLabel = contribution
                 ? `${contribution.username}${contribution.user_id === user?.id ? " (moi)" : ""}`
-                : acqs[0]?.contribution_id ? "Membre" : "Plan commun";
+                : "Membre";
               const isExpanded = expandedPanes.has(paneKey);
               const paneProgress = getGroupProgress(acqs);
               const label = pane
