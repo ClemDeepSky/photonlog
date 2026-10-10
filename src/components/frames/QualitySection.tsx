@@ -932,18 +932,47 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                 </div>
                 {selection && (
                   <div className="rounded-md border border-border/60 bg-secondary/20 p-2">
-                    <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <p className="text-xs font-medium">
                         {selectedFrames.length} image{selectedFrames.length > 1 ? "s" : ""} sélectionnée{selectedFrames.length > 1 ? "s" : ""}
                       </p>
-                      <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setSelection(null)}>
-                        Effacer la sélection
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-6 px-2 text-xs"
+                          disabled={checkedPaths.size === 0 || rejecting}
+                          title={`Déplacer les brutes cochées vers le sous-dossier « ${REJECTED_FOLDER} » (rien n'est supprimé)`}
+                          onClick={async () => {
+                            setRejecting(true);
+                            try {
+                              await rejectFrames(Array.from(checkedPaths));
+                              setSelection(null);
+                            } finally {
+                              setRejecting(false);
+                            }
+                          }}
+                        >
+                          {rejecting ? "Déplacement…" : `Rejeter cochées (${checkedPaths.size}) → ${REJECTED_FOLDER}`}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setSelection(null)}>
+                          Effacer la sélection
+                        </Button>
+                      </div>
                     </div>
                     <div className="max-h-64 overflow-auto">
                       <table className="w-full text-xs">
                         <thead className="sticky top-0 bg-card text-muted-foreground">
                           <tr className="text-left">
+                            <th className="w-8 px-2 py-1 font-normal">
+                              <Checkbox
+                                aria-label="Tout cocher"
+                                checked={selectedFrames.length > 0 && checkedPaths.size === selectedFrames.length}
+                                onCheckedChange={(v) =>
+                                  setCheckedPaths(v ? new Set(selectedFrames.map((p) => p.relativePath)) : new Set())
+                                }
+                              />
+                            </th>
                             <th className="px-2 py-1 font-normal">Fichier</th>
                             <th className="px-2 py-1 font-normal">Date</th>
                             <th className="px-2 py-1 text-right font-normal">FWHM</th>
@@ -961,6 +990,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                               onClick={() => openFrame(p.relativePath, p.fileName)}
                               title="Ouvrir l'aperçu"
                             >
+                              <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                  aria-label={`Rejeter ${p.fileName}`}
+                                  checked={checkedPaths.has(p.relativePath)}
+                                  onCheckedChange={(v) =>
+                                    setCheckedPaths((prev) => {
+                                      const next = new Set(prev);
+                                      if (v) next.add(p.relativePath);
+                                      else next.delete(p.relativePath);
+                                      return next;
+                                    })
+                                  }
+                                />
+                              </td>
                               <td className="max-w-[18rem] truncate px-2 py-1 text-primary">{p.fileName}</td>
                               <td className="whitespace-nowrap px-2 py-1 text-muted-foreground">
                                 {p.capturedAt ? new Date(p.capturedAt).toLocaleString("fr-FR") : ""}
