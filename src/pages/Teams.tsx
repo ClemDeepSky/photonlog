@@ -34,15 +34,26 @@ const Teams = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchTeams = async () => {
+    setTeams([]);
+    if (!user) { setLoading(false); return; }
+    const { data: memberships, error: membershipError } = await supabase
+      .from("team_members").select("team_id").eq("user_id", user.id);
+    if (membershipError) {
+      toast({ title: "Chargement impossible", description: membershipError.message, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+    const ids = (memberships ?? []).map((row) => row.team_id);
     const { data, error } = await supabase
       .from("teams")
       .select("*")
+      .or(ids.length ? `owner_id.eq.${user.id},id.in.(${ids.join(",")})` : `owner_id.eq.${user.id}`)
       .order("created_at", { ascending: false });
     if (!error && data) setTeams(data as Team[]);
     setLoading(false);
   };
 
-  useEffect(() => { fetchTeams(); }, []);
+  useEffect(() => { fetchTeams(); }, [user?.id]);
 
   const createTeam = async (e: React.FormEvent) => {
     e.preventDefault();

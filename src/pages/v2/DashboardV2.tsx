@@ -1,4 +1,5 @@
 import AppLayout from "@/components/AppLayout";
+import { personalProjectFilter } from "@/lib/personalProjectScope";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,13 +35,14 @@ const DashboardV2 = () => {
   const { user } = useAuth();
 
   const { data: projects } = useQuery({
-    queryKey: ["v2-projects"],
+    queryKey: ["v2-projects", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select(
           "id, name, status, team_id, schema_version, tracking_mode, target_object, teams(name), project_acquisitions(id, filter, exposure_duration, quantity, acquired, target_seconds, pane_id)"
         )
+        .or(await personalProjectFilter(user?.id))
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as ProjectRow[];
@@ -49,33 +51,37 @@ const DashboardV2 = () => {
   });
 
   const { data: batches } = useQuery({
-    queryKey: ["v2-all-batches"],
+    queryKey: ["v2-all-batches", user?.id, projects?.map((project) => project.id)],
     queryFn: async () => {
+      if (!projects?.length) return [];
       const { data, error } = await supabase
         .from("session_batches")
-        .select("project_id, filter, exposure_duration, sub_count");
+        .select("project_id, filter, exposure_duration, sub_count")
+        .in("project_id", projects.map((project) => project.id));
       if (error) throw error;
       return data as (AcquiredBatch & { project_id: string })[];
     },
-    enabled: !!user,
+    enabled: !!user && !!projects,
   });
 
   const { data: lastSessions } = useQuery({
-    queryKey: ["v2-last-sessions"],
+    queryKey: ["v2-last-sessions", user?.id, projects?.map((project) => project.id)],
     queryFn: async () => {
+      if (!projects?.length) return {};
       const { data, error } = await supabase
         .from("project_sessions")
         .select("project_id, started_at")
+        .in("project_id", projects.map((project) => project.id))
         .not("started_at", "is", null)
         .order("started_at", { ascending: false });
       if (error) throw error;
       const map: Record<string, string> = {};
       for (const row of data || []) {
-        if (!map[row.project_id!] && row.started_at) map[row.project_id!] = row.started_at;
+        if (row.project_id && !map[row.project_id] && row.started_at) map[row.project_id] = row.started_at;
       }
       return map;
     },
-    enabled: !!user,
+    enabled: !!user && !!projects,
   });
 
   const batchesFor = (project: ProjectRow): AcquiredBatch[] => {
