@@ -681,7 +681,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                   )}
                 </div>
                 <div className="flex items-stretch" style={{ paddingLeft: axisWidth, paddingRight: 16 }}>
-                  <div className="relative h-6 w-full select-none" aria-label="Phase de la lune par nuit">
+                  <div className="relative h-9 w-full select-none" aria-label="Phase de la lune par nuit">
                     {visibleNightRanges.map((range) => {
                       const index = nightRanges.findIndex((item) => item.night === range.night);
                       const mp = moonPhase(range.night);
@@ -695,13 +695,13 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           key={`moon-${range.night}`}
                           type="button"
                           onClick={() => setZoom(frameNight(range.start, range.end, totalPoints))}
-                          className="absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-dashed border-muted-foreground/70 text-[11px] leading-none text-foreground transition-opacity hover:opacity-80"
+                          className="absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-dashed border-muted-foreground/70 text-[15px] leading-none text-foreground transition-opacity hover:opacity-80"
                           style={{ left: `${left}%`, width: `${width}%`, backgroundColor: nightColor(index).replace(")", " / 0.12)") }}
                           title={`${nightTitle(range.night)} · Lune ${mp.symbol} ${mp.illumination} % — cliquez pour zoomer sur cette nuit`}
                         >
-                          <span className="flex h-full w-full items-center justify-center gap-1 px-1 leading-none">
-                            <span className="text-[13px]">{mp.symbol}</span>
-                            <span>{mp.illumination} %</span>
+                          <span className="flex h-full w-full items-center justify-center gap-1.5 px-1 leading-none">
+                            <span className="text-[22px]">{mp.symbol}</span>
+                            <span className="font-medium">{mp.illumination} %</span>
                           </span>
                         </button>
                       );
