@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
+import { MemberAvatar, useMemberAvatars } from "@/components/MemberAvatar";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ const TeamDetail = () => {
 
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const avatars = useMemberAvatars(members.map((m) => m.user_id));
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -76,7 +78,7 @@ const TeamDetail = () => {
     const userIds = membersData.map(m => m.user_id);
     const { data: profilesData } = await supabase
       .from("profiles")
-      .select("id, username, email")
+      .select("id, username, email, avatar_url")
       .in("id", userIds);
 
     const profileMap = new Map((profilesData || []).map(p => [p.id, p]));
@@ -332,6 +334,7 @@ const TeamDetail = () => {
                 {members.map((member) => (
                   <div key={member.id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/50">
                     <div className="flex items-center gap-2 min-w-0">
+                      <MemberAvatar userId={member.user_id} avatars={avatars} fallback={(member.username || member.email || "U")[0].toUpperCase()} className="h-6 w-6" />
                       {member.user_id === team.owner_id && (
                         <Crown className="h-3 w-3 text-primary shrink-0" />
                       )}

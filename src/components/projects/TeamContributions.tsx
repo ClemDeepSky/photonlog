@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, UserPlus, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { MemberAvatar, useMemberAvatars } from "@/components/MemberAvatar";
 import { toast } from "@/hooks/use-toast";
 import { ensureContribution } from "@/lib/sessions";
 import { filterBand } from "@/lib/filterBands";
@@ -159,6 +160,7 @@ export const ContributionCard = ({ c, isMine, editable, isMosaic, panes, setups,
   const [pane, setPane] = useState<string>("all");
   const [folder, setFolder] = useState(c.folder_path || "");
   const [pattern, setPattern] = useState(c.filename_pattern || "");
+  const avatars = useMemberAvatars([c.user_id]);
 
   const planned = lines.reduce((s, l) => s + l.quantity * Number(l.exposure_duration), 0);
   const acquired = lines.reduce((s, l) => s + Math.min(l.acquired, l.quantity) * Number(l.exposure_duration), 0);
@@ -181,6 +183,7 @@ export const ContributionCard = ({ c, isMine, editable, isMosaic, panes, setups,
   return (
     <div className="rounded-lg border border-border/60 p-3 space-y-3" style={{ borderLeft: `4px solid ${c.color}` }}>
       <div className="flex flex-wrap items-center gap-2">
+        <MemberAvatar userId={c.user_id} avatars={avatars} fallback={c.username?.[0]?.toUpperCase()} />
         <span className="h-3 w-3 rounded-full" style={{ background: c.color }} />
         <span className="font-medium">{c.username}</span>
         {isMine && <Badge variant="secondary" className="text-[10px]">Moi</Badge>}
