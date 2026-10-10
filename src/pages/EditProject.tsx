@@ -523,7 +523,7 @@ const EditProject = () => {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-3xl">
           {/* General info */}
           <Card>
             <CardContent className="pt-6 space-y-4">
