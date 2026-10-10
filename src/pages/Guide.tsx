@@ -311,7 +311,7 @@ const Guide = () => {
                 </Feature>
                 <Feature icon={Globe} title="Comparer plusieurs lieux">
                   Plusieurs sites peuvent être enregistrés : le même projet observé depuis la ville, la campagne ou un
-                  spot de altitude n’offre pas la même nuit. Vous choisissez le site au moment de préparer le projet.
+                  spot d’altitude n’offre pas la même nuit. Vous choisissez le site au moment de préparer le projet.
                 </Feature>
               </div>
               <GuideFigure
