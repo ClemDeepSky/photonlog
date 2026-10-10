@@ -71,6 +71,13 @@
       "when": 1791653477443,
       "tag": "0009_fix_invite_join",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791658780193,
+      "tag": "0010_contribution_panes",
+      "breakpoints": true
     }
   ]
 }
