@@ -512,7 +512,7 @@ const EditProject = () => {
 
   return (
     <AppLayout>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full">
         <div className="mb-6 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/projects")}>
             <ArrowLeft className="h-5 w-5" />
@@ -546,11 +546,11 @@ const EditProject = () => {
 
               <div>
                 <Label>Nom du projet</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" className="max-w-3xl" />
               </div>
               <div>
                 <Label>Dossier racine du projet</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 max-w-3xl">
                   <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: M31 ou D:\Astro\M31" className="flex-1" />
                   <Button type="button" variant="outline" size="icon" onClick={pickRootFolder} title="Choisir le dossier racine">
                     <FolderOpen className="h-4 w-4" />
@@ -564,6 +564,7 @@ const EditProject = () => {
                   value={filenamePattern}
                   onChange={(e) => setFilenamePattern(e.target.value)}
                   placeholder="$$TARGETNAME$$_$$IMAGETYPE$$_$$FILTER$$_$$DATE$$_$$TIME$$_$$SENSORTEMP$$_$$EXPOSURETIME$$s_FWHM$$FWHM$$_ex$$ECCENTRICITY$$_starsCount-$$STARCOUNT$$_hfr-$$HFR$$_$$FRAMENR$$"
+                  className="max-w-3xl"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Collez le modèle de nommage de votre logiciel (N.I.N.A. par exemple) pour extraire automatiquement
@@ -571,7 +572,7 @@ const EditProject = () => {
                   fichiers ne contiennent pas ces informations.
                 </p>
               </div>
-              <div>
+              <div className="max-w-3xl">
                 <Label>Setup</Label>
                 <Select value={setup} onValueChange={setSetup}>
                   <SelectTrigger><SelectValue placeholder={equipment?.length ? "Sélectionner un setup" : "Aucun setup — créez-en un dans Matériel"} /></SelectTrigger>
@@ -596,7 +597,7 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Description (optionnel)</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2} />
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2} className="max-w-3xl" />
               </div>
               <ProjectImageField value={imageUrl} onChange={setImageUrl} />
             </CardContent>
