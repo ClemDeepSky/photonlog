@@ -798,10 +798,15 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                             (index % 2 === 0 ? "bg-primary/10" : "bg-accent/10")
                           }
                           style={{ left: `${left}%`, width: `${width}%` }}
-                          title={`${new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR")} · ${range.count} image${range.count > 1 ? "s" : ""} — cliquez pour zoomer sur cette nuit`}
+                          title={`${new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR")} · ${range.count} image${range.count > 1 ? "s" : ""} · Lune ${moonPhase(range.night).symbol} ${moonPhase(range.night).illumination} % — cliquez pour zoomer sur cette nuit`}
                         >
-                          <span className="flex h-full w-full items-center justify-center px-1">
-                            {new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                           <span className="flex h-full w-full flex-col items-center justify-center px-1 leading-tight">
+                            <span>
+                              {new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                            </span>
+                            <span className="text-[8px] opacity-80">
+                              {moonPhase(range.night).symbol} {moonPhase(range.night).illumination} %
+                            </span>
                           </span>
                         </button>
                       );
