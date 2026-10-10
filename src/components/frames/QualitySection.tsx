@@ -47,6 +47,7 @@ interface FrameRow {
   sensor_temp: number | null;
   file_name: string | null;
   relative_path: string | null;
+  contribution_id?: string | null;
 }
 
 const METRICS = [
@@ -102,7 +103,18 @@ const moonPhase = (night: string) => {
   return { illumination, symbol };
 };
 
-const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: boolean }) => {
+interface QualitySectionProps {
+  projectId: string;
+  isMosaic: boolean;
+  /** Filtre d'affichage : "all", "common" (brutes sans participant) ou id de contribution */
+  participant?: string;
+  /** Contribution de l'utilisateur courant (projets Team) */
+  myContributionId?: string | null;
+  /** L'utilisateur peut trier les brutes communes (sans participant) */
+  canSortCommon?: boolean;
+}
+
+const QualitySection = ({ projectId, isMosaic, participant = "all", myContributionId = null, canSortCommon = true }: QualitySectionProps) => {
   const queryClient = useQueryClient();
   const [activeMetrics, setActiveMetrics] = useState<Set<MetricKey>>(
     new Set<MetricKey>(["fwhm", "eccentricity"])
@@ -119,7 +131,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
           .from("project_frames")
-          .select("id, filter, exposure_duration, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp, file_name, relative_path")
+          .select("id, filter, exposure_duration, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp, file_name, relative_path, contribution_id")
           .eq("project_id", projectId)
           .order("captured_at", { ascending: true })
           .order("id", { ascending: true })
@@ -134,9 +146,25 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   });
 
   const withDates = useMemo(
-    () => (frames || []).filter((f): f is FrameRow & { captured_at: string } => Boolean(f.captured_at)),
-    [frames]
+    () =>
+      (frames || []).filter(
+        (f): f is FrameRow & { captured_at: string } =>
+          Boolean(f.captured_at) &&
+          (participant === "all" ||
+            (participant === "common" ? !f.contribution_id : f.contribution_id === participant)),
+      ),
+    [frames, participant]
   );
+  // Seul le propriétaire d'une brute peut la trier (déplacement vers « _rejetées »).
+  const sortablePaths = useMemo(() => {
+    const set = new Set<string>();
+    for (const f of frames || []) {
+      if (!f.relative_path) continue;
+      const mine = f.contribution_id ? f.contribution_id === myContributionId : canSortCommon;
+      if (mine) set.add(f.relative_path);
+    }
+    return set;
+  }, [frames, myContributionId, canSortCommon]);
 
   const frameGroupKey = (f: FrameRow) => JSON.stringify([f.filter, f.exposure_duration]);
   const availableFilters = useMemo(() => {
@@ -955,9 +983,10 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                             <th className="w-8 px-2 py-1 font-normal">
                               <Checkbox
                                 aria-label="Tout cocher"
-                                checked={selectedFrames.length > 0 && checkedPaths.size === selectedFrames.length}
+                                disabled={!selectedFrames.some((p) => sortablePaths.has(p.relativePath))}
+                                checked={checkedPaths.size > 0 && checkedPaths.size === selectedFrames.filter((p) => sortablePaths.has(p.relativePath)).length}
                                 onCheckedChange={(v) =>
-                                  setCheckedPaths(v ? new Set(selectedFrames.map((p) => p.relativePath)) : new Set())
+                                  setCheckedPaths(v ? new Set(selectedFrames.map((p) => p.relativePath).filter((rp) => sortablePaths.has(rp))) : new Set())
                                 }
                               />
                             </th>
@@ -979,6 +1008,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                               title="Ouvrir l'aperçu"
                             >
                               <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
+                                {sortablePaths.has(p.relativePath) && (
                                 <Checkbox
                                   aria-label={`Rejeter ${p.fileName}`}
                                   checked={checkedPaths.has(p.relativePath)}
@@ -991,6 +1021,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                                     })
                                   }
                                 />
+                                )}
                               </td>
                               <td className="max-w-[18rem] truncate px-2 py-1 text-primary">{p.fileName}</td>
                               <td className="whitespace-nowrap px-2 py-1 text-muted-foreground">
@@ -1023,7 +1054,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
         relativePath={preview?.path || ""}
         open={!!preview}
         onOpenChange={(o) => !o && setPreview(null)}
-        onDelete={preview ? () => rejectFrames([preview.path]) : undefined}
+        onDelete={preview && sortablePaths.has(preview.path) ? () => rejectFrames([preview.path]) : undefined}
       />
     </Card>
   );
