@@ -46,7 +46,7 @@ interface SkyViewerProps {
   onRaDecChange?: (ra: string, dec: string) => void;
   onRotationChange?: (angleDeg: number) => void;
   /** Projets Team : champ du setup de chaque participant, dessiné sur chaque cadre */
-  participants?: { id: string; label: string; color: string; focalLength: number | null; sensorWidthMm: number | null; sensorHeightMm: number | null }[];
+  participants?: { id: string; label: string; color: string; focalLength: number | null; sensorWidthMm: number | null; sensorHeightMm: number | null; panes?: { ra: string; dec: string; position_angle: number | null }[] }[];
 }
 
 const SENSORS: Record<string, { width: number; height: number; label: string }> = {
@@ -225,7 +225,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
   const [hiddenParticipants, setHiddenParticipants] = useState<Set<string>>(new Set());
   const participantFovs = (participants || [])
     .filter((p) => p.focalLength && p.sensorWidthMm && p.sensorHeightMm && !hiddenParticipants.has(p.id))
-    .map((p) => ({ color: p.color, w: calcFOVDeg(p.sensorWidthMm!, p.focalLength!), h: calcFOVDeg(p.sensorHeightMm!, p.focalLength!) }));
+    .map((p) => ({ color: p.color, w: calcFOVDeg(p.sensorWidthMm!, p.focalLength!), h: calcFOVDeg(p.sensorHeightMm!, p.focalLength!), panes: p.panes }));
   const participantKey = JSON.stringify(participantFovs);
   const sensorInfo = sensorOptions[sensor] || SENSORS.apsc;
   const fovW = calcFOVDeg(sensorInfo.width, focalLength);
@@ -346,9 +346,17 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
           const r = parseRA(ra), d = parseDEC(dec);
           if (r !== null && d !== null) centers.push([r, d, positionAngle || 0]);
         }
-        for (const pf of participantFovs) for (const [r, d, a] of centers) {
-          const pts = cornersFor(r, d, a, pf.w, pf.h);
-          if (pts) next.push({ pts, color: pf.color, interactive: false });
+        for (const pf of participantFovs) {
+          // Cadrage propre au participant s'il en a un, sinon centres du projet.
+          const own: [number, number, number][] = [];
+          for (const pane of pf.panes || []) {
+            const r = parseRA(pane.ra), d = parseDEC(pane.dec);
+            if (r !== null && d !== null) own.push([r, d, pane.position_angle ?? 0]);
+          }
+          for (const [r, d, a] of own.length ? own : centers) {
+            const pts = cornersFor(r, d, a, pf.w, pf.h);
+            if (pts) next.push({ pts, color: pf.color, interactive: false, dashed: true });
+          }
         }
       }
       setShapes(next);
@@ -465,6 +473,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
                 fill={s.interactive ? "rgba(0,255,136,0.08)" : "none"}
                 stroke={s.color}
                 strokeWidth={2}
+                strokeDasharray={(s as any).dashed ? "6 4" : undefined}
                 style={{ pointerEvents: s.interactive && interactive ? "auto" : "none", cursor: "move" }}
                 onPointerDown={s.interactive && interactive ? startDrag("move") : undefined}
               />
