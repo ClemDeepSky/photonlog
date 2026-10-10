@@ -139,6 +139,7 @@ Deno.serve(async (req) => {
       text,
       purpose: 'transactional',
       label: 'team-invite',
+      unsubscribe_token: unsubscribeToken,
       queued_at: new Date().toISOString(),
     },
   })
