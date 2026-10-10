@@ -239,15 +239,16 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       return { ...item, points };
     });
 
-    const ranges = new Map<string, { night: string; start: number; end: number; count: number }>();
+    const ranges = new Map<string, { night: string; start: number; end: number; count: number; firstAt: string; lastAt: string }>();
     for (const { idx, f } of indexed) {
       const night = nightOf(f.captured_at);
       const existing = ranges.get(night);
       if (existing) {
         existing.end = idx;
         existing.count += 1;
+        existing.lastAt = f.captured_at;
       } else {
-        ranges.set(night, { night, start: idx, end: idx, count: 1 });
+        ranges.set(night, { night, start: idx, end: idx, count: 1, firstAt: f.captured_at, lastAt: f.captured_at });
       }
     }
 
