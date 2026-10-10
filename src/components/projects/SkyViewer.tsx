@@ -362,7 +362,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
         </p>
       )}
       <div className="relative w-full rounded-md overflow-hidden border border-border" style={{ height: 400 }}>
-        <div ref={containerRef} className="absolute inset-0" />
+        <div ref={containerRef} className="sky-viewer absolute inset-0" style={{ width: "100%", height: "100%" }} />
         <svg
           className="absolute inset-0 h-full w-full"
           style={{ pointerEvents: "none" }}
