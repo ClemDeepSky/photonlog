@@ -42,7 +42,8 @@ const App = () => (
           <DemoTourProvider>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<Auth />} />
+<Route path="/auth" element={<Auth />} />
+            <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/confidentialite" element={<Privacy />} />
             <Route path="/rgpd" element={<Privacy />} />
