@@ -2,14 +2,18 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
+  ArrowUpDown,
   BarChart3,
+  CalendarDays,
   Camera,
   CheckCircle2,
   ChevronRight,
   CircleUserRound,
+  Clock,
   FolderOpen,
   Gauge,
   ImagePlus,
+  LayoutGrid,
   LineChart,
   LockKeyhole,
   Menu,
@@ -36,6 +40,7 @@ const sections = [
   { id: "projets", label: "Projets" },
   { id: "frames", label: "Frames" },
   { id: "qualite", label: "Qualité des brutes" },
+  { id: "tris", label: "Tris et classements" },
   { id: "compte", label: "Compte et confidentialité" },
 ] as const;
 
@@ -335,8 +340,44 @@ const Guide = () => {
               />
             </section>
 
+            <section id="tris" className="scroll-mt-24">
+              <p className="text-sm font-medium text-primary">09 — TRIS ET CLASSEMENTS</p>
+              <h2 className="mt-2 text-3xl font-bold">Comment les listes sont rangées</h2>
+              <div className="mt-6">
+                <Feature icon={ArrowUpDown} title="Filtres : L R V B S H O">
+                  Les filtres sont toujours classés dans cet ordre — Luminance, Rouge, Vert, Bleu, Soufre, Halpha,
+                  Oxygène — et chacun porte la couleur de sa bande passante : fond clair pour L, rouge pour R, vert pour
+                  V, bleu pour B, bordeaux pour S, corail pour H, turquoise pour O. Un filtre qui ne fait pas partie de
+                  cette liste arrive en dernier, sur fond neutre.
+                </Feature>
+                <Feature icon={Clock} title="Filtre et durée de pose séparés">
+                  Une série de poses n’est jamais mélangée à une autre du même filtre mais d’une autre durée : l’onglet
+                  « L · 180 s » ne contient que les poses de 180 s, « L · 300 s » que celles de 300 s. À l’intérieur d’un
+                  même filtre, les durées sont rangées de la plus courte à la plus longue.
+                </Feature>
+                <Feature icon={LayoutGrid} title="Panneaux numérotés">
+                  Les panneaux d’une mosaïque sont classés par numéro croissant, P1 puis P2, P3… À l’intérieur d’un
+                  panneau, les lignes de poses sont rangées par ordre alphabétique du nom du filtre. Le groupe « global »
+                  — les poses qui ne dépendent d’aucun panneau — est placé en dernier.
+                </Feature>
+                <Feature icon={CalendarDays} title="Chronologie des poses">
+                  Dans le graphique de qualité, les images sont rangées de la plus ancienne à la plus récente d’après leur
+                  date de capture, et les nuits sont séparées les unes des autres. Masquer une nuit ne déplace pas les
+                  autres : chaque image garde sa place dans la chronologie.
+                </Feature>
+                <Feature icon={BarChart3} title="Compteurs du tableau de bord">
+                  Les filtres du tableau de bord sont classés du plus grand temps d’intégration déjà acquis au plus petit :
+                  ce qui avance le mieux apparaît en premier.
+                </Feature>
+                <Feature icon={FolderOpen} title="Vos projets">
+                  La liste « Projets » présente les plus récemment créés en premier. Le tableau de bord, lui, place en
+                  tête les projets modifiés le plus récemment.
+                </Feature>
+              </div>
+            </section>
+
             <section id="compte" className="scroll-mt-24">
-              <p className="text-sm font-medium text-primary">09 — COMPTE ET CONFIDENTIALITÉ</p>
+              <p className="text-sm font-medium text-primary">10 — COMPTE ET CONFIDENTIALITÉ</p>
               <h2 className="mt-2 text-3xl font-bold">Vos accès et vos données</h2>
               <div className="mt-6">
                 <Feature icon={CircleUserRound} title="Compte personnel">
