@@ -92,7 +92,7 @@ const loadAladin = (): Promise<void> => {
     if (!document.querySelector('link[href*="aladin"]')) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.css";
+      link.href = "https://aladin.cds.unistra.fr/AladinLite/api/v3/3.6.5/aladin.css";
       document.head.appendChild(link);
     }
 
@@ -103,7 +103,7 @@ const loadAladin = (): Promise<void> => {
     }
 
     const script = document.createElement("script");
-    script.src = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js";
+    script.src = "https://aladin.cds.unistra.fr/AladinLite/api/v3/3.6.5/aladin.js";
     script.charset = "utf-8";
     script.onload = () => {
       // A.init is a Promise that resolves when WASM is ready
