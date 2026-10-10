@@ -564,6 +564,7 @@ const EditProject = () => {
                   value={filenamePattern}
                   onChange={(e) => setFilenamePattern(e.target.value)}
                   placeholder="$$TARGETNAME$$_$$IMAGETYPE$$_$$FILTER$$_$$DATE$$_$$TIME$$_$$SENSORTEMP$$_$$EXPOSURETIME$$s_FWHM$$FWHM$$_ex$$ECCENTRICITY$$_starsCount-$$STARCOUNT$$_hfr-$$HFR$$_$$FRAMENR$$"
+                  className="max-w-3xl"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Collez le modèle de nommage de votre logiciel (N.I.N.A. par exemple) pour extraire automatiquement
@@ -571,7 +572,7 @@ const EditProject = () => {
                   fichiers ne contiennent pas ces informations.
                 </p>
               </div>
-              <div>
+              <div className="max-w-3xl">
                 <Label>Setup</Label>
                 <Select value={setup} onValueChange={setSetup}>
                   <SelectTrigger><SelectValue placeholder={equipment?.length ? "Sélectionner un setup" : "Aucun setup — créez-en un dans Matériel"} /></SelectTrigger>
@@ -596,7 +597,7 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Description (optionnel)</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2} />
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2} className="max-w-3xl" />
               </div>
               <ProjectImageField value={imageUrl} onChange={setImageUrl} />
             </CardContent>
