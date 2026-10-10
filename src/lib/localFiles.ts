@@ -63,6 +63,8 @@ export async function entriesFromDirHandle(root: any): Promise<LocalFileEntry[]>
   const walk = async (dir: DirHandle, prefix: string) => {
     for await (const child of dir.values()) {
       if (child.kind === "directory") {
+        // Les brutes rejetées sont déplacées là : on ne les réindexe jamais.
+        if (child.name.toLowerCase() === "_rejetées") continue;
         await walk(child as DirHandle, prefix + child.name + "/");
       } else {
         // Jamais de child.getFile() ici : le nom du handle suffit.

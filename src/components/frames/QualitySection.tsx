@@ -10,7 +10,8 @@ import {
   getProjectDirHandle,
   ensureReadPermission,
   ensureWritePermission,
-  deleteFileFromHandle,
+  moveFileToSubfolder,
+  REJECTED_FOLDER,
   getFileFromHandle,
   requestProjectDirHandle,
 } from "@/lib/dirHandleStore";
@@ -291,6 +292,10 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   const [drag, setDrag] = useState<{ start: number; cur: number } | null>(null);
   const [selection, setSelection] = useState<[number, number] | null>(null);
   useEffect(() => setSelection(null), [selectedFilter, offPanes, totalPoints]);
+  // Cases à cocher de la liste de sélection (rejet vers « _rejetées »).
+  const [checkedPaths, setCheckedPaths] = useState<Set<string>>(new Set());
+  const [rejecting, setRejecting] = useState(false);
+  useEffect(() => setCheckedPaths(new Set()), [selection, selectedFilter, offPanes]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
@@ -408,23 +413,24 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     setPreview({ file, path: relativePath });
   };
 
-  // Suppression définitive du fichier sur le disque + désindexation.
-  const deleteFrame = async (relativePath: string) => {
+  // Rejet de brutes : déplacement vers le sous-dossier « _rejetées » du dossier
+  // du projet (rien n'est supprimé du disque) + désindexation dans Photonlog.
+  const rejectFrames = async (relativePaths: string[]) => {
+    if (!relativePaths.length) return;
     let handle = await getProjectDirHandle(projectId);
     if (!handle) {
       // Le rafraîchissement a pu se faire sans mémoriser le dossier (aperçu intégré) :
-      // on demande le dossier maintenant pour autoriser la suppression sur le disque.
+      // on demande le dossier maintenant pour autoriser le déplacement sur le disque.
       try {
-        handle = await requestProjectDirHandle(projectId);
+        handle = await requestProjectDirHandle(projectId, { mode: "readwrite" });
       } catch (err: any) {
-        const msg = String(err?.message || "");
         const aborted = err?.name === "AbortError";
         if (!aborted) {
           toast({
-            title: "Suppression indisponible ici",
+            title: "Rejet indisponible ici",
             description:
               err?.name === "NotSupportedError"
-                ? "Utilisez Chrome ou Edge pour supprimer un fichier du disque."
+                ? "Utilisez Chrome ou Edge pour déplacer un fichier du dossier."
                 : "Ouvrez la page dans un nouvel onglet (hors aperçu intégré) puis désignez le dossier du projet.",
             variant: "destructive",
           });
@@ -437,45 +443,58 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     if (!ok) {
       toast({
         title: "Autorisation refusée",
-        description: "La modification du dossier est nécessaire pour supprimer le fichier.",
-        variant: "destructive",
-      });
-      return;
-    }
-    const removed = await deleteFileFromHandle(handle, relativePath);
-    if (!removed) {
-      toast({
-        title: "Suppression impossible",
-        description: "Le fichier n'a pas pu être supprimé (introuvable ou verrouillé).",
+        description: `La modification du dossier est nécessaire pour déplacer les fichiers vers « ${REJECTED_FOLDER} ».`,
         variant: "destructive",
       });
       return;
     }
 
-    // Désindexation + recomptage de l'acquisition concernée.
-    const { data: rows } = await supabase
-      .from("project_frames")
-      .select("id, acquisition_id")
-      .eq("project_id", projectId)
-      .eq("relative_path", relativePath);
-    const acquisitionIds = Array.from(
-      new Set((rows || []).map((r: any) => r.acquisition_id).filter(Boolean))
-    ) as string[];
-    await supabase.from("project_frames").delete().eq("project_id", projectId).eq("relative_path", relativePath);
+    const moved: string[] = [];
+    const failed: string[] = [];
+    for (const path of relativePaths) {
+      const newPath = await moveFileToSubfolder(handle, path);
+      if (newPath) moved.push(path);
+      else failed.push(path);
+    }
 
-    for (const acqId of acquisitionIds) {
-      const { count } = await supabase
+    if (moved.length) {
+      // Désindexation + recomptage des acquisitions concernées.
+      const { data: rows } = await supabase
         .from("project_frames")
-        .select("id", { count: "exact", head: true })
+        .select("id, acquisition_id")
         .eq("project_id", projectId)
-        .eq("acquisition_id", acqId);
-      await supabase.from("project_acquisitions").update({ acquired: count || 0 }).eq("id", acqId);
+        .in("relative_path", moved);
+      const acquisitionIds = Array.from(
+        new Set((rows || []).map((r: any) => r.acquisition_id).filter(Boolean))
+      ) as string[];
+      await supabase.from("project_frames").delete().eq("project_id", projectId).in("relative_path", moved);
+
+      for (const acqId of acquisitionIds) {
+        const { count } = await supabase
+          .from("project_frames")
+          .select("id", { count: "exact", head: true })
+          .eq("project_id", projectId)
+          .eq("acquisition_id", acqId);
+        await supabase.from("project_acquisitions").update({ acquired: count || 0 }).eq("id", acqId);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["project-frames", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["project-acquisitions"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisitions"] });
     }
 
-    queryClient.invalidateQueries({ queryKey: ["project-frames", projectId] });
-    queryClient.invalidateQueries({ queryKey: ["project-acquisitions"] });
-    queryClient.invalidateQueries({ queryKey: ["acquisitions"] });
-    toast({ title: "Fichier supprimé", description: relativePath });
+    if (failed.length) {
+      toast({
+        title: `${moved.length} brute(s) déplacée(s), ${failed.length} échec(s)`,
+        description: `Les fichiers en échec n'ont pas pu être déplacés (introuvables ou verrouillés) : ${failed.slice(0, 3).join(", ")}${failed.length > 3 ? "…" : ""}`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: `${moved.length} brute(s) rejetée(s)`,
+        description: `Déplacée(s) vers le sous-dossier « ${REJECTED_FOLDER} » — récupérables à la main, rien n'a été supprimé.`,
+      });
+    }
   };
 
 
@@ -913,18 +932,47 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                 </div>
                 {selection && (
                   <div className="rounded-md border border-border/60 bg-secondary/20 p-2">
-                    <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <p className="text-xs font-medium">
                         {selectedFrames.length} image{selectedFrames.length > 1 ? "s" : ""} sélectionnée{selectedFrames.length > 1 ? "s" : ""}
                       </p>
-                      <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setSelection(null)}>
-                        Effacer la sélection
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-6 px-2 text-xs"
+                          disabled={checkedPaths.size === 0 || rejecting}
+                          title={`Déplacer les brutes cochées vers le sous-dossier « ${REJECTED_FOLDER} » (rien n'est supprimé)`}
+                          onClick={async () => {
+                            setRejecting(true);
+                            try {
+                              await rejectFrames(Array.from(checkedPaths));
+                              setSelection(null);
+                            } finally {
+                              setRejecting(false);
+                            }
+                          }}
+                        >
+                          {rejecting ? "Déplacement…" : `Rejeter cochées (${checkedPaths.size}) → ${REJECTED_FOLDER}`}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setSelection(null)}>
+                          Effacer la sélection
+                        </Button>
+                      </div>
                     </div>
                     <div className="max-h-64 overflow-auto">
                       <table className="w-full text-xs">
                         <thead className="sticky top-0 bg-card text-muted-foreground">
                           <tr className="text-left">
+                            <th className="w-8 px-2 py-1 font-normal">
+                              <Checkbox
+                                aria-label="Tout cocher"
+                                checked={selectedFrames.length > 0 && checkedPaths.size === selectedFrames.length}
+                                onCheckedChange={(v) =>
+                                  setCheckedPaths(v ? new Set(selectedFrames.map((p) => p.relativePath)) : new Set())
+                                }
+                              />
+                            </th>
                             <th className="px-2 py-1 font-normal">Fichier</th>
                             <th className="px-2 py-1 font-normal">Date</th>
                             <th className="px-2 py-1 text-right font-normal">FWHM</th>
@@ -942,6 +990,20 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                               onClick={() => openFrame(p.relativePath, p.fileName)}
                               title="Ouvrir l'aperçu"
                             >
+                              <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                  aria-label={`Rejeter ${p.fileName}`}
+                                  checked={checkedPaths.has(p.relativePath)}
+                                  onCheckedChange={(v) =>
+                                    setCheckedPaths((prev) => {
+                                      const next = new Set(prev);
+                                      if (v) next.add(p.relativePath);
+                                      else next.delete(p.relativePath);
+                                      return next;
+                                    })
+                                  }
+                                />
+                              </td>
                               <td className="max-w-[18rem] truncate px-2 py-1 text-primary">{p.fileName}</td>
                               <td className="whitespace-nowrap px-2 py-1 text-muted-foreground">
                                 {p.capturedAt ? new Date(p.capturedAt).toLocaleString("fr-FR") : ""}
@@ -972,7 +1034,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
         relativePath={preview?.path || ""}
         open={!!preview}
         onOpenChange={(o) => !o && setPreview(null)}
-        onDelete={preview ? () => deleteFrame(preview.path) : undefined}
+        onDelete={preview ? () => rejectFrames([preview.path]) : undefined}
       />
     </Card>
   );

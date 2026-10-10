@@ -79,6 +79,64 @@ export async function ensureWritePermission(handle: any, request = true): Promis
   return (await handle.requestPermission(opts)) === "granted";
 }
 
+/** Sous-dossier où sont déplacées les brutes rejetées (jamais supprimées). */
+export const REJECTED_FOLDER = "_rejetées";
+
+/**
+ * Déplace un fichier du dossier mémorisé vers le sous-dossier « _rejetées »
+ * (à la racine du dossier du projet). Rien n'est supprimé : le fichier reste
+ * récupérable à la main. Retourne le nouveau chemin relatif, ou null si le
+ * déplacement a échoué (fichier introuvable, verrouillé, autorisation…).
+ */
+export async function moveFileToSubfolder(
+  handle: any,
+  relativePath: string,
+  subfolder: string = REJECTED_FOLDER
+): Promise<string | null> {
+  const parts = relativePath.split("/").filter(Boolean);
+  if (parts.length === 0) return null;
+  // Le chemin relatif du fallback <input webkitdirectory> inclut le nom du dossier racine.
+  const segments = parts.length > 1 && parts[0] === handle.name ? parts.slice(1) : parts;
+  try {
+    let dir = handle;
+    for (const seg of segments.slice(0, -1)) {
+      dir = await dir.getDirectoryHandle(seg);
+    }
+    const fileName = segments[segments.length - 1];
+    const fileHandle = await dir.getFileHandle(fileName);
+    const target = await handle.getDirectoryHandle(subfolder, { create: true });
+
+    // Évite d'écraser un fichier déjà rejeté portant le même nom.
+    let candidate = fileName;
+    let n = 1;
+    for (;;) {
+      try {
+        await target.getFileHandle(candidate);
+        const dot = fileName.lastIndexOf(".");
+        candidate = dot > 0 ? `${fileName.slice(0, dot)}_${n}${fileName.slice(dot)}` : `${fileName}_${n}`;
+        n++;
+      } catch {
+        break; // nom libre
+      }
+    }
+
+    if (typeof fileHandle.move === "function") {
+      await fileHandle.move(target, candidate);
+    } else {
+      // Secours : copie puis retrait de l'original.
+      const file = await fileHandle.getFile();
+      const dest = await target.getFileHandle(candidate, { create: true });
+      const writable = await dest.createWritable();
+      await writable.write(file);
+      await writable.close();
+      await dir.removeEntry(fileName);
+    }
+    return `${subfolder}/${candidate}`;
+  } catch {
+    return null;
+  }
+}
+
 /** Supprime définitivement un fichier du dossier mémorisé (pas de corbeille). */
 export async function deleteFileFromHandle(handle: any, relativePath: string): Promise<boolean> {
   const parts = relativePath.split("/").filter(Boolean);
