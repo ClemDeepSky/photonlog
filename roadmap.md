@@ -9,6 +9,7 @@
 - Mode manuel : sessions et lots de poses saisis.
 - Mode automatique : le scan du dossier reconstruit sessions et lots.
 - Activation V2 projet par projet, sans migration destructive.
+- Enregistrement d'un projet : mise à jour en place des panneaux et des lignes de plan (les brutes indexées gardent leur lien).
 
 ## Ouvert (en attente de vos réponses)
 - Progression principale en temps aussi pour les projets personnels (à confirmer).
