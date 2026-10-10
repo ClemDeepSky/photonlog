@@ -598,8 +598,50 @@ const EditProject = () => {
                           {panes.map((pane, idx) => (
                             <TableRow key={idx}>
                               <TableCell className="text-xs font-mono">{pane.pane_number}</TableCell>
-                              <TableCell><Input value={pane.ra} onChange={(e) => updatePane(idx, "ra", e.target.value)} className="h-7 text-xs" placeholder="RA" /></TableCell>
-                              <TableCell><Input value={pane.dec} onChange={(e) => updatePane(idx, "dec", e.target.value)} className="h-7 text-xs" placeholder="DEC" /></TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-0.5">
+                                  {(["h", "m", "s"] as const).map((unit, partIdx) => {
+                                    const parts = splitSexagesimal(pane.ra);
+                                    return (
+                                      <span key={unit} className="flex items-center gap-0.5">
+                                        <Input
+                                          value={parts[partIdx]}
+                                          onChange={(e) => {
+                                            const next = [...parts] as [string, string, string];
+                                            next[partIdx] = e.target.value.replace(/[^\d.-]/g, "");
+                                            updatePane(idx, "ra", joinSexagesimal(next, ["h", "m", "s"]));
+                                          }}
+                                          className="h-7 w-12 px-1 text-xs text-center"
+                                          placeholder="0"
+                                        />
+                                        <span className="text-[10px] text-muted-foreground">{unit}</span>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-0.5">
+                                  {(["d", "m", "s"] as const).map((unit, partIdx) => {
+                                    const parts = splitSexagesimal(pane.dec);
+                                    return (
+                                      <span key={unit} className="flex items-center gap-0.5">
+                                        <Input
+                                          value={parts[partIdx]}
+                                          onChange={(e) => {
+                                            const next = [...parts] as [string, string, string];
+                                            next[partIdx] = e.target.value.replace(/[^\d.-]/g, "");
+                                            updatePane(idx, "dec", joinSexagesimal(next, ["d", "m", "s"]));
+                                          }}
+                                          className="h-7 w-12 px-1 text-xs text-center"
+                                          placeholder="0"
+                                        />
+                                        <span className="text-[10px] text-muted-foreground">{unit}</span>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </TableCell>
                               <TableCell><Input value={pane.position_angle?.toString() || ""} onChange={(e) => updatePane(idx, "position_angle", e.target.value)} className="h-7 text-xs" placeholder="°" type="number" /></TableCell>
                               <TableCell>
                                 <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removePane(idx)}>
