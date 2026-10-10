@@ -50,6 +50,13 @@
       "when": 1791649850880,
       "tag": "0006_scope_legacy_policies_to_common_rows",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791649868625,
+      "tag": "0007_contribution_setup_snapshot",
+      "breakpoints": true
     }
   ]
 }

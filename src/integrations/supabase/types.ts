@@ -308,9 +308,12 @@ export type Database = {
           created_at: string
           equipment_profile_id: string | null
           filename_pattern: string | null
+          focal_length: number | null
           folder_path: string | null
           id: string
           project_id: string
+          sensor_height_mm: number | null
+          sensor_width_mm: number | null
           setup: string | null
           tracking_mode: string
           updated_at: string
@@ -320,9 +323,12 @@ export type Database = {
           created_at?: string
           equipment_profile_id?: string | null
           filename_pattern?: string | null
+          focal_length?: number | null
           folder_path?: string | null
           id?: string
           project_id: string
+          sensor_height_mm?: number | null
+          sensor_width_mm?: number | null
           setup?: string | null
           tracking_mode?: string
           updated_at?: string
@@ -332,9 +338,12 @@ export type Database = {
           created_at?: string
           equipment_profile_id?: string | null
           filename_pattern?: string | null
+          focal_length?: number | null
           folder_path?: string | null
           id?: string
           project_id?: string
+          sensor_height_mm?: number | null
+          sensor_width_mm?: number | null
           setup?: string | null
           tracking_mode?: string
           updated_at?: string
