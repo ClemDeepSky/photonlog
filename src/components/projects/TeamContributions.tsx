@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { ensureContribution } from "@/lib/sessions";
-import { filterBand, FILTER_BANDS } from "@/lib/filterBands";
+import { filterBand } from "@/lib/filterBands";
 import { canEditContribution, type TeamContribution } from "@/lib/teamContributions";
 
 export interface PlanLine {
@@ -322,5 +322,4 @@ const ContributionCard = ({ c, isMine, editable, isMosaic, panes, setups, lines,
   );
 };
 
-void FILTER_BANDS;
 export default TeamContributions;
