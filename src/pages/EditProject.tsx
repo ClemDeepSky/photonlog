@@ -93,11 +93,12 @@ const EditProject = () => {
 
   // Load project data
   const { data: equipment } = useQuery({
-    queryKey: ["equipment-profiles"],
+    queryKey: ["equipment-profiles", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("equipment_profiles")
         .select("id, name, focal_length, diameter, pixel_size, sensor_width_px, sensor_height_px, filters")
+        .eq("user_id", user!.id)
         .order("name");
       if (error) throw error;
       return data;
