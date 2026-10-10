@@ -92,12 +92,12 @@ const Guide = () => {
       <main>
         <section className="border-b border-border/60">
           <div className="px-5 py-16 lg:px-8 lg:py-24">
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
               <p className="mb-4 text-sm font-medium text-primary">DOCUMENTATION PHOTONLOG</p>
-              <h1 className="max-w-3xl text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
+              <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
                 Pilotez vos acquisitions, de la cible à la dernière pose
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
+              <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
                 Photonlog centralise vos projets d’astrophotographie, vos setups, vos équipes et le suivi de chaque
                 série d’images. Ce guide présente les écrans et les principales actions dans l’ordre d’utilisation.
               </p>

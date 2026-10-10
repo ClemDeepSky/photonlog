@@ -38,7 +38,7 @@ const ProjectImageField = ({ value, onChange }: Props) => {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 max-w-3xl">
       <Label>Vignette du projet</Label>
       <div className="flex items-start gap-4">
         <img
