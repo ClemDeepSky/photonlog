@@ -11,6 +11,9 @@
 - Activation V2 projet par projet, sans migration destructive.
 - Enregistrement d'un projet : mise à jour en place des panneaux et des lignes de plan (les brutes indexées gardent leur lien).
 
+## En cours
+- Réunir coordonnées et cadrage, hériter du setup général et unifier Manuel/CSV et J2000/JNow pour les projets simples et mosaïques.
+
 ## Ouvert (en attente de vos réponses)
 - Progression principale en temps aussi pour les projets personnels (à confirmer).
 - Vocabulaire FR/EN validé avant reprise des textes de toute l'application.
