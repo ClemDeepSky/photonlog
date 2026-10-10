@@ -1,4 +1,5 @@
 # Architecture rules
+- Frames groups Team acquisition lines by contribution and pane ID, labels common plans separately, and resolves a member's unassigned single-panel lines to their sole pane for display only, so distinct plans never appear as anonymous duplicate panels.
 - Normal project lists use the shared personalProjectFilter and user-scoped query keys; V2 summaries query only those project IDs, so administrative read privileges never widen the personal workspace.
 
 - Use ProjectCoordinates for both project creation and editing, with CoordinateInputs shared by simple targets and mosaic panels, so their layout and epoch handling stay consistent.
