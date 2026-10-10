@@ -282,5 +282,37 @@ export function parseFrameName(relativePath: string, pattern?: string | null): P
   if (!result.filter) result.filter = detectFilterFromPath(relativePath);
   if (result.exposureDuration == null) result.exposureDuration = detectExposureFromPath(relativePath);
   result.paneNumber = detectPaneFromPath(relativePath);
+  // Repli souple : lit date/heure et métriques directement dans le nom quand
+  // le modèle du projet ne colle pas (ex. variantes sans starsCount/hfr).
+  if (!result.matchedPattern) applyLooseNameHints(base, result);
   return result;
+}
+
+/** Extrait date, FWHM, excentricité, HFR, étoiles et température d'un nom libre. */
+function applyLooseNameHints(base: string, result: ParsedFrame): void {
+  if (!result.capturedAt) {
+    const dt = base.match(/(\d{4}[-_/]\d{2}[-_/]\d{2})[ _T](\d{2}[-:]\d{2}[-:]\d{2})/);
+    if (dt) result.capturedAt = buildDate(dt[1], dt[2]);
+  }
+  if (result.fwhm == null) {
+    const m = base.match(/fwhm[\s_\-=]*(\d+(?:[.,]\d+)?)/i);
+    if (m) result.fwhm = num(m[1]);
+  }
+  if (result.eccentricity == null) {
+    const m = base.match(/(?:^|[^a-z])ex(?:centricity)?[\s_\-=]*(\d+(?:[.,]\d+)?)/i);
+    if (m) result.eccentricity = num(m[1]);
+  }
+  if (result.hfr == null) {
+    const m = base.match(/hfr[\s_\-=]*(\d+(?:[.,]\d+)?)/i);
+    if (m) result.hfr = num(m[1]);
+  }
+  if (result.starCount == null) {
+    const m = base.match(/stars?[\s_\-=]*(?:count)?[\s_\-=]*(\d+)/i);
+    if (m) result.starCount = int(m[1]);
+  }
+  if (result.sensorTemp == null) {
+    // Température capteur : nombre négatif (ou positif) juste avant la durée, ex. "_-9.70_180.00s".
+    const m = base.match(/_(-?\d+(?:[.,]\d+)?)_\d+(?:[.,]\d+)?\s*s(?:ec)?(?:\b|_)/i);
+    if (m) result.sensorTemp = num(m[1]);
+  }
 }
