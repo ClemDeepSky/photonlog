@@ -407,27 +407,53 @@ const EditProject = () => {
 
   const updateProject = useMutation({
     mutationFn: async () => {
-      // Update project
-      const { error } = await supabase
-        .from("projects")
-        .update({
-          name, description: description || null, setup: setup || null, observing_site_id: siteId || null,
-          image_url: imageUrl,
-          folder_path: folderPath || null,
-          filename_pattern: filenamePattern || null,
-          team_id: isTeamProject ? selectedTeamId : null, is_mosaic: isMosaic,
-          ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
-          position_angle: isMosaic ? null : (parseFloat(positionAngle) || null),
-        })
-        .eq("id", id!);
-      if (error) throw error;
+      let cid: string | null = null;
+      if (!isTeam) {
+        const { error } = await supabase
+          .from("projects")
+          .update({
+            name, description: description || null, setup: setup || null, observing_site_id: siteId || null,
+            image_url: imageUrl,
+            folder_path: folderPath || null,
+            filename_pattern: filenamePattern || null,
+            team_id: isTeamProject ? selectedTeamId : null, is_mosaic: isMosaic,
+            ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
+            position_angle: isMosaic ? null : (parseFloat(positionAngle) || null),
+          })
+          .eq("id", id!);
+        if (error) throw error;
+      } else {
+        // Réglages du projet : administrateur de la team uniquement.
+        if (isProjectAdmin) {
+          const { error } = await supabase.from("projects").update({
+            name, description: description || null, observing_site_id: siteId || null, image_url: imageUrl,
+            team_id: isTeamProject ? selectedTeamId : null,
+          }).eq("id", id!);
+          if (error) throw error;
+        }
+        // Ma contribution : setup, dossier, structure des noms.
+        const c = mine ?? (await ensureContribution(id!, user!.id, { tracking_mode: "automatic" }));
+        cid = c.id;
+        const s = selectedSetup;
+        const mm = (px: number | null | undefined) => (s?.pixel_size && px ? (Number(s.pixel_size) * px) / 1000 : null);
+        const { error: cErr } = await supabase.from("project_contributions").update({
+          setup: setup || null, equipment_profile_id: s?.id ?? null,
+          focal_length: s?.focal_length ?? null, sensor_width_mm: mm(s?.sensor_width_px), sensor_height_mm: mm(s?.sensor_height_px),
+          folder_path: folderPath || null, filename_pattern: filenamePattern || null,
+        }).eq("id", cid);
+        if (cErr) throw cErr;
+      }
 
       // Mise à jour en place : les identifiants des panneaux et des lignes de plan
       // sont conservés, pour que les brutes déjà indexées restent reliées à leur ligne.
-      const targetPanes = isMosaic ? panes : [];
+      const singlePane: Pane[] = isTeam && !isMosaic && ra && dec
+        ? [{ id: scopeFallback ? undefined : singlePaneId, pane_number: 1, ra, dec, position_angle: parseFloat(positionAngle) || null,
+            pane_width: null, pane_height: null, overlap: null, row_index: null, col_index: null }]
+        : [];
+      const targetPanes = isMosaic ? panes : singlePane;
 
       const keptPaneIds = new Set(targetPanes.map((p) => p.id).filter(Boolean) as string[]);
-      const removedPaneIds = (projectPanes ?? [])
+      const removedPaneIds = (scopeFallback ? [] : projectPanes ?? [])
         .map((p) => p.id as string)
         .filter((pid) => !keptPaneIds.has(pid));
 
@@ -438,6 +464,7 @@ const EditProject = () => {
           project_id: id!, pane_number: p.pane_number, ra: p.ra, dec: p.dec,
           position_angle: p.position_angle, pane_width: p.pane_width, pane_height: p.pane_height,
           overlap: p.overlap, row_index: p.row_index, col_index: p.col_index,
+          ...(cid ? { contribution_id: cid } : {}),
         };
         if (p.id) {
           const { error: paneUpdError } = await supabase.from("project_panes").update(row).eq("id", p.id);
