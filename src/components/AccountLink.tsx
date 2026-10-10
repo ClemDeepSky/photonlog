@@ -69,11 +69,17 @@ export const AccountLink = ({ compact = false, className }: { compact?: boolean;
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem asChild className="cursor-pointer">
           <Link to="/account">
             <UserRound className="mr-2 h-4 w-4" />
             Profil
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="cursor-pointer">
+          <Link to="/guide">
+            <CircleHelp className="mr-2 h-4 w-4" />
+            Guide d’utilisation
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer" onSelect={() => void signOut()}>

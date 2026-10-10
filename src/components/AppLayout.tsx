@@ -79,13 +79,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </nav>
         <div className="p-4 border-t border-border/20">
           <Link
-            to="/guide"
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-2"
-          >
-            <CircleHelp className="h-3.5 w-3.5" />
-            Guide d’utilisation
-          </Link>
-          <Link
             to="/confidentialite"
             className="block text-xs text-muted-foreground hover:text-foreground mb-2"
           >
