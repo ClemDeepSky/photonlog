@@ -1,6 +1,7 @@
 # Photonlog V2 — feuille de route
 
 ## Fait
+- Frames Team : progression calculée aussi depuis les brutes indexées sans lien au plan ; association selon les panneaux propres au membre ; graphique par défaut tous filtres et cercles creux pour les autres membres.
 - Schéma additif : contributions, sessions, lots de poses, objectif en temps, lien brute→session. Rien de supprimé.
 - Interrupteur V1/V2 dans le menu (retour arrière immédiat), navigation V2 sans « Frames ».
 - Moteur de progression unique (temps d'intégration principal, poses en secondaire).

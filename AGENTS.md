@@ -1,4 +1,5 @@
 # Architecture rules
+- Frames progression and quality share paginated, user-scoped indexed frames; unmatched files resolve only within their contribution's plan, whose own panel count governs mosaic matching, so simple members remain independent of other members' mosaics.
 - Frames groups Team acquisition lines by contribution and pane ID, labels common plans separately, and resolves a member's unassigned single-panel lines to their sole pane for display only, so distinct plans never appear as anonymous duplicate panels.
 - Normal project lists use the shared personalProjectFilter and user-scoped query keys; V2 summaries query only those project IDs, so administrative read privileges never widen the personal workspace.
 

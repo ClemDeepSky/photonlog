@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useProjectFrames, type FrameRow } from "@/lib/projectFrames";
 import { LineChart } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -33,22 +34,6 @@ import {
 
 // Ordre L R V B S H O, couleur de fond = bande passante du filtre (partagé via src/lib/filterBands.ts)
 const DARK = "hsl(222, 47%, 8%)";
-
-interface FrameRow {
-  id: string;
-  filter: string | null;
-  exposure_duration: number | null;
-  pane_number: number | null;
-  captured_at: string | null;
-  fwhm: number | null;
-  eccentricity: number | null;
-  hfr: number | null;
-  star_count: number | null;
-  sensor_temp: number | null;
-  file_name: string | null;
-  relative_path: string | null;
-  contribution_id?: string | null;
-}
 
 const METRICS = [
   { key: "fwhm", label: "FWHM", color: "hsl(var(--primary))" },
@@ -119,31 +104,15 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
   const [activeMetrics, setActiveMetrics] = useState<Set<MetricKey>>(
     new Set<MetricKey>(["fwhm", "eccentricity"])
   );
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>("all");
   const [offPanes, setOffPanes] = useState<Set<string>>(new Set());
   
 
-  const { data: frames, isLoading } = useQuery({
-    queryKey: ["project-frames", projectId],
-    queryFn: async () => {
-      const all: FrameRow[] = [];
-      const PAGE = 1000;
-      for (let from = 0; ; from += PAGE) {
-        const { data, error } = await supabase
-          .from("project_frames")
-          .select("id, filter, exposure_duration, pane_number, captured_at, fwhm, eccentricity, hfr, star_count, sensor_temp, file_name, relative_path, contribution_id")
-          .eq("project_id", projectId)
-          .order("captured_at", { ascending: true })
-          .order("id", { ascending: true })
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        all.push(...((data || []) as FrameRow[]));
-        if (!data || data.length < PAGE) break;
-      }
-      return all;
-    },
-    enabled: !!projectId,
-  });
+  const { data: frames, isLoading } = useProjectFrames(projectId);
+  useEffect(() => {
+    setSelectedFilter("all");
+    setOffPanes(new Set());
+  }, [projectId, participant]);
 
   const withDates = useMemo(
     () =>
@@ -189,8 +158,8 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
       setSelectedFilter(null);
       return;
     }
-    if (!selectedFilter || !availableFilters.some((group) => group.key === selectedFilter)) {
-      setSelectedFilter(availableFilters[0].key);
+    if (!selectedFilter || (selectedFilter !== "all" && !availableFilters.some((group) => group.key === selectedFilter))) {
+      setSelectedFilter("all");
     }
   }, [availableFilters, selectedFilter]);
 
@@ -215,7 +184,7 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
   const { series, metricRanges, totalPoints, nightRanges } = useMemo(() => {
     const indexed: Array<{ idx: number; f: FrameRow & { captured_at: string } }> = [];
     for (const f of withDates) {
-      if (selectedFilter && frameGroupKey(f) !== selectedFilter) continue;
+      if (selectedFilter && selectedFilter !== "all" && frameGroupKey(f) !== selectedFilter) continue;
       if (f.pane_number != null && offPanes.has(String(f.pane_number))) continue;
       indexed.push({ idx: 0, f });
     }
@@ -251,6 +220,7 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
           eccentricity: f.eccentricity,
           starCount: f.star_count,
           sensorTemp: f.sensor_temp,
+          otherMember: Boolean(f.contribution_id && f.contribution_id !== myContributionId),
         }];
       });
       return { ...item, points };
@@ -275,7 +245,7 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
       totalPoints: indexed.length,
       nightRanges: Array.from(ranges.values()),
     };
-  }, [withDates, selectedFilter, activeMetrics, offPanes]);
+  }, [withDates, selectedFilter, activeMetrics, offPanes, myContributionId]);
 
   // Zoom horizontal : fenêtre continue [x0, x1] en unités d'index (bords à -0.5 / n-0.5).
   const MIN_SPAN = 2;
@@ -631,6 +601,9 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
           </CardTitle>
           {availableFilters.length > 0 && (
             <div className="flex max-w-full flex-wrap justify-end gap-1" role="tablist" aria-label="Filtre affiché">
+              <Button variant={selectedFilter === "all" ? "secondary" : "ghost"} size="sm"
+                role="tab" aria-selected={selectedFilter === "all"} className="h-7 px-2 text-xs"
+                onClick={() => setSelectedFilter("all")}>Tous</Button>
               {availableFilters.map((group) => {
                 const band = filterBand(group.filter);
                 const active = selectedFilter === group.key;
@@ -814,7 +787,8 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                             : (value) => {
                                 const m = activeRangeMetrics[0];
                                 if (!m) return "";
-                                const range = metricRanges[m.key]!;
+                                const range = metricRanges[m.key];
+                                if (!range) return "";
                                 return fmtMetric(m.key, range.min + (value / 100) * (range.max - range.min));
                               }
                         }
@@ -868,6 +842,13 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                           data={s.points}
                           line={{ stroke: s.color, strokeWidth: 1.5 }}
                           fill={s.color}
+                          shape={(props: { cx?: number; cy?: number; payload?: { otherMember?: boolean } }) => (
+                            <circle cx={props.cx} cy={props.cy}
+                              r={props.payload?.otherMember ? 3.5 : 2.5}
+                              fill={props.payload?.otherMember ? "none" : s.color}
+                              stroke={s.color} strokeWidth={props.payload?.otherMember ? 1.5 : 0}
+                              data-member-marker={props.payload?.otherMember ? "other" : "mine"} />
+                          )}
                           cursor="pointer"
                         />
                       ))}
