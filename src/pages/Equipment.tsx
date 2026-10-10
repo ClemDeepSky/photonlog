@@ -131,9 +131,11 @@ const Equipment = () => {
 
   const load = async () => {
     setLoading(true);
+    if (!user) { setItems([]); setLoading(false); return; }
     const { data, error } = await supabase
       .from("equipment_profiles")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
@@ -145,7 +147,7 @@ const Equipment = () => {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [user?.id]);
 
   const openCreate = () => {
     setEditingId(null);
