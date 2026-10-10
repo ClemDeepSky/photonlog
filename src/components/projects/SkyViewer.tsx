@@ -201,7 +201,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
           showShareControl: false,
           showSettingsControl: false,
           showFullscreenControl: true,
-          showLayersControl: false,
+          showLayersControl: true,
           showGotoControl: false,
           showFrame: false,
           showZoomControl: true,
