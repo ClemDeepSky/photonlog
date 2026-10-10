@@ -10,7 +10,8 @@ import {
   getProjectDirHandle,
   ensureReadPermission,
   ensureWritePermission,
-  deleteFileFromHandle,
+  moveFileToSubfolder,
+  REJECTED_FOLDER,
   getFileFromHandle,
   requestProjectDirHandle,
 } from "@/lib/dirHandleStore";
