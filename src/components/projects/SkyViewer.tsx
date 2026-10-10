@@ -180,7 +180,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
   };
   const [focalLength, setFocalLength] = useState(450);
   const [sensor, setSensor] = useState("apsc");
-  const [shapes, setShapes] = useState<{ pts: [number, number][]; color: string; interactive: boolean; handle?: [number, number]; center?: [number, number] }[]>([]);
+  const [shapes, setShapes] = useState<{ pts: [number, number][]; color: string; interactive: boolean; handle?: [number, number]; center?: [number, number]; dashed?: boolean }[]>([]);
   const dragRef = useRef<any>(null);
   const selfEditRef = useRef<{ ra: string; dec: string } | null>(null);
 
@@ -473,7 +473,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
                 fill={s.interactive ? "rgba(0,255,136,0.08)" : "none"}
                 stroke={s.color}
                 strokeWidth={2}
-                strokeDasharray={(s as any).dashed ? "6 4" : undefined}
+                strokeDasharray={s.dashed ? "6 4" : undefined}
                 style={{ pointerEvents: s.interactive && interactive ? "auto" : "none", cursor: "move" }}
                 onPointerDown={s.interactive && interactive ? startDrag("move") : undefined}
               />
