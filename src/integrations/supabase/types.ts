@@ -311,6 +311,7 @@ export type Database = {
           focal_length: number | null
           folder_path: string | null
           id: string
+          observing_site_id: string | null
           project_id: string
           sensor_height_mm: number | null
           sensor_width_mm: number | null
@@ -326,6 +327,7 @@ export type Database = {
           focal_length?: number | null
           folder_path?: string | null
           id?: string
+          observing_site_id?: string | null
           project_id: string
           sensor_height_mm?: number | null
           sensor_width_mm?: number | null
@@ -341,6 +343,7 @@ export type Database = {
           focal_length?: number | null
           folder_path?: string | null
           id?: string
+          observing_site_id?: string | null
           project_id?: string
           sensor_height_mm?: number | null
           sensor_width_mm?: number | null
@@ -355,6 +358,13 @@ export type Database = {
             columns: ["equipment_profile_id"]
             isOneToOne: false
             referencedRelation: "equipment_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_contributions_observing_site_id_fkey"
+            columns: ["observing_site_id"]
+            isOneToOne: false
+            referencedRelation: "observing_sites"
             referencedColumns: ["id"]
           },
           {
