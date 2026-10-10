@@ -57,6 +57,13 @@
       "when": 1791649868625,
       "tag": "0007_contribution_setup_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791653361371,
+      "tag": "0008_fix_invite_policies_auth_users",
+      "breakpoints": true
     }
   ]
 }
