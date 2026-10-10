@@ -134,7 +134,7 @@ const EditProject = () => {
   const { data: projectAcquisitions } = useQuery({
     queryKey: ["project-acquisitions", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("project_acquisitions").select("*").eq("project_id", id!);
+      const { data, error } = await supabase.from("project_acquisitions").select("*").eq("project_id", id!).is("contribution_id", null);
       if (error) throw error;
       return data;
     },
