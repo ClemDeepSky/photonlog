@@ -250,6 +250,14 @@ const EditProject = () => {
     ]);
   };
 
+  // Découpe une coordonnée sexagésimale ("0h 44m 20.8s", "40 21 46.5", "-41d16'08\"") en 3 parties.
+  const splitSexagesimal = (s: string): [string, string, string] => {
+    const m = s.replace(",", ".").match(/-?\d+(?:\.\d+)?/g) || [];
+    return [m[0] ?? "", m[1] ?? "", m[2] ?? ""];
+  };
+  const joinSexagesimal = (parts: [string, string, string], units: [string, string, string]) =>
+    parts.map((p, i) => (p !== "" ? `${p}${units[i]}` : "")).filter(Boolean).join(" ");
+
   const updatePane = (index: number, field: keyof Pane, value: string) => {
     setPanes((prev) =>
       prev.map((p, i) =>
