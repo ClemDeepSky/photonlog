@@ -14,10 +14,10 @@ import {
   X,
   Shield,
   CircleHelp,
-  UserCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { AccountLink } from "@/components/AccountLink";
 
 const v1NavItems = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -35,7 +35,7 @@ const v2NavItems = [
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
-  const { signOut, user } = useAuth();
+  const { signOut } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
@@ -78,10 +78,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           ))}
         </nav>
         <div className="p-4 border-t border-border/20">
-          <Link to="/account" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3 truncate">
-            <UserCircle className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">Mon compte · {user?.email}</span>
-          </Link>
           <Link
             to="/guide"
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-2"
@@ -111,9 +107,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             Beta
           </span>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+        <div className="flex items-center gap-1">
+          <AccountLink compact />
+          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
 
       {/* Mobile nav */}
@@ -137,14 +136,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               </Link>
             ))}
             <Link
-              to="/account"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3 px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <UserCircle className="h-4 w-4" />
-              Mon compte
-            </Link>
-            <Link
               to="/guide"
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-3 px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -162,6 +153,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Main content */}
       <main className="flex-1 md:pt-0 pt-14 overflow-auto">
+        <header className="hidden md:flex sticky top-0 z-30 h-12 shrink-0 items-center justify-end border-b border-border/20 bg-card/70 px-8 backdrop-blur-sm">
+          <AccountLink />
+        </header>
         <div className="p-6 md:p-8 w-full">{children}</div>
       </main>
     </div>
