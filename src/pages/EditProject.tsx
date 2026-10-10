@@ -373,48 +373,114 @@ const EditProject = () => {
         .eq("id", id!);
       if (error) throw error;
 
-      // Delete old panes and acquisitions, then re-insert
-      await supabase.from("project_acquisitions").delete().eq("project_id", id!);
-      await supabase.from("project_panes").delete().eq("project_id", id!);
+      // Mise à jour en place : les identifiants des panneaux et des lignes de plan
+      // sont conservés, pour que les brutes déjà indexées restent reliées à leur ligne.
+      const targetPanes = isMosaic ? panes : [];
 
-      if (isMosaic && panes.length > 0) {
-        const { data: panesData, error: panesError } = await supabase.from("project_panes").insert(
-          panes.map((p) => ({
-            project_id: id!, pane_number: p.pane_number, ra: p.ra, dec: p.dec,
-            position_angle: p.position_angle, pane_width: p.pane_width, pane_height: p.pane_height,
-            overlap: p.overlap, row_index: p.row_index, col_index: p.col_index,
-          }))
-        ).select("id");
-        if (panesError) throw panesError;
+      const keptPaneIds = new Set(targetPanes.map((p) => p.id).filter(Boolean) as string[]);
+      const removedPaneIds = (projectPanes ?? [])
+        .map((p) => p.id as string)
+        .filter((pid) => !keptPaneIds.has(pid));
 
-        const acqInserts: any[] = [];
-        panes.forEach((_, paneIdx) => {
-          const paneId = panesData?.[paneIdx]?.id;
+      const paneIdByIndex = new Map<number, string>();
+      for (let i = 0; i < targetPanes.length; i++) {
+        const p = targetPanes[i];
+        const row = {
+          project_id: id!, pane_number: p.pane_number, ra: p.ra, dec: p.dec,
+          position_angle: p.position_angle, pane_width: p.pane_width, pane_height: p.pane_height,
+          overlap: p.overlap, row_index: p.row_index, col_index: p.col_index,
+        };
+        if (p.id) {
+          const { error: paneUpdError } = await supabase.from("project_panes").update(row).eq("id", p.id);
+          if (paneUpdError) throw paneUpdError;
+          paneIdByIndex.set(i, p.id);
+        } else {
+          const { data: newPane, error: paneInsError } = await supabase
+            .from("project_panes").insert(row).select("id").single();
+          if (paneInsError) throw paneInsError;
+          paneIdByIndex.set(i, newPane.id);
+        }
+      }
+
+      const acqKey = (filter: string, exposure: number, bin: number, paneId: string | null) =>
+        `${paneId ?? "-"}|${filter}|${exposure}|${bin}`;
+      const plainKey = (filter: string, exposure: number, bin: number) => `${filter}|${exposure}|${bin}`;
+
+      const prevAcqs = (projectAcquisitions ?? []) as any[];
+      const prevByPaneKey = new Map<string, string>();
+      const prevByPlainKey = new Map<string, string[]>();
+      prevAcqs.forEach((a) => {
+        prevByPaneKey.set(acqKey(a.filter, Number(a.exposure_duration), a.bin, a.pane_id ?? null), a.id);
+        const pk = plainKey(a.filter, Number(a.exposure_duration), a.bin);
+        prevByPlainKey.set(pk, [...(prevByPlainKey.get(pk) ?? []), a.id]);
+      });
+
+      type DesiredRow = {
+        key: string; plain: string; filter: string; exposure: number; bin: number;
+        quantity: number; pane_id: string | null;
+      };
+      const desired: DesiredRow[] = [];
+      if (isMosaic && targetPanes.length > 0) {
+        targetPanes.forEach((_, paneIdx) => {
+          const paneId = paneIdByIndex.get(paneIdx) ?? null;
           acquisitions.forEach((acq, acqIdx) => {
             if (isPaneAcqEnabled(paneIdx, acqIdx)) {
-              acqInserts.push({
-                project_id: id!, pane_id: paneId || null,
-                filter: acq.filter, exposure_duration: acq.exposure_duration,
-                quantity: acq.quantity, bin: acq.bin,
+              desired.push({
+                key: acqKey(acq.filter, acq.exposure_duration, acq.bin, paneId),
+                plain: plainKey(acq.filter, acq.exposure_duration, acq.bin),
+                filter: acq.filter, exposure: acq.exposure_duration, bin: acq.bin,
+                quantity: acq.quantity, pane_id: paneId,
               });
             }
           });
         });
-        if (acqInserts.length > 0) {
-          const { error: acqError } = await supabase.from("project_acquisitions").insert(acqInserts);
-          if (acqError) throw acqError;
-        }
       } else {
-        if (acquisitions.length > 0) {
-          const { error: acqError } = await supabase.from("project_acquisitions").insert(
-            acquisitions.map((acq) => ({
-              project_id: id!, pane_id: null,
-              filter: acq.filter, exposure_duration: acq.exposure_duration,
-              quantity: acq.quantity, bin: acq.bin,
-            }))
-          );
-          if (acqError) throw acqError;
+        acquisitions.forEach((acq) => {
+          desired.push({
+            key: acqKey(acq.filter, acq.exposure_duration, acq.bin, null),
+            plain: plainKey(acq.filter, acq.exposure_duration, acq.bin),
+            filter: acq.filter, exposure: acq.exposure_duration, bin: acq.bin,
+            quantity: acq.quantity, pane_id: null,
+          });
+        });
+      }
+
+      const used = new Set<string>();
+      const toInsert: any[] = [];
+      const toUpdate: { id: string; quantity: number; pane_id: string | null }[] = [];
+      desired.forEach((d) => {
+        const match = isMosaic
+          ? prevByPaneKey.get(d.key)
+          : (prevByPlainKey.get(d.plain) ?? []).find((x) => !used.has(x));
+        if (match && !used.has(match)) {
+          used.add(match);
+          toUpdate.push({ id: match, quantity: d.quantity, pane_id: d.pane_id });
+        } else {
+          toInsert.push({
+            project_id: id!, pane_id: d.pane_id, filter: d.filter,
+            exposure_duration: d.exposure, quantity: d.quantity, bin: d.bin,
+          });
         }
+      });
+
+      const toDelete = prevAcqs.map((a) => a.id as string).filter((pid) => !used.has(pid));
+      if (toDelete.length > 0) {
+        const { error: acqDelError } = await supabase.from("project_acquisitions").delete().in("id", toDelete);
+        if (acqDelError) throw acqDelError;
+      }
+      for (const u of toUpdate) {
+        const { error: acqUpdError } = await supabase
+          .from("project_acquisitions").update({ quantity: u.quantity, pane_id: u.pane_id }).eq("id", u.id);
+        if (acqUpdError) throw acqUpdError;
+      }
+      if (toInsert.length > 0) {
+        const { error: acqInsError } = await supabase.from("project_acquisitions").insert(toInsert);
+        if (acqInsError) throw acqInsError;
+      }
+
+      if (removedPaneIds.length > 0) {
+        const { error: paneDelError } = await supabase.from("project_panes").delete().in("id", removedPaneIds);
+        if (paneDelError) throw paneDelError;
       }
     },
     onSuccess: () => {
