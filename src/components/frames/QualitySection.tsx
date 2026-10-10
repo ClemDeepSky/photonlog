@@ -680,6 +680,34 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                     </Button>
                   )}
                 </div>
+                <div className="flex items-stretch" style={{ paddingLeft: axisWidth, paddingRight: 16 }}>
+                  <div className="relative h-6 w-full select-none" aria-label="Phase de la lune par nuit">
+                    {visibleNightRanges.map((range) => {
+                      const index = nightRanges.findIndex((item) => item.night === range.night);
+                      const mp = moonPhase(range.night);
+                      const span = zoomWindow[1] - zoomWindow[0];
+                      const lo = Math.max(range.start - 0.5, zoomWindow[0]);
+                      const hi = Math.min(range.end + 0.5, zoomWindow[1]);
+                      const left = span > 0 ? ((lo - zoomWindow[0]) / span) * 100 : 0;
+                      const width = span > 0 ? Math.max(1.5, ((hi - lo) / span) * 100) : 100;
+                      return (
+                        <button
+                          key={`moon-${range.night}`}
+                          type="button"
+                          onClick={() => setZoom(frameNight(range.start, range.end, totalPoints))}
+                          className="absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-dashed border-muted-foreground/70 text-[11px] leading-none text-foreground transition-opacity hover:opacity-80"
+                          style={{ left: `${left}%`, width: `${width}%`, backgroundColor: nightColor(index).replace(")", " / 0.12)") }}
+                          title={`${nightTitle(range.night)} · Lune ${mp.symbol} ${mp.illumination} % — cliquez pour zoomer sur cette nuit`}
+                        >
+                          <span className="flex h-full w-full items-center justify-center gap-1 px-1 leading-none">
+                            <span className="text-[13px]">{mp.symbol}</span>
+                            <span>{mp.illumination} %</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <div
                   ref={chartWrapRef}
                   className="relative h-80 w-full select-none"
@@ -830,14 +858,11 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                             "absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-border/60 text-[10px] leading-none text-foreground transition-opacity hover:opacity-80 border-dashed border-r-muted-foreground"
                           }
                           style={{ left: `${left}%`, width: `${width}%`, backgroundColor: nightColor(index).replace(")", " / 0.22)") }}
-                          title={`${nightTitle(range.night)} · ${range.count} image${range.count > 1 ? "s" : ""} · Lune ${moonPhase(range.night).symbol} ${moonPhase(range.night).illumination} % — cliquez pour zoomer sur cette nuit`}
+                          title={`${nightTitle(range.night)} · ${range.count} image${range.count > 1 ? "s" : ""} — cliquez pour zoomer sur cette nuit`}
                         >
                           <span className="flex h-full w-full items-center justify-center gap-1 px-1 leading-none">
                             <span>
                               {nightLabel(range.night)}
-                            </span>
-                            <span className="text-[12px]">
-                              {moonPhase(range.night).symbol} {moonPhase(range.night).illumination} %
                             </span>
                           </span>
                         </button>
