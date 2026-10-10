@@ -13,7 +13,7 @@
 - Coordonnées et cadrage réunis : setup hérité, panneaux empilés et Manuel/CSV avec J2000/JNow communs aux projets simples et mosaïques ; vérifiés à l'écran sans modifier les données enregistrées.
 - Listes et statistiques ordinaires V1/V2 limitées aux projets personnels et aux équipes de l’utilisateur ; cinq pages vérifiées avec une session connectée. Liste Teams limitée aux appartenances et équipes créées.
 - Plan commun retiré de l’affichage (Frames et rappel des objectifs) : seules les objectifs assignés à un membre sont visibles ; les 12 lignes sans membre de « test team » restent en base.
-- Page Mon compte : export CSV, changement d’email et de mot de passe, photo de profil, nom d’utilisateur, suppression du compte (avec la fonction serveur associée) ; lien placé dans l’en-tête, à droite, vérifié à l’écran.
+- Page Mon compte : export CSV, changement d’email et de mot de passe, photo de profil, nom d’utilisateur, suppression du compte (avec la fonction serveur associée) ; simple pastille d’avatar en haut à droite ouvrant un menu « Profil » / « Déconnexion », vérifié à l’écran sur les deux tailles.
 
 ## Ouvert (en attente de vos réponses)
 - Progression principale en temps aussi pour les projets personnels (à confirmer).
