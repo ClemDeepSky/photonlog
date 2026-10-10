@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { personalProjectFilter } from "@/lib/personalProjectScope";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,11 +65,12 @@ const Dashboard = () => {
 
 
   const { data: projects, isLoading } = useQuery({
-    queryKey: ["dashboard-projects"],
+    queryKey: ["dashboard-projects", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select("id, name, team_id, status, teams(name), project_acquisitions(filter, quantity, acquired, exposure_duration)")
+        .or(await personalProjectFilter(user?.id))
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as ProjectWithAcquisitions[];

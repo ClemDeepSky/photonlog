@@ -1,4 +1,5 @@
 import { skyThumbnailUrl } from "@/lib/skyThumb";
+import { personalProjectFilter } from "@/lib/personalProjectScope";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -21,11 +22,12 @@ const Projects = () => {
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const { data: projects, isLoading } = useQuery({
-    queryKey: ["projects"],
+    queryKey: ["projects", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select("*, teams(name, logo_url), project_acquisitions(acquired, quantity, exposure_duration)")
+        .or(await personalProjectFilter(user?.id))
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;

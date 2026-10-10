@@ -1,4 +1,5 @@
 import AppLayout from "@/components/AppLayout";
+import { personalProjectFilter } from "@/lib/personalProjectScope";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,11 +66,12 @@ const Frames = () => {
 
 
   const { data: projects } = useQuery({
-    queryKey: ["frames-projects"],
+    queryKey: ["frames-projects", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select("id, name, is_mosaic, team_id, status, filename_pattern, teams(name)")
+        .or(await personalProjectFilter(user?.id))
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Project[];

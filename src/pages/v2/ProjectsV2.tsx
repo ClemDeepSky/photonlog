@@ -1,4 +1,5 @@
 import { skyThumbnailUrl } from "@/lib/skyThumb";
+import { personalProjectFilter } from "@/lib/personalProjectScope";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,13 +36,14 @@ const ProjectsV2 = () => {
   const { user } = useAuth();
 
   const { data: projects, isLoading } = useQuery({
-    queryKey: ["v2-projects-list"],
+    queryKey: ["v2-projects-list", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select(
           "id, created_by, name, status, team_id, is_mosaic, image_url, ra, dec, target_object, schema_version, tracking_mode, teams(name), project_acquisitions(id, filter, exposure_duration, quantity, acquired, target_seconds, pane_id)"
         )
+        .or(await personalProjectFilter(user?.id))
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as unknown as ProjectRow[];
@@ -50,15 +52,17 @@ const ProjectsV2 = () => {
   });
 
   const { data: batches } = useQuery({
-    queryKey: ["v2-all-batches"],
+    queryKey: ["v2-all-batches", user?.id, projects?.map((project) => project.id)],
     queryFn: async () => {
+      if (!projects?.length) return [];
       const { data, error } = await supabase
         .from("session_batches")
-        .select("project_id, filter, exposure_duration, sub_count");
+        .select("project_id, filter, exposure_duration, sub_count")
+        .in("project_id", projects.map((project) => project.id));
       if (error) throw error;
       return data as (AcquiredBatch & { project_id: string })[];
     },
-    enabled: !!user,
+    enabled: !!user && !!projects,
   });
 
   return (
