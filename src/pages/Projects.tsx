@@ -181,7 +181,7 @@ const Projects = () => {
                       </Button>
                       {editableIds.includes(project.id) && <Button
                         variant="ghost" size="icon"
-                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                        className="h-7 w-7 text-destructive"
                         aria-label={`Supprimer le projet ${project.name}`}
                         onClick={() => setPendingDelete({ id: project.id, name: project.name })}
                       >
