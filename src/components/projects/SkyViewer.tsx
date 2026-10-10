@@ -343,7 +343,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
           RA {ra || "—"} · Dec {dec || "—"} · Rotation {positionAngle || 0}°
         </p>
       )}
-      <div ref={wheelWrapRef} className="relative w-full rounded-md overflow-hidden border border-border" style={{ height: 400 }}>
+      <div ref={wheelWrapRef} className="relative aspect-[20/13] min-h-[400px] w-full rounded-md overflow-hidden border border-border">
         <div
           className={`pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-background/60 transition-opacity ${wheelHint ? "opacity-100" : "opacity-0"}`}
         >

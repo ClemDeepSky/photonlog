@@ -101,20 +101,20 @@ const CoordinateInputs = ({ ra, dec, rotation, onRaChange, onDecChange, onRotati
   };
 
   return (
-    <div className="w-full min-w-0">
-      <div className="flex items-center gap-2 py-1">
+    <div className="flex w-full min-w-max items-center gap-6">
+      <div className="flex shrink-0 items-center gap-2 py-1">
         <span className="w-10 text-xs text-muted-foreground">RA</span>
         <Cell value={r.h} unit="h" onChange={(v) => commit(formatRa(v, r.m, r.s), displayDec)} />
         <Cell value={r.m} unit="m" onChange={(v) => commit(formatRa(r.h, v, r.s), displayDec)} />
         <Cell value={r.s} unit="s" width="w-20" onChange={(v) => commit(formatRa(r.h, r.m, v), displayDec)} />
       </div>
-      <div className="flex items-center gap-2 py-1">
+      <div className="flex shrink-0 items-center gap-2 py-1">
         <span className="w-10 text-xs text-muted-foreground">Dec</span>
         <Cell value={d.d} unit="d" allowSign onChange={(v) => commit(displayRa, formatDec(v, d.m, d.s))} />
         <Cell value={d.m} unit="m" onChange={(v) => commit(displayRa, formatDec(d.d, v, d.s))} />
         <Cell value={d.s} unit="s" width="w-20" onChange={(v) => commit(displayRa, formatDec(d.d, d.m, v))} />
       </div>
-      <div className="flex items-center gap-2 py-1">
+      <div className="flex shrink-0 items-center gap-2 py-1">
         <span className="w-10 text-xs text-muted-foreground">Angle</span>
         <Cell value={rotation} unit="°" width="w-20" allowSign onChange={onRotationChange} />
       </div>
