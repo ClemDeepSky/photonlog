@@ -10,6 +10,8 @@ import { Progress } from "@/components/ui/progress";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
+import { useProjectFrames } from "@/lib/projectFrames";
+import { matchFrameAcquisition } from "@/lib/frameAcquisition";
 import { useProjectContributions } from "@/lib/teamContributions";
 import { MemberAvatar, useMemberAvatars } from "@/components/MemberAvatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -142,12 +144,25 @@ const Frames = () => {
   const avatars = useMemberAvatars((contributions ?? []).map((c) => c.user_id));
   const myContribution = contributions?.find((c) => c.user_id === user?.id) ?? null;
   const team = selectedProject?.teams ?? null;
+  const { data: indexedFrames } = useProjectFrames(selectedProjectId);
+  const frameCounts = new Map<string, number>();
+  for (const frame of indexedFrames ?? []) {
+    const lines = (allAcquisitions ?? []).filter((a) =>
+      (a.contribution_id ?? null) === frame.contribution_id,
+    );
+    const linked = lines.find((a) => a.id === frame.acquisition_id);
+    const id = linked?.id ?? matchFrameAcquisition(lines.map((a) => ({
+      id: a.id, filter: a.filter, exposure: a.exposure_duration,
+      paneNumber: a.pane_id ? panes?.find((p) => p.id === a.pane_id)?.pane_number ?? null : null,
+    })), frame.filter, frame.pane_number, frame.exposure_duration);
+    if (id) frameCounts.set(id, (frameCounts.get(id) ?? 0) + 1);
+  }
   const canEditCommon = !isTeam || (team?.management_mode === "single_admin" ? team.owner_id === user?.id : true);
   // Filtre par participant : "all" ou id de contribution. Les lignes sans
   // participant (ancien plan commun) ne sont plus affichées.
   const acquisitions = (allAcquisitions || []).filter((a) =>
     isTeam ? !!a.contribution_id && (participant === "all" || a.contribution_id === participant) : true,
-  );
+  ).map((a) => ({ ...a, acquired: Math.max(a.acquired, frameCounts.get(a.id) ?? 0) }));
   const refreshAll = () => {
     queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", selectedProjectId] });
     queryClient.invalidateQueries({ queryKey: ["project-frames", selectedProjectId] });

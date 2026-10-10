@@ -8,6 +8,7 @@ import { getProjectDirHandle, ensureReadPermission } from "@/lib/dirHandleStore"
 import { getCachedProjectEntries } from "@/lib/localFileCache";
 
 import { isAstroFile, parseFrameName } from "@/lib/frameNames";
+import { matchFrameAcquisition } from "@/lib/frameAcquisition";
 
 export interface RefreshAcquisition {
   id: string;
@@ -33,28 +34,8 @@ const CHUNK = 400;
 const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, contributionId = null, onDone }: FolderRefreshProps) => {
   const [busy, setBusy] = useState(false);
 
-  const sameExpo = (a: number | null | undefined, b: number | null) =>
-    a != null && b != null && Math.abs(Number(a) - b) < 0.5;
-
-  // Rattachement : filtre (+ panneau) puis, s'il existe plusieurs durées
-  // pour ce filtre, la durée lue sur la brute. Durée inconnue ou non prévue :
-  // durée la plus proche, à défaut la première ligne du filtre.
-  const findAcquisitionId = (filter: string | null, paneNumber: number | null, exposure: number | null) => {
-    if (!filter) return null;
-    let candidates = acquisitions.filter((a) => a.filter === filter);
-    if (isMosaic) {
-      if (paneNumber == null) return null;
-      candidates = candidates.filter((a) => a.paneNumber === paneNumber);
-    }
-    if (candidates.length <= 1 || exposure == null) return candidates[0]?.id ?? null;
-    const exact = candidates.find((a) => sameExpo(a.exposure, exposure));
-    if (exact) return exact.id;
-    const withExpo = candidates.filter((a) => a.exposure != null);
-    if (!withExpo.length) return candidates[0].id;
-    return withExpo.reduce((best, a) =>
-      Math.abs(Number(a.exposure) - exposure) < Math.abs(Number(best.exposure) - exposure) ? a : best,
-    ).id;
-  };
+  const findAcquisitionId = (filter: string | null, paneNumber: number | null, exposure: number | null) =>
+    matchFrameAcquisition(acquisitions, filter, paneNumber, exposure);
 
   const process = async (entries: LocalFileEntry[]) => {
     // Réindexation complète : le dossier est la référence. Les images déjà
