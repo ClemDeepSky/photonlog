@@ -409,23 +409,24 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     setPreview({ file, path: relativePath });
   };
 
-  // Suppression définitive du fichier sur le disque + désindexation.
-  const deleteFrame = async (relativePath: string) => {
+  // Rejet de brutes : déplacement vers le sous-dossier « _rejetées » du dossier
+  // du projet (rien n'est supprimé du disque) + désindexation dans Photonlog.
+  const rejectFrames = async (relativePaths: string[]) => {
+    if (!relativePaths.length) return;
     let handle = await getProjectDirHandle(projectId);
     if (!handle) {
       // Le rafraîchissement a pu se faire sans mémoriser le dossier (aperçu intégré) :
-      // on demande le dossier maintenant pour autoriser la suppression sur le disque.
+      // on demande le dossier maintenant pour autoriser le déplacement sur le disque.
       try {
-        handle = await requestProjectDirHandle(projectId);
+        handle = await requestProjectDirHandle(projectId, { mode: "readwrite" });
       } catch (err: any) {
-        const msg = String(err?.message || "");
         const aborted = err?.name === "AbortError";
         if (!aborted) {
           toast({
-            title: "Suppression indisponible ici",
+            title: "Rejet indisponible ici",
             description:
               err?.name === "NotSupportedError"
-                ? "Utilisez Chrome ou Edge pour supprimer un fichier du disque."
+                ? "Utilisez Chrome ou Edge pour déplacer un fichier du dossier."
                 : "Ouvrez la page dans un nouvel onglet (hors aperçu intégré) puis désignez le dossier du projet.",
             variant: "destructive",
           });
@@ -438,45 +439,58 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     if (!ok) {
       toast({
         title: "Autorisation refusée",
-        description: "La modification du dossier est nécessaire pour supprimer le fichier.",
-        variant: "destructive",
-      });
-      return;
-    }
-    const removed = await deleteFileFromHandle(handle, relativePath);
-    if (!removed) {
-      toast({
-        title: "Suppression impossible",
-        description: "Le fichier n'a pas pu être supprimé (introuvable ou verrouillé).",
+        description: `La modification du dossier est nécessaire pour déplacer les fichiers vers « ${REJECTED_FOLDER} ».`,
         variant: "destructive",
       });
       return;
     }
 
-    // Désindexation + recomptage de l'acquisition concernée.
-    const { data: rows } = await supabase
-      .from("project_frames")
-      .select("id, acquisition_id")
-      .eq("project_id", projectId)
-      .eq("relative_path", relativePath);
-    const acquisitionIds = Array.from(
-      new Set((rows || []).map((r: any) => r.acquisition_id).filter(Boolean))
-    ) as string[];
-    await supabase.from("project_frames").delete().eq("project_id", projectId).eq("relative_path", relativePath);
+    const moved: string[] = [];
+    const failed: string[] = [];
+    for (const path of relativePaths) {
+      const newPath = await moveFileToSubfolder(handle, path);
+      if (newPath) moved.push(path);
+      else failed.push(path);
+    }
 
-    for (const acqId of acquisitionIds) {
-      const { count } = await supabase
+    if (moved.length) {
+      // Désindexation + recomptage des acquisitions concernées.
+      const { data: rows } = await supabase
         .from("project_frames")
-        .select("id", { count: "exact", head: true })
+        .select("id, acquisition_id")
         .eq("project_id", projectId)
-        .eq("acquisition_id", acqId);
-      await supabase.from("project_acquisitions").update({ acquired: count || 0 }).eq("id", acqId);
+        .in("relative_path", moved);
+      const acquisitionIds = Array.from(
+        new Set((rows || []).map((r: any) => r.acquisition_id).filter(Boolean))
+      ) as string[];
+      await supabase.from("project_frames").delete().eq("project_id", projectId).in("relative_path", moved);
+
+      for (const acqId of acquisitionIds) {
+        const { count } = await supabase
+          .from("project_frames")
+          .select("id", { count: "exact", head: true })
+          .eq("project_id", projectId)
+          .eq("acquisition_id", acqId);
+        await supabase.from("project_acquisitions").update({ acquired: count || 0 }).eq("id", acqId);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["project-frames", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["project-acquisitions"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisitions"] });
     }
 
-    queryClient.invalidateQueries({ queryKey: ["project-frames", projectId] });
-    queryClient.invalidateQueries({ queryKey: ["project-acquisitions"] });
-    queryClient.invalidateQueries({ queryKey: ["acquisitions"] });
-    toast({ title: "Fichier supprimé", description: relativePath });
+    if (failed.length) {
+      toast({
+        title: `${moved.length} brute(s) déplacée(s), ${failed.length} échec(s)`,
+        description: `Les fichiers en échec n'ont pas pu être déplacés (introuvables ou verrouillés) : ${failed.slice(0, 3).join(", ")}${failed.length > 3 ? "…" : ""}`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: `${moved.length} brute(s) rejetée(s)`,
+        description: `Déplacée(s) vers le sous-dossier « ${REJECTED_FOLDER} » — récupérables à la main, rien n'a été supprimé.`,
+      });
+    }
   };
 
 
