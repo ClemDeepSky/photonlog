@@ -130,7 +130,7 @@ const Guide = () => {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg">
-              <Link to="/auth">Commencer gratuitement</Link>
+              <Link to="/auth">Commencer</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
               <a href="#progression">Découvrir</a>
