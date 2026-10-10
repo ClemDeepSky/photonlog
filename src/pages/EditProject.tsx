@@ -1,4 +1,5 @@
 import CoordinateInputs, { parseRa, formatRa, parseDec, formatDec } from "@/components/CoordinateInputs";
+import { raHmsToDeg, decDmsToDeg, degToRaHms, degToDecDms, precessDateToJ2000 } from "@/lib/coords";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -69,6 +70,7 @@ const EditProject = () => {
   const [positionAngle, setPositionAngle] = useState("");
 
   const [panes, setPanes] = useState<Pane[]>([]);
+  const [paneEpoch, setPaneEpoch] = useState<"J2000" | "JNow">("J2000");
   const [acquisitions, setAcquisitions] = useState<Acquisition[]>([]);
   const [disabledAcquisitions, setDisabledAcquisitions] = useState<Record<number, Set<number>>>({});
   const [loaded, setLoaded] = useState(false);
@@ -248,6 +250,24 @@ const EditProject = () => {
       ...prev,
       { pane_number: prev.length + 1, ra: "", dec: "", position_angle: null, pane_width: null, pane_height: null, overlap: null, row_index: null, col_index: null },
     ]);
+  };
+
+  // Met à jour RA et DEC d'un panneau ensemble, en convertissant en J2000 si la saisie est en JNow.
+  const commitPaneCoords = (index: number, nextRa: string, nextDec: string) => {
+    if (paneEpoch === "JNow") {
+      const pr = parseRa(nextRa);
+      const pd = parseDec(nextDec);
+      const conv = precessDateToJ2000(raHmsToDeg(pr.h, pr.m, pr.s), decDmsToDeg(pd.d, pd.m, pd.s));
+      const cr = degToRaHms(conv.ra);
+      const cd = degToDecDms(conv.dec);
+      nextRa = formatRa(cr.h, cr.m, cr.s);
+      nextDec = formatDec(cd.d, cd.m, cd.s);
+    }
+    setPanes((prev) => {
+      const u = [...prev];
+      u[index] = { ...u[index], ra: nextRa, dec: nextDec };
+      return u;
+    });
   };
 
   const updatePane = (index: number, field: keyof Pane, value: string) => {
@@ -556,7 +576,27 @@ const EditProject = () => {
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-base font-semibold">Panneaux mosaïque</Label>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Label className="text-base font-semibold">Panneaux mosaïque</Label>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">Époque :</span>
+                        {(["J2000", "JNow"] as const).map((e) => (
+                          <Button
+                            key={e}
+                            type="button"
+                            size="sm"
+                            variant={paneEpoch === e ? "default" : "outline"}
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setPaneEpoch(e)}
+                          >
+                            {e}
+                          </Button>
+                        ))}
+                        {paneEpoch === "JNow" && (
+                          <span className="text-[10px] text-muted-foreground">converti en J2000</span>
+                        )}
+                      </div>
+                    </div>
                     <Tabs value={coordMode} onValueChange={(v) => setCoordMode(v as "manual" | "csv")}>
                       <TabsList className="h-8">
                         <TabsTrigger value="manual" className="text-xs px-3 h-6">Manuel</TabsTrigger>
@@ -595,7 +635,7 @@ const EditProject = () => {
                                   {(["h", "m", "s"] as const).map((unit) => {
                                     const r = parseRa(pane.ra);
                                     const set = (key: "h" | "m" | "s", v: string) =>
-                                      updatePane(idx, "ra", formatRa(key === "h" ? v : r.h, key === "m" ? v : r.m, key === "s" ? v : r.s));
+                                      commitPaneCoords(idx, formatRa(key === "h" ? v : r.h, key === "m" ? v : r.m, key === "s" ? v : r.s), pane.dec);
                                     return (
                                       <span key={unit} className="flex items-center gap-0.5">
                                         <Input
@@ -615,7 +655,7 @@ const EditProject = () => {
                                   {(["d", "m", "s"] as const).map((unit) => {
                                     const dd = parseDec(pane.dec);
                                     const set = (key: "d" | "m" | "s", v: string) =>
-                                      updatePane(idx, "dec", formatDec(key === "d" ? v : dd.d, key === "m" ? v : dd.m, key === "s" ? v : dd.s));
+                                      commitPaneCoords(idx, pane.ra, formatDec(key === "d" ? v : dd.d, key === "m" ? v : dd.m, key === "s" ? v : dd.s));
                                     return (
                                       <span key={unit} className="flex items-center gap-0.5">
                                         <Input
