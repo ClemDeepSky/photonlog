@@ -79,7 +79,8 @@ const nightOf = (iso: string) => {
 };
 
 // Une couleur distincte par nuit (angle d'or pour bien séparer les teintes voisines).
-const nightColor = (index: number) => `hsl(${Math.round((index * 137.5) % 360)} 70% 55%)`;
+const NIGHT_COLORS = ["hsl(190 85% 55%)", "hsl(265 70% 62%)"];
+const nightColor = (index: number) => NIGHT_COLORS[index % NIGHT_COLORS.length];
 
 // Libellé « 09→10/10/26 » : soir → matin.
 const nightLabel = (night: string) => {
