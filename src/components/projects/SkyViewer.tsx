@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, Sun } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 
 const SKY_SURVEYS = [
   { id: "P/DSS2/color", label: "DSS2 · Couleur" },
@@ -163,6 +164,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
   const aladinRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [survey, setSurvey] = useState("P/DSS2/color");
+  const [brightness, setBrightness] = useState(100);
   const [surveyError, setSurveyError] = useState(false);
   const changeSurvey = (value: string) => {
     if (!aladinRef.current) return;
@@ -396,6 +398,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-base font-semibold"><MapPin className="h-4 w-4" />Cadrage</h3>
+        <div className="flex w-full flex-wrap items-center gap-4 sm:w-auto">
         <Select value={survey} onValueChange={changeSurvey} disabled={!ready}>
           <SelectTrigger aria-label="Carte du ciel" className="w-full sm:w-72">
             <SelectValue />
@@ -404,6 +407,12 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
             {SKY_SURVEYS.map((item) => <SelectItem key={item.id} value={item.id}>{item.label}</SelectItem>)}
           </SelectContent>
         </Select>
+          <div className="flex min-h-10 items-center gap-3" title="Luminosité de la carte du ciel">
+            <Sun className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <Slider aria-label="Luminosité" value={[brightness]} onValueChange={([value]) => setBrightness(value)} min={25} max={300} step={5} className="w-32" />
+            <output className="w-12 text-right text-xs tabular-nums text-muted-foreground">{brightness}%</output>
+          </div>
+        </div>
       </div>
       {surveyError && <p role="alert" className="text-sm text-destructive">Cette carte n’a pas pu être chargée. Choisissez un autre relevé.</p>}
       {!isMosaic && (ra || dec) && (
@@ -417,7 +426,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
         >
           <span className="rounded-md bg-card px-3 py-1.5 text-sm text-foreground border border-border">Ctrl + molette pour zoomer</span>
         </div>
-        <div ref={containerRef} className="sky-viewer absolute inset-0" style={{ width: "100%", height: "100%" }} />
+        <div ref={containerRef} className="sky-viewer absolute inset-0" style={{ width: "100%", height: "100%", filter: `brightness(${brightness / 100})` }} />
         <svg
           className="absolute inset-0 h-full w-full"
           style={{ pointerEvents: "none" }}
