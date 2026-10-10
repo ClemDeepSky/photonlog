@@ -38,6 +38,7 @@ interface Pane {
   pane_number: number;
   ra: string;
   dec: string;
+  contribution_id: string | null;
 }
 
 interface Project {
@@ -106,7 +107,7 @@ const Frames = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_panes")
-        .select("id, pane_number, ra, dec")
+        .select("id, pane_number, ra, dec, contribution_id")
         .eq("project_id", selectedProjectId!)
         .order("pane_number", { ascending: true });
       if (error) throw error;
@@ -163,12 +164,30 @@ const Frames = () => {
     });
   };
 
-  // Group acquisitions by pane
+  // Keep common and personal plans separate, including single-panel plans
+  // whose acquisition lines have no pane_id.
+  const paneGroupKey = (acq: Acquisition) => {
+    if (!isTeam) return acq.pane_id || "global";
+    const owner = acq.contribution_id || "common";
+    const ownPanes = (panes || []).filter((p) => p.contribution_id === acq.contribution_id);
+    const paneId = acq.pane_id || (ownPanes.length === 1 ? ownPanes[0].id : "global");
+    return `${owner}:${paneId}`;
+  };
+  const groupPane = (acqs: Acquisition[]) => {
+    const first = acqs[0];
+    if (!first) return undefined;
+    if (first.pane_id) return panes?.find((p) => p.id === first.pane_id);
+    if (!isTeam || !first.contribution_id) return undefined;
+    const ownPanes = (panes || []).filter((p) => p.contribution_id === first.contribution_id);
+    return ownPanes.length === 1 ? ownPanes[0] : undefined;
+  };
+
+  // Group acquisitions by participant and pane, never by panel number alone.
   const groupedAcquisitions = (() => {
     if (!acquisitions) return {};
     const groups: Record<string, Acquisition[]> = {};
     for (const acq of acquisitions) {
-      const key = acq.pane_id || "global";
+      const key = paneGroupKey(acq);
       if (!groups[key]) groups[key] = [];
       groups[key].push(acq);
     }
@@ -185,9 +204,16 @@ const Frames = () => {
   })();
 
   // Sort pane groups by pane number ("global" group last)
-  const sortedPaneEntries = Object.entries(groupedAcquisitions).sort(([keyA], [keyB]) => {
-    const paneA = panes?.find((p) => p.id === keyA);
-    const paneB = panes?.find((p) => p.id === keyB);
+  const sortedPaneEntries = Object.entries(groupedAcquisitions).sort(([, acqsA], [, acqsB]) => {
+    const ownerIndex = (acqs: Acquisition[]) => {
+      const cid = acqs[0]?.contribution_id;
+      if (!cid) return Number.MAX_SAFE_INTEGER;
+      const index = (contributions || []).findIndex((c) => c.id === cid);
+      return index < 0 ? Number.MAX_SAFE_INTEGER - 1 : index;
+    };
+    if (isTeam && ownerIndex(acqsA) !== ownerIndex(acqsB)) return ownerIndex(acqsA) - ownerIndex(acqsB);
+    const paneA = groupPane(acqsA);
+    const paneB = groupPane(acqsB);
     const numA = paneA?.pane_number ?? Number.MAX_SAFE_INTEGER;
     const numB = paneB?.pane_number ?? Number.MAX_SAFE_INTEGER;
     return numA - numB;
@@ -399,13 +425,15 @@ const Frames = () => {
 
             {/* Acquisitions by pane */}
             {sortedPaneEntries.map(([paneKey, acqs]) => {
-              const pane = panes?.find((p) => p.id === paneKey);
+              const pane = groupPane(acqs);
+              const contribution = contributions?.find((c) => c.id === acqs[0]?.contribution_id);
+              const ownerLabel = contribution
+                ? `${contribution.username}${contribution.user_id === user?.id ? " (moi)" : ""}`
+                : acqs[0]?.contribution_id ? "Membre" : "Plan commun";
               const isExpanded = expandedPanes.has(paneKey);
               const paneProgress = getGroupProgress(acqs);
               const label = pane
                 ? `Panneau ${pane.pane_number} — ${pane.ra} / ${pane.dec}`
-                : selectedProject?.is_mosaic
-                ? `Panneau`
                 : "Acquisitions";
 
               return (
@@ -421,7 +449,10 @@ const Frames = () => {
                         ) : (
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         )}
-                        <CardTitle className="text-sm font-medium">{label}</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                          {isTeam && <span className="text-muted-foreground">{ownerLabel} · </span>}
+                          {label}
+                        </CardTitle>
                         <Badge variant="outline" className="text-xs">
                           {paneProgress}%
                         </Badge>
