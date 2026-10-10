@@ -280,14 +280,14 @@ const Guide = () => {
               <h2 className="mt-2 text-3xl font-bold">Savoir combien de temps vous avez, et sous quelle lune</h2>
               <p className="mt-5 max-w-3xl text-base leading-7 text-muted-foreground">
                 Un site d’observation est le lieu où vous installez votre matériel : votre jardin, un observatoire
-                associatif, un spot de nomade. Ses coordonnées déterminent la durée de la nuit et la trajectoire de la
+                associatif, un spot en nomade. Ses coordonnées déterminent la durée de la nuit et la trajectoire de la
                 lune, deux paramètres qui décident de ce qu’il est raisonnable de tenter une nuit donnée.
               </p>
               <div className="mt-6">
                 <Feature icon={MapPin} title="Créer un site en une minute">
                   Sur la page « Matériel », bouton « Nouveau site » : un nom, le pays, puis la ville la plus proche. La
                   recherche propose les communes et préremplit latitude, longitude, altitude et fuseau. Les coordonnées
-                  restent corrigeables à la main pour indiquer la position GPS exacte de votre emplacement.
+                  restent ajustables manuellement pour indiquer la position GPS exacte de votre emplacement.
                 </Feature>
                 <Feature icon={Clock} title="La durée réelle de la nuit">
                   Photonlog calcule la fin du crépuscule astronomique le soir et le début de l’aube au matin : entre les
@@ -301,7 +301,7 @@ const Guide = () => {
                 </Feature>
                 <Feature icon={LineChart} title="La courbe de hauteur">
                   Une petite courbe suit la lune du crépuscule à l’aube : la zone colorée correspond à vos acquisitions,
-                  la ligne pointillée à l’horizon. On voit d’un coup d’œil si la lune se couche avant le milieu de nuit ou
+                  la ligne pointillée à l’horizon. On voit d’un coup d’œil si la lune se couche avant le milieu de la nuit ou
                   si elle sera là du début à la fin.
                 </Feature>
                 <Feature icon={Link2} title="Lier un site à un projet">
