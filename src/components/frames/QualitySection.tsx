@@ -292,6 +292,10 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
   const [drag, setDrag] = useState<{ start: number; cur: number } | null>(null);
   const [selection, setSelection] = useState<[number, number] | null>(null);
   useEffect(() => setSelection(null), [selectedFilter, offPanes, totalPoints]);
+  // Cases à cocher de la liste de sélection (rejet vers « _rejetées »).
+  const [checkedPaths, setCheckedPaths] = useState<Set<string>>(new Set());
+  const [rejecting, setRejecting] = useState(false);
+  useEffect(() => setCheckedPaths(new Set()), [selection, selectedFilter, offPanes]);
   const chartWrapRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
