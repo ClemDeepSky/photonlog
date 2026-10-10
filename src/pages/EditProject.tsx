@@ -117,6 +117,17 @@ const EditProject = () => {
   });
 
   const selectedSetup = equipment?.find((e) => e.name === setup);
+  // Setup / site déjà choisis par un autre membre : affichés en lecture seule.
+  const foreignSetup = !!setup && !!equipment && !equipment.some((e) => e.name === setup);
+  const foreignSite = !!siteId && !!sites && !sites.some((s) => s.id === siteId);
+  const { data: projectSite } = useQuery({
+    queryKey: ["project-site-name", siteId],
+    enabled: foreignSite,
+    queryFn: async () => {
+      const { data } = await supabase.from("observing_sites").select("name").eq("id", siteId).maybeSingle();
+      return data;
+    },
+  });
   const setupSensorWidthMm = selectedSetup?.pixel_size && selectedSetup?.sensor_width_px
     ? (Number(selectedSetup.pixel_size) * selectedSetup.sensor_width_px) / 1000 : null;
   const setupSensorHeightMm = selectedSetup?.pixel_size && selectedSetup?.sensor_height_px
@@ -598,6 +609,12 @@ const EditProject = () => {
               </div>
               <div >
                 <Label>Setup</Label>
+                {foreignSetup || !canEditCommon ? (
+                  <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+                    {setup || "Aucun setup"}
+                    {foreignSetup && <span className="block text-xs text-muted-foreground">Setup d'un autre membre — visible, non sélectionnable.</span>}
+                  </div>
+                ) : (
                 <Select value={setup} onValueChange={setSetup}>
                   <SelectTrigger><SelectValue placeholder={equipment?.length ? "Sélectionner un setup" : "Aucun setup — créez-en un dans Matériel"} /></SelectTrigger>
                   <SelectContent>
@@ -606,11 +623,9 @@ const EditProject = () => {
                         {e.name}{e.focal_length ? ` — ${e.focal_length}mm` : ""}
                       </SelectItem>
                     ))}
-                    {setup && !equipment?.some((e) => e.name === setup) && (
-                      <SelectItem value={setup}>{setup}</SelectItem>
-                    )}
                   </SelectContent>
                 </Select>
+                )}
                 {selectedSetup && (
                   <p className="text-xs text-muted-foreground mt-1">
                     {selectedSetup.diameter ? `Ø${selectedSetup.diameter}mm · ` : ""}
@@ -621,6 +636,12 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Site d'observation</Label>
+                {foreignSite || !canEditCommon ? (
+                  <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+                    {foreignSite ? (projectSite?.name ?? "Site d'un autre membre") : (sites?.find((s) => s.id === siteId)?.name ?? "Aucun site")}
+                    {foreignSite && <span className="block text-xs text-muted-foreground">Site d'un autre membre — visible, non sélectionnable.</span>}
+                  </div>
+                ) : (
                 <Select value={siteId || "none"} onValueChange={(v) => setSiteId(v === "none" ? "" : v)}>
                   <SelectTrigger><SelectValue placeholder="Choisir un site" /></SelectTrigger>
                   <SelectContent>
@@ -630,7 +651,8 @@ const EditProject = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">{sites?.length ? "Sert à calculer la nuit astronomique et la position de la lune." : "Aucun site — créez-en un dans Matériel et observatoires."}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">{sites?.length || foreignSite ? "Sert à calculer la nuit astronomique et la position de la lune." : "Aucun site — créez-en un dans Matériel et observatoires."}</p>
               </div>
               <div>
                 <Label>Description (optionnel)</Label>

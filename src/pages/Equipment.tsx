@@ -147,7 +147,7 @@ const Equipment = () => {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [user?.id]);
 
   const openCreate = () => {
     setEditingId(null);
