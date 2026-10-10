@@ -1,9 +1,7 @@
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { raHmsToDeg, decDmsToDeg, degToRaHms, degToDecDms, precessDateToJ2000 } from "@/lib/coords";
+import { raHmsToDeg, decDmsToDeg, degToRaHms, degToDecDms, precessDateToJ2000, precessJ2000ToDate, centuriesSinceJ2000 } from "@/lib/coords";
 
-const num = (s: string) => s.replace(/[^\d.]/g, "");
+const num = (s: string) => s.replace(",", ".").replace(/[^\d.]/g, "");
 
 export function parseRa(value: string) {
   const m = value.match(/(-?[\d.]+)\D+(-?[\d.]+)\D+(-?[\d.]+)/);
@@ -37,11 +35,12 @@ const Cell = ({
 }) => (
   <div className="relative">
     <Input
+      aria-label={unit}
       inputMode="decimal"
       value={value}
       onChange={(e) => {
         const v = e.target.value;
-        onChange(allowSign ? v.replace(/[^-\d.]/g, "") : num(v));
+        onChange(allowSign ? v.replace(",", ".").replace(/[^-\d.]/g, "") : num(v));
       }}
       className={`${width} h-8 pr-5 text-right font-mono text-sm`}
       placeholder="0"
@@ -52,71 +51,67 @@ const Cell = ({
   </div>
 );
 
-type Epoch = "J2000" | "JNow";
+export type Epoch = "J2000" | "JNow";
 
 type Props = {
   ra: string;
   dec: string;
   rotation: string;
+  epoch?: Epoch;
   onRaChange: (v: string) => void;
   onDecChange: (v: string) => void;
   onRotationChange: (v: string) => void;
 };
 
-const CoordinateInputs = ({ ra, dec, rotation, onRaChange, onDecChange, onRotationChange }: Props) => {
-  const [epoch, setEpoch] = useState<Epoch>("J2000");
+export function coordinatesToJ2000(ra: string, dec: string, epoch: Epoch) {
+  if (epoch === "J2000" || !ra || !dec) return { ra, dec };
   const r = parseRa(ra);
   const d = parseDec(dec);
+  const converted = precessDateToJ2000(raHmsToDeg(r.h, r.m, r.s), decDmsToDeg(d.d, d.m, d.s));
+  const cr = degToRaHms(converted.ra);
+  const cd = degToDecDms(converted.dec);
+  return { ra: formatRa(cr.h, cr.m, cr.s), dec: formatDec(cd.d, cd.m, cd.s) };
+}
+
+const CoordinateInputs = ({ ra, dec, rotation, onRaChange, onDecChange, onRotationChange, epoch = "J2000" }: Props) => {
+  let displayRa = ra;
+  let displayDec = dec;
+  if (epoch === "JNow" && ra && dec) {
+    const r = parseRa(ra);
+    const d = parseDec(dec);
+    const converted = precessJ2000ToDate(raHmsToDeg(r.h, r.m, r.s), decDmsToDeg(d.d, d.m, d.s), centuriesSinceJ2000());
+    const cr = degToRaHms(converted.ra);
+    const cd = degToDecDms(converted.dec);
+    displayRa = formatRa(cr.h, cr.m, cr.s);
+    displayDec = formatDec(cd.d, cd.m, cd.s);
+  }
+  const r = parseRa(displayRa);
+  const d = parseDec(displayDec);
 
   // En mode JNow, la valeur saisie est convertie en J2000 avant d'être stockée.
   const commit = (nextRa: string, nextDec: string) => {
-    if (epoch === "JNow") {
-      const pr = parseRa(nextRa);
-      const pd = parseDec(nextDec);
-      const conv = precessDateToJ2000(raHmsToDeg(pr.h, pr.m, pr.s), decDmsToDeg(pd.d, pd.m, pd.s));
-      const cr = degToRaHms(conv.ra);
-      const cd = degToDecDms(conv.dec);
-      onRaChange(formatRa(cr.h, cr.m, cr.s));
-      onDecChange(formatDec(cd.d, cd.m, cd.s));
-    } else {
-      onRaChange(nextRa);
-      onDecChange(nextDec);
-    }
+    const converted = coordinatesToJ2000(nextRa, nextDec, epoch);
+    onRaChange(converted.ra);
+    onDecChange(converted.dec);
   };
 
   return (
-    <div className="inline-block rounded-md border border-border bg-muted/20 p-2">
+    <div className="w-full min-w-0">
       <div className="flex items-center gap-2 py-1">
         <span className="w-10 text-xs text-muted-foreground">RA</span>
-        <Cell value={r.h} unit="h" onChange={(v) => commit(formatRa(v, r.m, r.s), dec)} />
-        <Cell value={r.m} unit="m" onChange={(v) => commit(formatRa(r.h, v, r.s), dec)} />
-        <Cell value={r.s} unit="s" width="w-20" onChange={(v) => commit(formatRa(r.h, r.m, v), dec)} />
+        <Cell value={r.h} unit="h" onChange={(v) => commit(formatRa(v, r.m, r.s), displayDec)} />
+        <Cell value={r.m} unit="m" onChange={(v) => commit(formatRa(r.h, v, r.s), displayDec)} />
+        <Cell value={r.s} unit="s" width="w-20" onChange={(v) => commit(formatRa(r.h, r.m, v), displayDec)} />
       </div>
       <div className="flex items-center gap-2 py-1">
         <span className="w-10 text-xs text-muted-foreground">Dec</span>
-        <Cell value={d.d} unit="d" allowSign onChange={(v) => commit(ra, formatDec(v, d.m, d.s))} />
-        <Cell value={d.m} unit="m" onChange={(v) => commit(ra, formatDec(d.d, v, d.s))} />
-        <Cell value={d.s} unit="s" width="w-20" onChange={(v) => commit(ra, formatDec(d.d, d.m, v))} />
-        <span className="ml-2 text-xs text-muted-foreground">Rotation</span>
-        <Cell value={rotation} unit="°" width="w-20" allowSign onChange={onRotationChange} />
+        <Cell value={d.d} unit="d" allowSign onChange={(v) => commit(displayRa, formatDec(v, d.m, d.s))} />
+        <Cell value={d.m} unit="m" onChange={(v) => commit(displayRa, formatDec(d.d, v, d.s))} />
+        <Cell value={d.s} unit="s" width="w-20" onChange={(v) => commit(displayRa, formatDec(d.d, d.m, v))} />
       </div>
-      <div className="flex items-center gap-2 pt-1">
-        <span className="w-10 text-xs text-muted-foreground">Époque</span>
-        {(["J2000", "JNow"] as const).map((e) => (
-          <Button
-            key={e}
-            type="button"
-            size="sm"
-            variant={epoch === e ? "default" : "outline"}
-            className="h-6 px-2 text-xs"
-            onClick={() => setEpoch(e)}
-          >
-            {e}
-          </Button>
-        ))}
-        {epoch === "JNow" && (
-          <span className="text-[10px] text-muted-foreground">converti en J2000 à l'enregistrement</span>
-        )}
+      <div className="flex items-center gap-2 py-1">
+        <span className="w-10 text-xs text-muted-foreground">Angle</span>
+        <Cell value={rotation} unit="°" width="w-20" allowSign onChange={onRotationChange} />
       </div>
     </div>
   );
