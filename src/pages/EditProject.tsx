@@ -512,7 +512,7 @@ const EditProject = () => {
 
   return (
     <AppLayout>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full">
         <div className="mb-6 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/projects")}>
             <ArrowLeft className="h-5 w-5" />

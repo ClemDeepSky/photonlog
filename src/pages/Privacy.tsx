@@ -27,7 +27,7 @@ const Privacy = () => {
         </div>
       </header>
 
-      <main className="w-full max-w-3xl mx-auto px-6 py-12 space-y-10">
+      <main className="w-full px-6 py-12 space-y-10">
         <div className="space-y-3">
           <h1 className="text-3xl font-medium text-foreground">
             Politique de confidentialité et RGPD

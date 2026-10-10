@@ -74,7 +74,7 @@ const Guide = () => {
   return (
     <div className="min-h-screen bg-cosmic text-foreground">
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
+        <div className="flex h-16 items-center justify-between px-5 lg:px-8">
           <Link to="/" className="flex items-center gap-2" aria-label="Accueil Photonlog">
             <Telescope className="h-6 w-6 text-primary" />
             <span className="text-lg font-bold text-gradient">Photonlog</span>
@@ -91,7 +91,7 @@ const Guide = () => {
 
       <main>
         <section className="border-b border-border/60">
-          <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-24">
+          <div className="px-5 py-16 lg:px-8 lg:py-24">
             <div className="max-w-4xl">
               <p className="mb-4 text-sm font-medium text-primary">DOCUMENTATION PHOTONLOG</p>
               <h1 className="max-w-3xl text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
@@ -113,7 +113,7 @@ const Guide = () => {
           </div>
         </section>
 
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:px-8 lg:py-16">
+        <div className="grid gap-12 px-5 py-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:px-8 lg:py-16">
           <aside className="hidden lg:block">
             <nav className="sticky top-24" aria-label="Sommaire du guide">
               <p className="mb-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -370,7 +370,7 @@ const Guide = () => {
       </main>
 
       <footer className="border-t border-border/60 py-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8">
+        <div className="flex flex-col gap-3 px-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8">
           <span>Photonlog — Guide d’utilisation</span>
           <div className="flex gap-5">
             <Link to="/confidentialite" className="hover:text-foreground">Confidentialité</Link>
