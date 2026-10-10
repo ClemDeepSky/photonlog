@@ -9,12 +9,13 @@ import { Telescope, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
 const AcceptInvite = () => {
   const { token } = useParams<{ token: string }>();
-  const { user, session } = useAuth();
+  const { user, session, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [status, setStatus] = useState<"loading" | "ready" | "accepted" | "error" | "expired">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "accepted" | "error" | "expired" | "mismatch">("loading");
   const [teamName, setTeamName] = useState("");
   const [error, setError] = useState("");
+  const [invitedEmail, setInvitedEmail] = useState("");
 
   useEffect(() => {
     const checkInvitation = async () => {
@@ -29,7 +30,7 @@ const AcceptInvite = () => {
         .select("*, teams(name)")
         .eq("token", token)
         .eq("status", "pending")
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         setStatus("expired");
@@ -42,11 +43,21 @@ const AcceptInvite = () => {
       }
 
       setTeamName((data as any).teams?.name || "Équipe");
+      setInvitedEmail(data.email);
+      if (user?.email && data.email.toLowerCase() !== user.email.toLowerCase()) {
+        setStatus("mismatch");
+        return;
+      }
       setStatus("ready");
     };
 
     checkInvitation();
-  }, [token]);
+  }, [token, user?.email]);
+
+  const switchAccount = async () => {
+    await signOut();
+    navigate(`/auth?redirect=/invite/${token}`);
+  };
 
   const acceptInvitation = async () => {
     if (!user || !token) return;
@@ -75,6 +86,10 @@ const AcceptInvite = () => {
       if (memberErr.message.includes("duplicate") || memberErr.code === "23505") {
         toast({ title: "Vous êtes déjà membre de cette équipe." });
         navigate("/teams");
+        return;
+      }
+      if (memberErr.message.includes("row-level security")) {
+        setStatus("mismatch");
         return;
       }
       setStatus("error");
@@ -149,11 +164,31 @@ const AcceptInvite = () => {
               <CardDescription>{error}</CardDescription>
             </>
           )}
+          {status === "mismatch" && (
+            <>
+              <XCircle className="h-12 w-12 text-destructive mx-auto mb-2" />
+              <CardTitle>Mauvais compte</CardTitle>
+              <CardDescription>
+                Cette invitation à rejoindre {teamName} a été envoyée à <strong>{invitedEmail}</strong>, mais vous êtes
+                connecté avec <strong>{user?.email}</strong>. Connectez-vous avec le compte invité pour l'accepter.
+              </CardDescription>
+            </>
+          )}
         </CardHeader>
         {status === "ready" && (
           <CardContent>
             <Button className="w-full" onClick={acceptInvitation}>
               Accepter l'invitation
+            </Button>
+          </CardContent>
+        )}
+        {status === "mismatch" && (
+          <CardContent className="space-y-2">
+            <Button className="w-full" onClick={switchAccount}>
+              Changer de compte
+            </Button>
+            <Button variant="secondary" className="w-full" onClick={() => navigate("/")}>
+              Retour à l'accueil
             </Button>
           </CardContent>
         )}
