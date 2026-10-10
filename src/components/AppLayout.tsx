@@ -54,6 +54,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex items-center gap-2 p-6 border-b border-border/20">
           <Telescope className="h-6 w-6 text-primary" />
           <span className="text-xl font-bold text-gradient">Photonlog</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-1.5 py-0.5 leading-none">
+            Beta
+          </span>
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => (
@@ -100,6 +103,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex items-center gap-2">
           <Telescope className="h-5 w-5 text-primary" />
           <span className="font-bold text-gradient">Photonlog</span>
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-1 py-0.5 leading-none">
+            Beta
+          </span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
