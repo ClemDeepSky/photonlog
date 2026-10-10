@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { filterBand, compareFilters } from "@/lib/filterBands";
+import { filterBand } from "@/lib/filterBands";
 import { useProjectContributions } from "@/lib/teamContributions";
 import { useContributionPanes } from "./MyContribution";
 
@@ -41,7 +41,7 @@ const TeamGoalsReminder = ({ projectId, myContributionId }: Props) => {
             const e = agg.get(k) || { filter: l.filter, exp: Number(l.exposure_duration), qty: 0 };
             e.qty += l.quantity; agg.set(k, e);
           });
-          const rows = [...agg.values()].sort((a, b) => compareFilters(a.filter, b.filter) || a.exp - b.exp);
+          const rows = [...agg.values()].sort((a, b) => (filterBand(a.filter).order - filterBand(b.filter).order) || a.exp - b.exp);
           const total = rows.reduce((s, r) => s + r.qty * r.exp, 0);
           const nPanes = panes.filter((p) => p.contribution_id === c.id).length;
           return (
