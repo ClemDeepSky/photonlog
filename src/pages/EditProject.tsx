@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 
+import FilenamePreview from "@/components/projects/FilenamePreview";
 import ProjectImageField from "@/components/projects/ProjectImageField";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -566,6 +567,7 @@ const EditProject = () => {
                   placeholder="$$TARGETNAME$$_$$IMAGETYPE$$_$$FILTER$$_$$DATE$$_$$TIME$$_$$SENSORTEMP$$_$$EXPOSURETIME$$s_FWHM$$FWHM$$_ex$$ECCENTRICITY$$_starsCount-$$STARCOUNT$$_hfr-$$HFR$$_$$FRAMENR$$"
                   
                 />
+                <FilenamePreview pattern={filenamePattern} />
                 <p className="text-xs text-muted-foreground mt-1">
                   Collez le modèle de nommage de votre logiciel (N.I.N.A. par exemple) pour extraire automatiquement
                   la qualité de chaque brute (FWHM, excentricité, HFR, étoiles, température). Laissez vide si vos
@@ -599,7 +601,7 @@ const EditProject = () => {
                 <Label>Description (optionnel)</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2}  />
               </div>
-              <ProjectImageField value={imageUrl} onChange={setImageUrl} />
+              <ProjectImageField value={imageUrl} onChange={setImageUrl} ra={ra} dec={dec} />
             </CardContent>
           </Card>
 

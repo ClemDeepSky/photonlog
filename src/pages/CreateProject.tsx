@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import AstroBinImportDialog from "@/components/projects/AstroBinImportDialog";
+import FilenamePreview from "@/components/projects/FilenamePreview";
 import ProjectImageField from "@/components/projects/ProjectImageField";
 import type { AstroBinImport } from "@/lib/astrobin";
 import { supabase } from "@/integrations/supabase/client";
@@ -354,6 +355,7 @@ const CreateProject = () => {
                   placeholder="$$TARGETNAME$$_$$IMAGETYPE$$_$$FILTER$$_$$DATE$$_$$TIME$$_$$SENSORTEMP$$_$$EXPOSURETIME$$s_FWHM$$FWHM$$_ex$$ECCENTRICITY$$_starsCount-$$STARCOUNT$$_hfr-$$HFR$$_$$FRAMENR$$"
                   
                 />
+                <FilenamePreview pattern={filenamePattern} />
                 <p className="text-xs text-muted-foreground mt-1">
                   Collez le modèle de nommage de votre logiciel (N.I.N.A. par exemple) pour extraire automatiquement
                   la qualité de chaque brute. Laissez vide si vos fichiers ne contiennent pas ces informations.
@@ -383,7 +385,7 @@ const CreateProject = () => {
                 <Label>Description (optionnel)</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2}  />
               </div>
-              <ProjectImageField value={imageUrl} onChange={setImageUrl} />
+              <ProjectImageField value={imageUrl} onChange={setImageUrl} ra={ra} dec={dec} />
             </CardContent>
           </Card>
 
