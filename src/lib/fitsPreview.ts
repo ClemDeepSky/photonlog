@@ -145,6 +145,38 @@ export function stretchToCanvas(preview: FitsPreview, _level: number = 0, maxSid
   const range = params.white - params.black || 1;
   const mid = Math.min(0.99, Math.max(0.01, (params.mid - params.black) / range));
 
+  // Réduction éventuelle pour rester léger à l'affichage.
+  const scale = Math.min(1, maxSide / Math.max(w, h));
+  const dw = Math.max(1, Math.round(w * scale));
+  const dh = Math.max(1, Math.round(h * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = dw;
+  canvas.height = dh;
+  const ctx = canvas.getContext("2d")!;
+  const img = ctx.createImageData(dw, dh);
+
+  for (let y = 0; y < dh; y++) {
+    // Les FITS sont stockés de bas en haut : on inverse l'axe vertical.
+    const sy = Math.min(h - 1, Math.round((y / dh) * h));
+    const srcRow = (h - 1 - sy) * w;
+    for (let x = 0; x < dw; x++) {
+      const sx = Math.min(w - 1, Math.round((x / dw) * w));
+      let v = (px[srcRow + sx] - params.black) / range;
+      v = v <= 0 ? 0 : v >= 1 ? 1 : v;
+      const g = Math.round(255 * mtf(v, mid));
+      const o = (y * dw + x) * 4;
+      img.data[o] = g;
+      img.data[o + 1] = g;
+      img.data[o + 2] = g;
+      img.data[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return canvas;
+}
+
+
 /** Décode un FITS en pixels bruts (mono ou première couche). */
 export async function decodeFitsToCanvas(file: File): Promise<FitsPreview> {
   const buf = await file.arrayBuffer();
