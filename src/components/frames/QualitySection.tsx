@@ -25,6 +25,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceArea,
+  ReferenceLine,
 } from "recharts";
 
 // Ordre L R V B S H O, couleur de fond = bande passante du filtre
@@ -73,7 +74,29 @@ const nightOf = (iso: string) => {
   // Une nuit = la date du soir : avant midi, on rattache au jour précédent.
   const d = new Date(iso);
   if (d.getHours() < 12) d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+// Une couleur distincte par nuit (angle d'or pour bien séparer les teintes voisines).
+const nightColor = (index: number) => `hsl(${Math.round((index * 137.5) % 360)} 70% 55%)`;
+
+// Libellé « 09→10/10/26 » : soir → matin.
+const nightLabel = (night: string) => {
+  const start = new Date(`${night}T12:00:00`);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  const dd = (d: Date) => String(d.getDate()).padStart(2, "0");
+  const tail = end.toLocaleDateString("fr-FR", { month: "2-digit", year: "2-digit" });
+  return start.getMonth() === end.getMonth()
+    ? `${dd(start)}→${dd(end)}/${tail}`
+    : `${start.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}→${dd(end)}/${tail}`;
+};
+const nightTitle = (night: string) => {
+  const start = new Date(`${night}T12:00:00`);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return `Nuit du ${start.toLocaleDateString("fr-FR")} au ${end.toLocaleDateString("fr-FR")}`;
 };
 
 // Phase de la lune pour une nuit (date du soir, évaluée à minuit).
@@ -681,13 +704,23 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           key={range.night}
                            x1={Math.max(range.start - 0.5, zoomWindow[0])}
                            x2={Math.min(range.end + 0.5, zoomWindow[1])}
-                          fill={index % 2 === 0 ? "hsl(var(--primary))" : "hsl(var(--accent))"}
-                          fillOpacity={0.055}
+                          fill={nightColor(index)}
+                          fillOpacity={0.09}
                           strokeOpacity={0}
                            ifOverflow="hidden"
                         />
                          );
                        })}
+                      {visibleNightRanges.slice(1).map((range) => (
+                        <ReferenceLine
+                          key={`sep-${range.night}`}
+                          x={range.start - 0.5}
+                          stroke="hsl(var(--muted-foreground))"
+                          strokeDasharray="2 3"
+                          strokeOpacity={0.7}
+                          ifOverflow="hidden"
+                        />
+                      ))}
                       <XAxis
                         type="number"
                         dataKey="x"
@@ -770,10 +803,10 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                         <ReferenceArea
                           x1={Math.max(selection[0], zoomWindow[0])}
                           x2={Math.min(selection[1], zoomWindow[1])}
-                          fill="hsl(var(--primary))"
-                          fillOpacity={0.15}
-                          stroke="hsl(var(--primary))"
-                          strokeOpacity={0.6}
+                          fillOpacity={0}
+                          stroke="hsl(var(--foreground))"
+                          strokeDasharray="4 2"
+                          strokeOpacity={0.8}
                           ifOverflow="hidden"
                         />
                       )}
@@ -794,15 +827,14 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           type="button"
                           onClick={() => setZoom(frameNight(range.start, range.end, totalPoints))}
                           className={
-                            "absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-border/60 text-[10px] leading-none text-foreground transition-opacity hover:opacity-80 " +
-                            (index % 2 === 0 ? "bg-primary/10" : "bg-accent/10")
+                            "absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-border/60 text-[10px] leading-none text-foreground transition-opacity hover:opacity-80 border-dashed border-r-muted-foreground"
                           }
-                          style={{ left: `${left}%`, width: `${width}%` }}
-                          title={`${new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR")} · ${range.count} image${range.count > 1 ? "s" : ""} · Lune ${moonPhase(range.night).symbol} ${moonPhase(range.night).illumination} % — cliquez pour zoomer sur cette nuit`}
+                          style={{ left: `${left}%`, width: `${width}%`, backgroundColor: nightColor(index).replace(")", " / 0.22)") }}
+                          title={`${nightTitle(range.night)} · ${range.count} image${range.count > 1 ? "s" : ""} · Lune ${moonPhase(range.night).symbol} ${moonPhase(range.night).illumination} % — cliquez pour zoomer sur cette nuit`}
                         >
                           <span className="flex h-full w-full items-center justify-center gap-1 px-1 leading-none">
                             <span>
-                              {new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                              {nightLabel(range.night)}
                             </span>
                             <span className="text-[12px]">
                               {moonPhase(range.night).symbol} {moonPhase(range.night).illumination} %
