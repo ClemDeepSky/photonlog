@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { parseTelescopiusCsv } from "@/lib/telescopiusCsv";
 
 interface Pane {
   pane_number: number;
@@ -104,27 +105,7 @@ const CreateProject = () => {
   const setupSensorHeightMm = selectedSetup?.pixel_size && selectedSetup?.sensor_height_px
     ? (Number(selectedSetup.pixel_size) * selectedSetup.sensor_height_px) / 1000 : null;
 
-  const parseCsv = (text: string) => {
-    const lines = text.split("\n").filter((l) => l.trim());
-    const dataLines =
-      lines.length > 1 && lines[0].toLowerCase().includes("pane") && lines[0].toLowerCase().includes("ra")
-        ? lines.slice(1)
-        : lines;
-    const parsed: Pane[] = [];
-    for (const line of dataLines) {
-      if (!line.trim()) continue;
-      const parts = line.split(",").map((s) => s.trim());
-      if (parts.length < 2) continue;
-      const paneNum = parseInt(parts[0].replace(/[^\d]/g, "")) || parsed.length + 1;
-      parsed.push({
-        pane_number: paneNum, ra: parts[1] || "", dec: parts[2] || "",
-        position_angle: parseFloat(parts[3]) || null, pane_width: parseFloat(parts[4]) || null,
-        pane_height: parseFloat(parts[5]) || null, overlap: parseFloat(parts[6]?.replace("%", "")) || null,
-        row_index: parseInt(parts[7]) || null, col_index: parseInt(parts[8]) || null,
-      });
-    }
-    return parsed;
-  };
+  const parseCsv = (text: string): Pane[] => parseTelescopiusCsv(text) as Pane[];
 
   const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
