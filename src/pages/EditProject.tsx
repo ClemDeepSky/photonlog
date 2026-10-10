@@ -211,9 +211,23 @@ const EditProject = () => {
   useEffect(() => {
     if (!project || loaded) return;
     if (projectPanes !== undefined && projectAcquisitions !== undefined) {
-      if (projectPanes && projectPanes.length > 0) {
+      const ownScope = isTeam && !scopeFallback;
+      const scopeMosaic = ownScope ? projectPanes.length > 1 : project.is_mosaic;
+      if (isTeam) {
+        setFolderPath(mine?.folder_path || "");
+        setFilenamePattern(mine?.filename_pattern || "");
+        setSetup(mine?.setup || "");
+        setIsMosaic(scopeMosaic);
+      }
+      if (ownScope && projectPanes.length === 1) {
+        // Cadrage personnel simple : un seul panneau, affiché comme une cible simple.
+        const p = projectPanes[0];
+        setRa(p.ra); setDec(p.dec);
+        setPositionAngle(p.position_angle != null ? String(p.position_angle) : "");
+        setSinglePaneId(p.id);
+      } else if (projectPanes && projectPanes.length > 0) {
         setPanes(projectPanes.map((p) => ({
-          id: p.id, pane_number: p.pane_number, ra: p.ra, dec: p.dec,
+          id: scopeFallback ? undefined : p.id, pane_number: p.pane_number, ra: p.ra, dec: p.dec,
           position_angle: p.position_angle ? Number(p.position_angle) : null,
           pane_width: p.pane_width ? Number(p.pane_width) : null,
           pane_height: p.pane_height ? Number(p.pane_height) : null,
@@ -223,7 +237,7 @@ const EditProject = () => {
       }
 
       if (projectAcquisitions && projectAcquisitions.length > 0) {
-        if (project.is_mosaic && projectPanes && projectPanes.length > 0) {
+        if (scopeMosaic && projectPanes && projectPanes.length > 0) {
           // Extract unique acquisitions (by filter+exposure+bin) and build disabled map
           const uniqueAcqs: Acquisition[] = [];
           const acqKey = (a: { filter: string; exposure_duration: number; bin: number }) =>
