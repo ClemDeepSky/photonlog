@@ -18,7 +18,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, FolderOpen } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import { useProjectContributions } from "@/lib/teamContributions";
-import MyContribution, { useContributionPanes } from "@/components/projects/MyContribution";
+import { useContributionPanes } from "@/components/projects/MyContribution";
+import TeamGoalsReminder from "@/components/projects/TeamGoalsReminder";
+import { ensureContribution } from "@/lib/sessions";
 
 import FilenamePreview from "@/components/projects/FilenamePreview";
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -482,7 +484,7 @@ const EditProject = () => {
         `${paneId ?? "-"}|${filter}|${exposure}|${bin}`;
       const plainKey = (filter: string, exposure: number, bin: number) => `${filter}|${exposure}|${bin}`;
 
-      const prevAcqs = (projectAcquisitions ?? []) as any[];
+      const prevAcqs = (scopeFallback ? [] : projectAcquisitions ?? []) as any[];
       const prevByPaneKey = new Map<string, string>();
       const prevByPlainKey = new Map<string, string[]>();
       prevAcqs.forEach((a) => {
@@ -535,6 +537,7 @@ const EditProject = () => {
           toInsert.push({
             project_id: id!, pane_id: d.pane_id, filter: d.filter,
             exposure_duration: d.exposure, quantity: d.quantity, bin: d.bin,
+            ...(cid ? { contribution_id: cid } : {}),
           });
         }
       });
@@ -562,6 +565,8 @@ const EditProject = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project-edit", id] });
+      ["edit-scope", "team-contributions", "contribution-panes", "frames-acquisitions", "frames-panes"].forEach((k) =>
+        queryClient.invalidateQueries({ queryKey: [k, id] }));
       toast({ title: "Projet mis à jour" });
       navigate("/projects");
     },
