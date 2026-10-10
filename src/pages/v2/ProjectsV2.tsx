@@ -1,3 +1,4 @@
+import { skyThumbnailUrl } from "@/lib/skyThumb";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +37,7 @@ const ProjectsV2 = () => {
       const { data, error } = await supabase
         .from("projects")
         .select(
-          "id, name, status, team_id, is_mosaic, image_url, target_object, schema_version, tracking_mode, teams(name), project_acquisitions(id, filter, exposure_duration, quantity, acquired, target_seconds, pane_id)"
+          "id, name, status, team_id, is_mosaic, image_url, ra, dec, target_object, schema_version, tracking_mode, teams(name), project_acquisitions(id, filter, exposure_duration, quantity, acquired, target_seconds, pane_id)"
         )
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -84,7 +85,7 @@ const ProjectsV2 = () => {
                 <Card key={project.id} className="border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
                   <Link to={`/v2/projects/${project.id}`}>
                     <img
-                      src={project.image_url || projectPlaceholder}
+                      src={project.image_url || skyThumbnailUrl((project as any).ra, (project as any).dec) || projectPlaceholder}
                       alt={`Aperçu du projet ${project.name}`}
                       loading="lazy"
                       className="h-32 w-full object-cover"
