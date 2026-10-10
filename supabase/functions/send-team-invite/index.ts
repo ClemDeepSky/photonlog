@@ -99,6 +99,26 @@ Deno.serve(async (req) => {
 
   const messageId = crypto.randomUUID()
 
+  // Transactional (app) emails require an unsubscribe token for the recipient.
+  let unsubscribeToken: string
+  const { data: existingToken } = await adminClient
+    .from('email_unsubscribe_tokens')
+    .select('token')
+    .eq('email', invitation.email)
+    .maybeSingle()
+  if (existingToken?.token) {
+    unsubscribeToken = existingToken.token
+  } else {
+    unsubscribeToken = crypto.randomUUID()
+    const { error: tokenError } = await adminClient.from('email_unsubscribe_tokens').insert({
+      token: unsubscribeToken,
+      email: invitation.email,
+    })
+    if (tokenError) {
+      console.error('Failed to create unsubscribe token', { error: tokenError, invitationId })
+    }
+  }
+
   await adminClient.from('email_send_log').insert({
     message_id: messageId,
     template_name: 'team-invite',
