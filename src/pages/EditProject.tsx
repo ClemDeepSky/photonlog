@@ -18,7 +18,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, FolderOpen } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import { useProjectContributions } from "@/lib/teamContributions";
-import MyContribution, { useContributionPanes } from "@/components/projects/MyContribution";
+import { useContributionPanes } from "@/components/projects/MyContribution";
+import TeamGoalsReminder from "@/components/projects/TeamGoalsReminder";
+import { ensureContribution } from "@/lib/sessions";
 
 import FilenamePreview from "@/components/projects/FilenamePreview";
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -80,6 +82,7 @@ const EditProject = () => {
   const [acquisitions, setAcquisitions] = useState<Acquisition[]>([]);
   const [disabledAcquisitions, setDisabledAcquisitions] = useState<Record<number, Set<number>>>({});
   const [loaded, setLoaded] = useState(false);
+  const [singlePaneId, setSinglePaneId] = useState<string | undefined>(undefined);
 
   const { data: teams } = useQuery({
     queryKey: ["my-teams"],
@@ -153,25 +156,38 @@ const EditProject = () => {
       return !!data;
     },
   });
-  const { data: projectPanes } = useQuery({
-    queryKey: ["project-panes", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("project_panes").select("*").eq("project_id", id!).is("contribution_id", null).order("pane_number");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id && !!user,
-  });
+  // Projet Team : la page entière (setup, dossier, cadrage, acquisitions) porte sur
+  // la contribution du membre connecté ; le projet lui-même n'est modifiable que par l'admin.
+  const isTeam = !!project?.team_id;
+  const mine = contributions?.find((c) => c.user_id === user?.id);
+  const isProjectAdmin = !isTeam || projectTeam?.owner_id === user?.id;
+  const scopeReady = !!project && (!isTeam || (contributions !== undefined && projectTeam !== undefined));
+  const scopeId = isTeam ? mine?.id ?? null : null;
 
-  const { data: projectAcquisitions } = useQuery({
-    queryKey: ["project-acquisitions", id],
+  const { data: scope } = useQuery({
+    queryKey: ["edit-scope", id, scopeId, isTeam],
+    enabled: !!id && !!user && scopeReady,
     queryFn: async () => {
-      const { data, error } = await supabase.from("project_acquisitions").select("*").eq("project_id", id!).is("contribution_id", null);
-      if (error) throw error;
-      return data;
+      const load = async (cid: string | null) => {
+        let pq = supabase.from("project_panes").select("*").eq("project_id", id!);
+        let aq = supabase.from("project_acquisitions").select("*").eq("project_id", id!);
+        pq = cid ? pq.eq("contribution_id", cid) : pq.is("contribution_id", null);
+        aq = cid ? aq.eq("contribution_id", cid) : aq.is("contribution_id", null);
+        const [p, a] = await Promise.all([pq.order("pane_number"), aq]);
+        if (p.error) throw p.error;
+        if (a.error) throw a.error;
+        return { panes: p.data, acqs: a.data };
+      };
+      if (!isTeam) return { ...(await load(null)), fallback: false };
+      const own = scopeId ? await load(scopeId) : { panes: [], acqs: [] };
+      if (own.panes.length || own.acqs.length) return { ...own, fallback: false };
+      // Pas encore de contribution : on part du cadrage et des objectifs du projet.
+      return { ...(await load(null)), fallback: true };
     },
-    enabled: !!id && !!user,
   });
+  const projectPanes = scope?.panes;
+  const projectAcquisitions = scope?.acqs;
+  const scopeFallback = !!scope?.fallback;
 
   // Populate form when data loads
   useEffect(() => {
@@ -198,9 +214,23 @@ const EditProject = () => {
   useEffect(() => {
     if (!project || loaded) return;
     if (projectPanes !== undefined && projectAcquisitions !== undefined) {
-      if (projectPanes && projectPanes.length > 0) {
+      const ownScope = isTeam && !scopeFallback;
+      const scopeMosaic = ownScope ? projectPanes.length > 1 : project.is_mosaic;
+      if (isTeam) {
+        setFolderPath(mine?.folder_path || "");
+        setFilenamePattern(mine?.filename_pattern || "");
+        setSetup(mine?.setup || "");
+        setIsMosaic(scopeMosaic);
+      }
+      if (ownScope && projectPanes.length === 1) {
+        // Cadrage personnel simple : un seul panneau, affiché comme une cible simple.
+        const p = projectPanes[0];
+        setRa(p.ra); setDec(p.dec);
+        setPositionAngle(p.position_angle != null ? String(p.position_angle) : "");
+        setSinglePaneId(p.id);
+      } else if (projectPanes && projectPanes.length > 0) {
         setPanes(projectPanes.map((p) => ({
-          id: p.id, pane_number: p.pane_number, ra: p.ra, dec: p.dec,
+          id: scopeFallback ? undefined : p.id, pane_number: p.pane_number, ra: p.ra, dec: p.dec,
           position_angle: p.position_angle ? Number(p.position_angle) : null,
           pane_width: p.pane_width ? Number(p.pane_width) : null,
           pane_height: p.pane_height ? Number(p.pane_height) : null,
@@ -210,7 +240,7 @@ const EditProject = () => {
       }
 
       if (projectAcquisitions && projectAcquisitions.length > 0) {
-        if (project.is_mosaic && projectPanes && projectPanes.length > 0) {
+        if (scopeMosaic && projectPanes && projectPanes.length > 0) {
           // Extract unique acquisitions (by filter+exposure+bin) and build disabled map
           const uniqueAcqs: Acquisition[] = [];
           const acqKey = (a: { filter: string; exposure_duration: number; bin: number }) =>
@@ -246,7 +276,7 @@ const EditProject = () => {
           setDisabledAcquisitions(disabled);
         } else {
           setAcquisitions(projectAcquisitions.map((a) => ({
-            id: a.id, filter: a.filter, exposure_duration: Number(a.exposure_duration),
+            id: scopeFallback ? undefined : a.id, filter: a.filter, exposure_duration: Number(a.exposure_duration),
             quantity: a.quantity, bin: a.bin,
           })));
         }
@@ -256,7 +286,7 @@ const EditProject = () => {
 
       setLoaded(true);
     }
-  }, [project, projectPanes, projectAcquisitions, loaded]);
+  }, [project, projectPanes, projectAcquisitions, loaded, isTeam, scopeFallback, mine]);
 
   const parseCsv = (text: string): Pane[] => parseTelescopiusCsv(text) as Pane[];
 
@@ -379,27 +409,53 @@ const EditProject = () => {
 
   const updateProject = useMutation({
     mutationFn: async () => {
-      // Update project
-      const { error } = await supabase
-        .from("projects")
-        .update({
-          name, description: description || null, setup: setup || null, observing_site_id: siteId || null,
-          image_url: imageUrl,
-          folder_path: folderPath || null,
-          filename_pattern: filenamePattern || null,
-          team_id: isTeamProject ? selectedTeamId : null, is_mosaic: isMosaic,
-          ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
-          position_angle: isMosaic ? null : (parseFloat(positionAngle) || null),
-        })
-        .eq("id", id!);
-      if (error) throw error;
+      let cid: string | null = null;
+      if (!isTeam) {
+        const { error } = await supabase
+          .from("projects")
+          .update({
+            name, description: description || null, setup: setup || null, observing_site_id: siteId || null,
+            image_url: imageUrl,
+            folder_path: folderPath || null,
+            filename_pattern: filenamePattern || null,
+            team_id: isTeamProject ? selectedTeamId : null, is_mosaic: isMosaic,
+            ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
+            position_angle: isMosaic ? null : (parseFloat(positionAngle) || null),
+          })
+          .eq("id", id!);
+        if (error) throw error;
+      } else {
+        // Réglages du projet : administrateur de la team uniquement.
+        if (isProjectAdmin) {
+          const { error } = await supabase.from("projects").update({
+            name, description: description || null, observing_site_id: siteId || null, image_url: imageUrl,
+            team_id: isTeamProject ? selectedTeamId : null,
+          }).eq("id", id!);
+          if (error) throw error;
+        }
+        // Ma contribution : setup, dossier, structure des noms.
+        const c = mine ?? (await ensureContribution(id!, user!.id, { tracking_mode: "automatic" }));
+        cid = c.id;
+        const s = selectedSetup;
+        const mm = (px: number | null | undefined) => (s?.pixel_size && px ? (Number(s.pixel_size) * px) / 1000 : null);
+        const { error: cErr } = await supabase.from("project_contributions").update({
+          setup: setup || null, equipment_profile_id: s?.id ?? null,
+          focal_length: s?.focal_length ?? null, sensor_width_mm: mm(s?.sensor_width_px), sensor_height_mm: mm(s?.sensor_height_px),
+          folder_path: folderPath || null, filename_pattern: filenamePattern || null,
+        }).eq("id", cid);
+        if (cErr) throw cErr;
+      }
 
       // Mise à jour en place : les identifiants des panneaux et des lignes de plan
       // sont conservés, pour que les brutes déjà indexées restent reliées à leur ligne.
-      const targetPanes = isMosaic ? panes : [];
+      const singlePane: Pane[] = isTeam && !isMosaic && ra && dec
+        ? [{ id: scopeFallback ? undefined : singlePaneId, pane_number: 1, ra, dec, position_angle: parseFloat(positionAngle) || null,
+            pane_width: null, pane_height: null, overlap: null, row_index: null, col_index: null }]
+        : [];
+      const targetPanes = isMosaic ? panes : singlePane;
 
       const keptPaneIds = new Set(targetPanes.map((p) => p.id).filter(Boolean) as string[]);
-      const removedPaneIds = (projectPanes ?? [])
+      const removedPaneIds = (scopeFallback ? [] : projectPanes ?? [])
         .map((p) => p.id as string)
         .filter((pid) => !keptPaneIds.has(pid));
 
@@ -410,6 +466,7 @@ const EditProject = () => {
           project_id: id!, pane_number: p.pane_number, ra: p.ra, dec: p.dec,
           position_angle: p.position_angle, pane_width: p.pane_width, pane_height: p.pane_height,
           overlap: p.overlap, row_index: p.row_index, col_index: p.col_index,
+          ...(cid ? { contribution_id: cid } : {}),
         };
         if (p.id) {
           const { error: paneUpdError } = await supabase.from("project_panes").update(row).eq("id", p.id);
@@ -427,7 +484,7 @@ const EditProject = () => {
         `${paneId ?? "-"}|${filter}|${exposure}|${bin}`;
       const plainKey = (filter: string, exposure: number, bin: number) => `${filter}|${exposure}|${bin}`;
 
-      const prevAcqs = (projectAcquisitions ?? []) as any[];
+      const prevAcqs = (scopeFallback ? [] : projectAcquisitions ?? []) as any[];
       const prevByPaneKey = new Map<string, string>();
       const prevByPlainKey = new Map<string, string[]>();
       prevAcqs.forEach((a) => {
@@ -480,6 +537,7 @@ const EditProject = () => {
           toInsert.push({
             project_id: id!, pane_id: d.pane_id, filter: d.filter,
             exposure_duration: d.exposure, quantity: d.quantity, bin: d.bin,
+            ...(cid ? { contribution_id: cid } : {}),
           });
         }
       });
@@ -507,6 +565,8 @@ const EditProject = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project-edit", id] });
+      ["edit-scope", "team-contributions", "contribution-panes", "frames-acquisitions", "frames-panes"].forEach((k) =>
+        queryClient.invalidateQueries({ queryKey: [k, id] }));
       toast({ title: "Projet mis à jour" });
       navigate("/projects");
     },
@@ -545,31 +605,24 @@ const EditProject = () => {
         </div>
 
         <div className="space-y-6">
-          {project?.team_id && (
-            <>
-              <MyContribution projectId={project.id} team={projectTeam}
-                defaultRa={project.ra || ""} defaultDec={project.dec || ""}
-                defaultAngle={project.position_angle != null ? Number(project.position_angle) : null} />
-              <div className="pt-2">
-                <h2 className="text-lg font-semibold">Projet de l'équipe</h2>
-                <p className="text-xs text-muted-foreground">
-                  {canEditCommon ? "Cible, cadrage commun et objectif global de l'équipe." : "Lecture seule : seul l'administrateur de la team modifie ces réglages."}
-                </p>
-              </div>
-            </>
+          {isTeam && (
+            <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 px-3 py-2">
+              Projet d'équipe : votre setup, votre dossier, votre cadrage et vos acquisitions ne concernent que votre contribution.
+              {!isProjectAdmin && " Le nom, la team et le site du projet sont réglés par l'administrateur."}
+            </p>
           )}
           {/* General info */}
           <Card>
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center gap-3">
-                <Switch checked={isTeamProject} onCheckedChange={(v) => { setIsTeamProject(v); if (!v) setSelectedTeamId(""); }} id="team-toggle" disabled={!teams?.length} />
+                <Switch checked={isTeamProject} onCheckedChange={(v) => { setIsTeamProject(v); if (!v) setSelectedTeamId(""); }} id="team-toggle" disabled={!teams?.length || !isProjectAdmin} />
                 <Label htmlFor="team-toggle">Projet de team</Label>
               </div>
 
               {isTeamProject && (
                 <div>
                   <Label>Team</Label>
-                  <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                  <Select value={selectedTeamId} onValueChange={setSelectedTeamId} disabled={!isProjectAdmin}>
                     <SelectTrigger><SelectValue placeholder="Sélectionner une team" /></SelectTrigger>
                     <SelectContent>
                       {teams?.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
@@ -580,10 +633,10 @@ const EditProject = () => {
 
               <div>
                 <Label>Nom du projet</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion"  />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" disabled={!isProjectAdmin} />
               </div>
               <div>
-                <Label>Dossier racine du projet</Label>
+                <Label>{isTeam ? "Mon dossier d'acquisitions" : "Dossier racine du projet"}</Label>
                 <div className="flex gap-2">
                   <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: M31 ou D:\Astro\M31" className="flex-1" />
                   <Button type="button" variant="outline" size="icon" onClick={pickRootFolder} title="Choisir le dossier racine">
@@ -609,7 +662,7 @@ const EditProject = () => {
               </div>
               <div >
                 <Label>Setup</Label>
-                {foreignSetup || !canEditCommon ? (
+                {!isTeam && (foreignSetup || !canEditCommon) ? (
                   <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
                     {setup || "Aucun setup"}
                     {foreignSetup && <span className="block text-xs text-muted-foreground">Setup d'un autre membre — visible, non sélectionnable.</span>}
@@ -636,7 +689,7 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Site d'observation</Label>
-                {foreignSite || !canEditCommon ? (
+                {foreignSite || !isProjectAdmin || (!isTeam && !canEditCommon) ? (
                   <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
                     {foreignSite ? (projectSite?.name ?? "Site d'un autre membre") : (sites?.find((s) => s.id === siteId)?.name ?? "Aucun site")}
                     {foreignSite && <span className="block text-xs text-muted-foreground">Site d'un autre membre — visible, non sélectionnable.</span>}
@@ -656,7 +709,7 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Description (optionnel)</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2}  />
+                <Textarea value={description} disabled={!isProjectAdmin} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2}  />
               </div>
               <ProjectImageField value={imageUrl} onChange={setImageUrl} ra={ra} dec={dec} />
             </CardContent>
@@ -687,7 +740,7 @@ const EditProject = () => {
                   setupSensorWidthMm={setupSensorWidthMm}
                   setupSensorHeightMm={setupSensorHeightMm}
                   setupName={selectedSetup?.name}
-                  participants={project?.team_id ? (contributions || []).map((c) => ({
+                  participants={isTeam ? (contributions || []).filter((c) => c.id !== mine?.id).map((c) => ({
                     id: c.id, label: `${c.username}${c.setup ? ` · ${c.setup}` : ""}`, color: c.color,
                     focalLength: c.focal_length, sensorWidthMm: c.sensor_width_mm, sensorHeightMm: c.sensor_height_mm,
                     panes: (memberPanes || []).filter((p) => p.contribution_id === c.id),
@@ -799,10 +852,12 @@ const EditProject = () => {
             </CardContent>
           </Card>
 
+          {isTeam && project && <TeamGoalsReminder projectId={project.id} myContributionId={mine?.id} />}
+
           {/* Actions */}
           <div className="flex justify-end gap-3 pb-8">
             <Button variant="outline" onClick={() => navigate("/projects")}>Annuler</Button>
-            <Button onClick={() => updateProject.mutate()} disabled={!canSubmit || !canEditCommon || updateProject.isPending}>
+            <Button onClick={() => updateProject.mutate()} disabled={!canSubmit || (!isTeam && !canEditCommon) || updateProject.isPending}>
               {updateProject.isPending ? "Enregistrement..." : "Enregistrer les modifications"}
             </Button>
           </div>
