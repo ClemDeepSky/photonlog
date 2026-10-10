@@ -91,20 +91,6 @@ function readPixels(
   return out;
 }
 
-/** Bornes d'étirement par percentiles sur un échantillon. */
-function stretchBounds(px: Float32Array, loPct: number, hiPct: number): [number, number] {
-  const step = Math.max(1, Math.floor(px.length / 200000));
-  const sample: number[] = [];
-  for (let i = 0; i < px.length; i += step) {
-    const v = px[i];
-    if (Number.isFinite(v)) sample.push(v);
-  }
-  if (sample.length === 0) return [0, 1];
-  sample.sort((a, b) => a - b);
-  const lo = sample[Math.floor(sample.length * loPct)];
-  const hi = sample[Math.min(sample.length - 1, Math.floor(sample.length * hiPct))];
-  return hi > lo ? [lo, hi] : [sample[0], sample[sample.length - 1] || sample[0] + 1];
-}
 
 /**
  * Auto-stretch façon Siril/PixInsight : le point noir est posé à moyenne − 2,8 σ
