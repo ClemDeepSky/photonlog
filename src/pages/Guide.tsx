@@ -12,11 +12,15 @@ import {
   Clock,
   FolderOpen,
   Gauge,
+  Globe,
   ImagePlus,
   LayoutGrid,
   LineChart,
+  Link2,
   LockKeyhole,
+  MapPin,
   Menu,
+  Moon,
   MousePointerClick,
   RefreshCw,
   Shield,
@@ -30,6 +34,7 @@ import projectsAsset from "@/assets/help/projects.png.asset.json";
 import equipmentAsset from "@/assets/help/equipment.png.asset.json";
 import framesAsset from "@/assets/help/frames.png.asset.json";
 import projectConfigAsset from "@/assets/help/project-config.png.asset.json";
+import observingSiteAsset from "@/assets/help/observing-site.png.asset.json";
 
 const sections = [
   { id: "objectif", label: "Objectif" },
@@ -37,6 +42,7 @@ const sections = [
   { id: "tableau-de-bord", label: "Tableau de bord" },
   { id: "equipes", label: "Équipes" },
   { id: "materiel", label: "Matériel" },
+  { id: "sites", label: "Sites d’observation" },
   { id: "projets", label: "Projets" },
   { id: "frames", label: "Frames" },
   { id: "qualite", label: "Qualité des brutes" },
@@ -103,8 +109,9 @@ const Guide = () => {
                 Pilotez vos acquisitions, de la cible à la dernière pose
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-                Photonlog centralise vos projets d’astrophotographie, vos setups, vos équipes et le suivi de chaque
-                série d’images. Ce guide présente les écrans et les principales actions dans l’ordre d’utilisation.
+                Photonlog centralise vos projets d’astrophotographie, vos setups, vos sites d’observation, vos équipes et
+                le suivi de chaque série d’images. Ce guide présente les écrans et les principales actions dans l’ordre
+                d’utilisation.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button asChild>
@@ -156,6 +163,10 @@ const Guide = () => {
                 <Feature icon={Wrench} title="Réutiliser votre matériel">
                   Enregistrez vos configurations optiques une fois et rattachez-les à vos différents projets.
                 </Feature>
+                <Feature icon={MapPin} title="Observer au bon endroit, au bon moment">
+                  Enregistrez vos lieux d’observation : Photonlog en déduit la durée de la nuit et la position de la lune
+                  pour chaque session.
+                </Feature>
                 <Feature icon={Users} title="Travailler seul ou en équipe">
                   Gardez un projet personnel ou partagez sa gestion avec les membres d’une team.
                 </Feature>
@@ -172,8 +183,9 @@ const Guide = () => {
                 {[
                   ["1", "Compte ou team", "Connectez-vous, puis créez une team si le projet doit être partagé."],
                   ["2", "Profil matériel", "Renseignez le setup qui sera utilisé pour cadrer et réaliser les poses."],
-                  ["3", "Projet d’acquisition", "Choisissez la cible, les coordonnées, les filtres et les objectifs."],
-                  ["4", "Suivi des frames", "Mettez à jour les poses manuellement ou à partir du dossier du projet."],
+                  ["3", "Site d’observation", "Indiquez où vous observez : la durée de nuit et la lune en découlent."],
+                  ["4", "Projet d’acquisition", "Choisissez la cible, les coordonnées, les filtres et les objectifs."],
+                  ["5", "Suivi des frames", "Mettez à jour les poses manuellement ou à partir du dossier du projet."],
                 ].map(([number, title, text]) => (
                   <li key={number} className="border-t border-border/70 py-5">
                     <div className="flex gap-4">
@@ -251,6 +263,10 @@ const Guide = () => {
                   Ajoutez les filtres disponibles ainsi que le système et le logiciel d’acquisition. Le setup peut ensuite
                   être sélectionné dans un projet.
                 </Feature>
+                <Feature icon={MapPin} title="Et vos sites d’observation">
+                  La même page accueille vos lieux d’observation, qui servent à calculer la durée de nuit et la position de
+                  la lune. Voir le chapitre <a href="#sites" className="underline hover:text-foreground">Sites d’observation</a>.
+                </Feature>
               </div>
               <GuideFigure
                 src={equipmentAsset.url}
@@ -259,8 +275,54 @@ const Guide = () => {
               />
             </section>
 
+            <section id="sites" className="scroll-mt-24">
+              <p className="text-sm font-medium text-primary">06 — SITES D’OBSERVATION</p>
+              <h2 className="mt-2 text-3xl font-bold">Savoir combien de temps vous avez, et sous quelle lune</h2>
+              <p className="mt-5 max-w-3xl text-base leading-7 text-muted-foreground">
+                Un site d’observation est le lieu où vous installez votre matériel : votre jardin, un observatoire
+                associatif, un spot en nomade. Ses coordonnées déterminent la durée de la nuit et la trajectoire de la
+                lune, deux paramètres qui décident de ce qu’il est raisonnable de tenter une nuit donnée.
+              </p>
+              <div className="mt-6">
+                <Feature icon={MapPin} title="Créer un site en une minute">
+                  Sur la page « Matériel », bouton « Nouveau site » : un nom, le pays, puis la ville la plus proche. La
+                  recherche propose les communes et préremplit latitude, longitude, altitude et fuseau. Les coordonnées
+                  restent ajustables manuellement pour indiquer la position GPS exacte de votre emplacement.
+                </Feature>
+                <Feature icon={Clock} title="La durée réelle de la nuit">
+                  Photonlog calcule la fin du crépuscule astronomique le soir et le début de l’aube au matin : entre les
+                  deux, le ciel est assez sombre pour poser. Cette fenêtre dépend de votre latitude et de la saison —
+                  courte autour du solstice d’été, longue aux équinoxes et en hiver.
+                </Feature>
+                <Feature icon={Moon} title="La lune, nuit par nuit">
+                  Chaque nuit affiche son pourcentage d’illumination, ses heures de lever et de coucher, la hauteur
+                  maximale que la lune atteint pendant vos poses et sa distance à votre cible. Une lune levée pendant vos
+                  poses est signalée en rouge : c’est elle qui va noyer les nébuleuses. Une lune couchée ne gêne pas.
+                </Feature>
+                <Feature icon={LineChart} title="La courbe de hauteur">
+                  Une petite courbe suit la lune du crépuscule à l’aube : la zone colorée correspond à vos acquisitions,
+                  la ligne pointillée à l’horizon. On voit d’un coup d’œil si la lune se couche avant le milieu de la nuit ou
+                  si elle sera là du début à la fin.
+                </Feature>
+                <Feature icon={Link2} title="Lier un site à un projet">
+                  Le champ « Site d’observation » figure dans la création du projet et dans ses paramètres. Une fois le
+                  site associé, le panneau replié « Conditions par nuit » apparaît sous le graphique de qualité, avec une
+                  ligne par nuit réellement acquise.
+                </Feature>
+                <Feature icon={Globe} title="Comparer plusieurs lieux">
+                  Plusieurs sites peuvent être enregistrés : le même projet observé depuis la ville, la campagne ou un
+                  spot d’altitude n’offre pas la même nuit. Vous choisissez le site au moment de préparer le projet.
+                </Feature>
+              </div>
+              <GuideFigure
+                src={observingSiteAsset.url}
+                alt="Formulaire de création d’un site d’observation Photonlog, la ville recherchée préremplit les coordonnées GPS"
+                caption="Choisir une ville préremplit latitude, longitude et altitude ; la position GPS exacte reste ajustable."
+              />
+            </section>
+
             <section id="projets" className="scroll-mt-24">
-              <p className="text-sm font-medium text-primary">06 — PROJETS</p>
+              <p className="text-sm font-medium text-primary">07 — PROJETS</p>
               <h2 className="mt-2 text-3xl font-bold">Préparer une cible et son plan de poses</h2>
               <div className="mt-6">
                 <Feature icon={FolderOpen} title="Informations générales">
@@ -297,7 +359,7 @@ const Guide = () => {
             </section>
 
             <section id="frames" className="scroll-mt-24">
-              <p className="text-sm font-medium text-primary">07 — FRAMES</p>
+              <p className="text-sm font-medium text-primary">08 — FRAMES</p>
               <h2 className="mt-2 text-3xl font-bold">Mettre à jour les acquisitions réalisées</h2>
               <div className="mt-6">
                 <Feature icon={ImagePlus} title="Saisie manuelle">
@@ -317,7 +379,7 @@ const Guide = () => {
             </section>
 
             <section id="qualite" className="scroll-mt-24">
-              <p className="text-sm font-medium text-primary">08 — QUALITÉ DES BRUTES</p>
+              <p className="text-sm font-medium text-primary">09 — QUALITÉ DES BRUTES</p>
               <h2 className="mt-2 text-3xl font-bold">Lire l’évolution d’une session</h2>
               <div className="mt-6">
                 <Feature icon={LineChart} title="Mesures disponibles">
@@ -332,6 +394,10 @@ const Guide = () => {
                   Utilisez la molette ou la barre d’aperçu pour zoomer dans la chronologie. Un point donne accès au nom de
                   l’image et aux mesures extraites.
                 </Feature>
+                <Feature icon={Moon} title="Conditions par nuit">
+                  Lorsqu’un site d’observation est associé au projet, un panneau replié « Conditions par nuit » s’affiche
+                  sous le graphique : durée de la nuit astronomique, lune, lever et coucher, hauteur pendant vos poses.
+                </Feature>
               </div>
               <GuideFigure
                 src={framesAsset.url}
@@ -341,7 +407,7 @@ const Guide = () => {
             </section>
 
             <section id="tris" className="scroll-mt-24">
-              <p className="text-sm font-medium text-primary">09 — TRIS ET CLASSEMENTS</p>
+              <p className="text-sm font-medium text-primary">10 — TRIS ET CLASSEMENTS</p>
               <h2 className="mt-2 text-3xl font-bold">Comment les listes sont rangées</h2>
               <div className="mt-6">
                 <Feature icon={ArrowUpDown} title="Filtres : L R V B S H O">
@@ -357,8 +423,8 @@ const Guide = () => {
                 </Feature>
                 <Feature icon={LayoutGrid} title="Panneaux numérotés">
                   Les panneaux d’une mosaïque sont classés par numéro croissant, P1 puis P2, P3… À l’intérieur d’un
-                  panneau, les lignes de poses sont rangées par ordre alphabétique du nom du filtre. Le groupe « global »
-                  — les poses qui ne dépendent d’aucun panneau — est placé en dernier.
+                  panneau, les lignes de poses sont rangées dans l’ordre des filtres, L R V B S H O, puis par durée
+                  croissante. Le groupe « global » — les poses qui ne dépendent d’aucun panneau — est placé en dernier.
                 </Feature>
                 <Feature icon={CalendarDays} title="Chronologie des poses">
                   Dans le graphique de qualité, les images sont rangées de la plus ancienne à la plus récente d’après leur
@@ -377,7 +443,7 @@ const Guide = () => {
             </section>
 
             <section id="compte" className="scroll-mt-24">
-              <p className="text-sm font-medium text-primary">10 — COMPTE ET CONFIDENTIALITÉ</p>
+              <p className="text-sm font-medium text-primary">11 — COMPTE ET CONFIDENTIALITÉ</p>
               <h2 className="mt-2 text-3xl font-bold">Vos accès et vos données</h2>
               <div className="mt-6">
                 <Feature icon={CircleUserRound} title="Compte personnel">
@@ -399,8 +465,8 @@ const Guide = () => {
               <Telescope className="mx-auto h-8 w-8 text-primary" />
               <h2 className="mt-4 text-2xl font-bold">Prêt à suivre votre prochaine nuit ?</h2>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                Commencez par créer votre setup, puis préparez un projet. Le projet de démonstration reste disponible si
-                vous souhaitez explorer Photonlog avant de saisir vos propres données.
+                Commencez par créer votre setup et votre site d’observation, puis préparez un projet. Le projet de
+                démonstration reste disponible si vous souhaitez explorer Photonlog avant de saisir vos propres données.
               </p>
               <Button asChild className="mt-6">
                 <Link to="/dashboard">Ouvrir mon tableau de bord</Link>
