@@ -211,20 +211,39 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
     return () => { cancelled = true; };
   }, []);
 
-  const hasCoordinates = !!(ra && dec);
+  const validCoordinates = (r: string, d: string): [number, number] | null => {
+    const x = parseRA(r);
+    const y = parseDEC(d);
+    return x !== null && y !== null && Number.isFinite(x) && Number.isFinite(y) && Math.abs(y) <= 90
+      ? [((x % 360) + 360) % 360, y] : null;
+  };
+  const hasCoordinates = validCoordinates(ra, dec) !== null;
   const sensorInfo = sensorOptions[sensor] || SENSORS.apsc;
   const fovW = calcFOVDeg(sensorInfo.width, focalLength);
   const fovH = calcFOVDeg(sensorInfo.height, focalLength);
+  // A mosaic's panel coordinates are authoritative, not the optional project centre.
+  const frameCenters = isMosaic
+    ? (panes ?? []).map((pane) => validCoordinates(pane.ra, pane.dec)).filter((point): point is [number, number] => point !== null)
+    : [validCoordinates(ra, dec)].filter((point): point is [number, number] => point !== null);
+  const radians = Math.PI / 180;
+  const sum = frameCenters.reduce((v, [r, d]) => [
+    v[0] + Math.cos(d * radians) * Math.cos(r * radians),
+    v[1] + Math.cos(d * radians) * Math.sin(r * radians),
+    v[2] + Math.sin(d * radians),
+  ], [0, 0, 0]);
+  const targetRA = frameCenters.length ? ((Math.atan2(sum[1], sum[0]) / radians) + 360) % 360 : 0;
+  const targetDEC = frameCenters.length ? Math.atan2(sum[2], Math.hypot(sum[0], sum[1])) / radians : 0;
+  const radius = Math.max(0, ...frameCenters.map(([r, d]) => Math.acos(Math.max(-1, Math.min(1,
+    Math.sin(targetDEC * radians) * Math.sin(d * radians)
+    + Math.cos(targetDEC * radians) * Math.cos(d * radians) * Math.cos((r - targetRA) * radians),
+  ))) / radians));
+  const maxFov = frameCenters.length
+    ? Math.min(180, Math.max(Math.max(fovW, fovH) * 2.5, (radius * 2 + Math.hypot(fovW, fovH)) * 1.25))
+    : 60;
 
   // Initialize / recenter Aladin view
   useEffect(() => {
     if (!ready || !containerRef.current || !window.A) return;
-
-    const raDeg = parseRA(ra);
-    const decDeg = parseDEC(dec);
-    const targetRA = raDeg ?? 10.684;
-    const targetDEC = decDeg ?? 41.269;
-    const maxFov = Math.max(fovW, fovH) * 2.5;
 
     try {
       if (!aladinRef.current) {
@@ -246,11 +265,12 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
       } else if (!selfEditRef.current || selfEditRef.current.ra !== ra || selfEditRef.current.dec !== dec) {
         // Only recenter when the change did not come from dragging the frame
         aladinRef.current.gotoRaDec(targetRA, targetDEC);
+        aladinRef.current.setFoV(maxFov);
       }
     } catch (e) {
       console.error("Aladin init error:", e);
     }
-  }, [ready, ra, dec, fovW, fovH]);
+  }, [ready, targetRA, targetDEC, maxFov, ra, dec]);
 
   // Compute the FOV frame(s) in screen space, refreshed every frame
   useEffect(() => {
@@ -449,7 +469,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
       )}
       {!hasCoordinates && !isMosaic && ready && (
         <p className="text-xs text-muted-foreground text-center">
-          Vue initiale (M31). Saisissez des coordonnées RA/DEC pour centrer le cadre sur votre cible.
+          Aucune coordonnée de cible renseignée.
         </p>
       )}
       {interactive && (
