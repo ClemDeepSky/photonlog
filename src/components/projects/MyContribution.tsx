@@ -235,24 +235,22 @@ const MyContribution = ({ projectId, team, defaultRa, defaultDec, defaultAngle }
             <table className="w-full max-w-md text-xs">
               <thead className="text-muted-foreground"><tr className="text-left">
                 <th className="px-2 py-1 font-normal">Filtre</th>
-                <th className="px-2 py-1 font-normal text-right">Objectif global</th>
                 <th className="px-2 py-1 font-normal text-right">Membres</th>
               </tr></thead>
               <tbody>
-                {filterRows.map(([f, v]) => {
+                {filterRows.map(([f, total]) => {
                   const band = filterBand(f);
                   return (
                     <tr key={f} className="border-t border-border/40">
                       <td className="px-2 py-1"><span className="rounded px-1.5 py-0.5 font-semibold" style={{ background: band.bg, color: band.fg }}>{f}</span></td>
-                      <td className="px-2 py-1 text-right tabular-nums">{v.global ? fmtH(v.global) : "—"}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{v.members ? fmtH(v.members) : "—"}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{total ? fmtH(total) : "—"}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           )}
-          {commonLines.length === 0 && filterRows.length === 0 && <p className="text-sm text-muted-foreground">Aucun objectif défini.</p>}
+          {filterRows.length === 0 && <p className="text-sm text-muted-foreground">Aucun objectif défini.</p>}
           {others.length === 0 ? <p className="text-sm text-muted-foreground">Aucun autre membre ne participe pour l'instant.</p> : others.map((c) => card(c, false))}
         </CardContent>
       </Card>
