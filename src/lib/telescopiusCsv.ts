@@ -23,7 +23,7 @@ const splitLine = (line: string, delim: string): string[] => {
       if (ch === '"') {
         if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false;
       } else cur += ch;
-    } else if (ch === '"') inQ = true;
+    } else if (ch === '"' && cur.trim() === "") inQ = true; // guillemet ouvrant seulement en début de champ : les " symboles de secondes d'arc sont conservés
     else if (ch === delim) { out.push(cur.trim()); cur = ""; }
     else cur += ch;
   }
