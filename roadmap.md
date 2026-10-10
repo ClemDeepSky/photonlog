@@ -11,9 +11,9 @@
 - Activation V2 projet par projet, sans migration destructive.
 - Enregistrement d'un projet : mise à jour en place des panneaux et des lignes de plan (les brutes indexées gardent leur lien).
 - Coordonnées et cadrage réunis : setup hérité, panneaux empilés et Manuel/CSV avec J2000/JNow communs aux projets simples et mosaïques ; vérifiés à l'écran sans modifier les données enregistrées.
+- Listes et statistiques ordinaires V1/V2 limitées aux projets personnels et aux équipes de l’utilisateur ; cinq pages vérifiées avec une session connectée. Liste Teams limitée aux appartenances et équipes créées.
 
 ## Ouvert (en attente de vos réponses)
-- En cours : limiter toutes les listes et statistiques ordinaires aux projets personnels et aux équipes de l’utilisateur, en V1/V2 ; vérifier avec une session connectée.
 - Progression principale en temps aussi pour les projets personnels (à confirmer).
 - Vocabulaire FR/EN validé avant reprise des textes de toute l'application.
 - Simplification de la fiche matériel (principal / complémentaire) et presets de convention de nommage.
