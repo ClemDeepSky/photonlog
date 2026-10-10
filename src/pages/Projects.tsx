@@ -98,6 +98,11 @@ const Projects = () => {
                     src={(project as any).image_url || skyThumbnailUrl((project as any).ra, (project as any).dec) || placeholder}
                     alt={`Vignette du projet ${project.name}`}
                     loading="lazy"
+                    onError={(e) => {
+                      const el = e.currentTarget;
+                      const sky = skyThumbnailUrl((project as any).ra, (project as any).dec);
+                      el.src = !sky || el.src === sky ? placeholder : sky;
+                    }}
                     className="h-full w-full object-cover"
                   />
                 </div>
