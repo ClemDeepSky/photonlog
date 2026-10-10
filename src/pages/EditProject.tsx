@@ -80,6 +80,7 @@ const EditProject = () => {
   const [acquisitions, setAcquisitions] = useState<Acquisition[]>([]);
   const [disabledAcquisitions, setDisabledAcquisitions] = useState<Record<number, Set<number>>>({});
   const [loaded, setLoaded] = useState(false);
+  const [singlePaneId, setSinglePaneId] = useState<string | undefined>(undefined);
 
   const { data: teams } = useQuery({
     queryKey: ["my-teams"],
@@ -283,7 +284,7 @@ const EditProject = () => {
 
       setLoaded(true);
     }
-  }, [project, projectPanes, projectAcquisitions, loaded]);
+  }, [project, projectPanes, projectAcquisitions, loaded, isTeam, scopeFallback, mine]);
 
   const parseCsv = (text: string): Pane[] => parseTelescopiusCsv(text) as Pane[];
 
