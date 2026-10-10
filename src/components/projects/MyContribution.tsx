@@ -140,14 +140,12 @@ const MyContribution = ({ projectId, team, defaultRa, defaultDec, defaultAngle }
   };
 
   const others = contributions.filter((c) => c.id !== mine?.id);
-  const commonLines = lines.filter((l) => !l.contribution_id);
-  // Objectif global (plan commun) face à la somme des objectifs des membres, par filtre.
-  const byFilter = new Map<string, { global: number; members: number }>();
+  // Somme des objectifs des membres, par filtre ; les lignes sans participant
+  // (ancien plan commun) ne sont plus affichées.
+  const byFilter = new Map<string, number>();
   for (const l of lines) {
-    const e = byFilter.get(l.filter) || { global: 0, members: 0 };
-    const sec = l.quantity * Number(l.exposure_duration);
-    if (l.contribution_id) e.members += sec; else e.global += sec;
-    byFilter.set(l.filter, e);
+    if (!l.contribution_id) continue;
+    byFilter.set(l.filter, (byFilter.get(l.filter) || 0) + l.quantity * Number(l.exposure_duration));
   }
   const filterRows = [...byFilter.entries()].sort((a, b) => filterBand(a[0]).order - filterBand(b[0]).order);
 
@@ -230,7 +228,7 @@ const MyContribution = ({ projectId, team, defaultRa, defaultDec, defaultAngle }
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Rappel des autres membres</CardTitle>
-          <p className="text-xs text-muted-foreground">Objectif global de l'équipe face à la somme des objectifs des membres.</p>
+          <p className="text-xs text-muted-foreground">Somme des objectifs des membres, par filtre.</p>
         </CardHeader>
         <CardContent className="space-y-4">
           {filterRows.length > 0 && (
