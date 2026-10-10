@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, FolderOpen } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
+import { useProjectContributions } from "@/lib/teamContributions";
 
 import FilenamePreview from "@/components/projects/FilenamePreview";
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -119,6 +120,7 @@ const EditProject = () => {
   const setupSensorHeightMm = selectedSetup?.pixel_size && selectedSetup?.sensor_height_px
     ? (Number(selectedSetup.pixel_size) * selectedSetup.sensor_height_px) / 1000 : null;
 
+  const { data: contributions } = useProjectContributions(project?.id, !!project?.team_id);
   const { data: projectPanes } = useQuery({
     queryKey: ["project-panes", id],
     queryFn: async () => {
@@ -629,6 +631,10 @@ const EditProject = () => {
                   setupSensorWidthMm={setupSensorWidthMm}
                   setupSensorHeightMm={setupSensorHeightMm}
                   setupName={selectedSetup?.name}
+                  participants={project?.team_id ? (contributions || []).map((c) => ({
+                    id: c.id, label: `${c.username}${c.setup ? ` · ${c.setup}` : ""}`, color: c.color,
+                    focalLength: c.focal_length, sensorWidthMm: c.sensor_width_mm, sensorHeightMm: c.sensor_height_mm,
+                  })) : undefined}
                 />
             }
           />
