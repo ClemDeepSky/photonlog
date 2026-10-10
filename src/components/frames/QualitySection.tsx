@@ -502,8 +502,8 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
     const ratio = (x - zoomWindow[0]) / (zoomWindow[1] - zoomWindow[0]);
     return axisWidth + ratio * plotW;
   };
-  // Hauteur du graphique : h-80 (320px), marges top 8 / bottom 12, domaine Y [0, 100].
-  const yToPx = (y: number) => 8 + (1 - y / 100) * 300;
+  // Hauteur du graphique : h-80 (320px), marges top 8 / bottom 12, axe X 30px, domaine Y [0, 100].
+  const yToPx = (y: number) => 8 + (1 - y / 100) * (320 - 8 - 12 - 30);
 
   const onDragStart = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
