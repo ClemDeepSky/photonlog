@@ -121,6 +121,23 @@ const loadAladin = (): Promise<void> => {
 
 const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLength, setupSensorWidthMm, setupSensorHeightMm, setupName, setups, onSetupChange, onRaDecChange, onRotationChange }: SkyViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const wheelWrapRef = useRef<HTMLDivElement>(null);
+  const [wheelHint, setWheelHint] = useState(false);
+  useEffect(() => {
+    const el = wheelWrapRef.current;
+    if (!el) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) { e.preventDefault(); setWheelHint(false); return; }
+      // Laisser défiler la page : la carte ne zoome qu'avec Ctrl + molette
+      e.stopPropagation();
+      setWheelHint(true);
+      clearTimeout(t);
+      t = setTimeout(() => setWheelHint(false), 1200);
+    };
+    el.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    return () => { el.removeEventListener("wheel", onWheel, { capture: true } as any); clearTimeout(t); };
+  }, []);
   const aladinRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [focalLength, setFocalLength] = useState(450);
@@ -362,7 +379,12 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
           RA {ra || "—"} · Dec {dec || "—"} · Rotation {positionAngle || 0}°
         </p>
       )}
-      <div className="relative w-full rounded-md overflow-hidden border border-border" style={{ height: 400 }}>
+      <div ref={wheelWrapRef} className="relative w-full rounded-md overflow-hidden border border-border" style={{ height: 400 }}>
+        <div
+          className={`pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-background/60 transition-opacity ${wheelHint ? "opacity-100" : "opacity-0"}`}
+        >
+          <span className="rounded-md bg-card px-3 py-1.5 text-sm text-foreground border border-border">Ctrl + molette pour zoomer</span>
+        </div>
         <div ref={containerRef} className="sky-viewer absolute inset-0" style={{ width: "100%", height: "100%" }} />
         <svg
           className="absolute inset-0 h-full w-full"

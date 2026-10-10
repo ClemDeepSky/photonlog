@@ -6,15 +6,19 @@ import { ImagePlus, Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import placeholder from "@/assets/project-placeholder.jpg";
+import { skyThumbnailUrl } from "@/lib/skyThumb";
 
 export const PROJECT_PLACEHOLDER = placeholder;
 
 interface Props {
   value: string | null;
   onChange: (url: string | null) => void;
+  ra?: string | null;
+  dec?: string | null;
+  fovDeg?: number;
 }
 
-const ProjectImageField = ({ value, onChange }: Props) => {
+const ProjectImageField = ({ value, onChange, ra, dec, fovDeg }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -38,11 +42,11 @@ const ProjectImageField = ({ value, onChange }: Props) => {
   };
 
   return (
-    <div className="space-y-2 max-w-3xl">
+    <div className="space-y-2">
       <Label>Vignette du projet</Label>
       <div className="flex items-start gap-4">
         <img
-          src={value || placeholder}
+          src={value || skyThumbnailUrl(ra, dec, fovDeg) || placeholder}
           alt="Vignette du projet"
           loading="lazy"
           className="h-24 w-40 rounded-md object-cover border border-border"
@@ -65,7 +69,7 @@ const ProjectImageField = ({ value, onChange }: Props) => {
             placeholder="… ou collez une URL d'image (AstroBin)"
           />
           <p className="text-xs text-muted-foreground">
-            Sans image, une vignette d'étoiles générique est utilisée.
+            Sans image, la vignette reprend la zone du ciel du cadrage du projet.
           </p>
         </div>
       </div>

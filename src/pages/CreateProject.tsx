@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import AstroBinImportDialog from "@/components/projects/AstroBinImportDialog";
+import FilenamePreview from "@/components/projects/FilenamePreview";
 import ProjectImageField from "@/components/projects/ProjectImageField";
 import type { AstroBinImport } from "@/lib/astrobin";
 import { supabase } from "@/integrations/supabase/client";
@@ -339,11 +340,11 @@ const CreateProject = () => {
 
               <div>
                 <Label>Nom du projet</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" className="max-w-3xl" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion"  />
               </div>
               <div>
                 <Label>Chemin du dossier local</Label>
-                <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42" className="max-w-3xl" />
+                <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: D:\Astro\M42 ou /home/user/astro/M42"  />
                 <p className="text-xs text-muted-foreground mt-1">Chemin vers le dossier contenant vos fichiers d'acquisition (utilisé pour le scan automatique)</p>
               </div>
               <div>
@@ -352,14 +353,15 @@ const CreateProject = () => {
                   value={filenamePattern}
                   onChange={(e) => setFilenamePattern(e.target.value)}
                   placeholder="$$TARGETNAME$$_$$IMAGETYPE$$_$$FILTER$$_$$DATE$$_$$TIME$$_$$SENSORTEMP$$_$$EXPOSURETIME$$s_FWHM$$FWHM$$_ex$$ECCENTRICITY$$_starsCount-$$STARCOUNT$$_hfr-$$HFR$$_$$FRAMENR$$"
-                  className="max-w-3xl"
+                  
                 />
+                <FilenamePreview pattern={filenamePattern} />
                 <p className="text-xs text-muted-foreground mt-1">
                   Collez le modèle de nommage de votre logiciel (N.I.N.A. par exemple) pour extraire automatiquement
                   la qualité de chaque brute. Laissez vide si vos fichiers ne contiennent pas ces informations.
                 </p>
               </div>
-              <div className="max-w-3xl">
+              <div >
                 <Label>Setup</Label>
                 <Select value={setup} onValueChange={setSetup}>
                   <SelectTrigger><SelectValue placeholder={equipment?.length ? "Sélectionner un setup" : "Aucun setup — créez-en un dans Matériel"} /></SelectTrigger>
@@ -381,9 +383,9 @@ const CreateProject = () => {
               </div>
               <div>
                 <Label>Description (optionnel)</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2} className="max-w-3xl" />
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2}  />
               </div>
-              <ProjectImageField value={imageUrl} onChange={setImageUrl} />
+              <ProjectImageField value={imageUrl} onChange={setImageUrl} ra={ra} dec={dec} />
             </CardContent>
           </Card>
 

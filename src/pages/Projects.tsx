@@ -1,3 +1,4 @@
+import { skyThumbnailUrl } from "@/lib/skyThumb";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -74,7 +75,7 @@ const Projects = () => {
               <Card key={project.id} className="group hover:border-primary/50 transition-colors">
                 <div className="relative h-32 w-full overflow-hidden rounded-t-lg">
                   <img
-                    src={(project as any).image_url || placeholder}
+                    src={(project as any).image_url || skyThumbnailUrl((project as any).ra, (project as any).dec) || placeholder}
                     alt={`Vignette du projet ${project.name}`}
                     loading="lazy"
                     className="h-full w-full object-cover"
