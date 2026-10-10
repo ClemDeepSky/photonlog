@@ -13,9 +13,12 @@ import { formatDuration } from "@/lib/duration";
 import { computeProgress, batchesFromPlanCounters, type AcquiredBatch, type PlanLine } from "@/lib/progress";
 import { FolderOpen, Grid3X3, Users, User } from "lucide-react";
 import projectPlaceholder from "@/assets/project-placeholder.jpg";
+import DeleteDemoButton from "@/components/projects/DeleteDemoButton";
+import { DEMO_PROJECT_NAME } from "@/lib/demoProject";
 
 interface ProjectRow {
   id: string;
+  created_by: string;
   name: string;
   status: string;
   team_id: string | null;
@@ -37,7 +40,7 @@ const ProjectsV2 = () => {
       const { data, error } = await supabase
         .from("projects")
         .select(
-          "id, name, status, team_id, is_mosaic, image_url, ra, dec, target_object, schema_version, tracking_mode, teams(name), project_acquisitions(id, filter, exposure_duration, quantity, acquired, target_seconds, pane_id)"
+          "id, created_by, name, status, team_id, is_mosaic, image_url, ra, dec, target_object, schema_version, tracking_mode, teams(name), project_acquisitions(id, filter, exposure_duration, quantity, acquired, target_seconds, pane_id)"
         )
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -105,7 +108,10 @@ const ProjectsV2 = () => {
                           {project.is_mosaic && <Grid3X3 className="h-3 w-3 ml-1" />}
                         </p>
                       </div>
-                      <Badge variant="outline" className="shrink-0">{progress.percent}%</Badge>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Badge variant="outline" className="shrink-0">{progress.percent}%</Badge>
+                        {project.created_by === user?.id && !project.team_id && project.name === DEMO_PROJECT_NAME && <DeleteDemoButton id={project.id} name={project.name} />}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
