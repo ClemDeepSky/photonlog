@@ -25,6 +25,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceArea,
+  ReferenceLine,
 } from "recharts";
 
 // Ordre L R V B S H O, couleur de fond = bande passante du filtre
@@ -710,6 +711,16 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                         />
                          );
                        })}
+                      {visibleNightRanges.slice(1).map((range) => (
+                        <ReferenceLine
+                          key={`sep-${range.night}`}
+                          x={range.start - 0.5}
+                          stroke="hsl(var(--muted-foreground))"
+                          strokeDasharray="2 3"
+                          strokeOpacity={0.7}
+                          ifOverflow="hidden"
+                        />
+                      ))}
                       <XAxis
                         type="number"
                         dataKey="x"
