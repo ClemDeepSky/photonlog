@@ -49,6 +49,11 @@ const ProjectImageField = ({ value, onChange, ra, dec, fovDeg }: Props) => {
           src={value || skyThumbnailUrl(ra, dec, fovDeg) || placeholder}
           alt="Vignette du projet"
           loading="lazy"
+          onError={(e) => {
+            const el = e.currentTarget;
+            const sky = skyThumbnailUrl(ra, dec, fovDeg);
+            el.src = !sky || el.src === sky ? placeholder : sky;
+          }}
           className="h-24 w-40 rounded-md object-cover border border-border"
         />
         <div className="flex-1 space-y-2">
