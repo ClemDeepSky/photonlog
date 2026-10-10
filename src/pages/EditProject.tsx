@@ -592,18 +592,16 @@ const EditProject = () => {
                               <TableCell className="text-xs font-mono">{pane.pane_number}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-0.5">
-                                  {(["h", "m", "s"] as const).map((unit, partIdx) => {
-                                    const parts = splitSexagesimal(pane.ra);
+                                  {(["h", "m", "s"] as const).map((unit) => {
+                                    const r = parseRa(pane.ra);
+                                    const set = (key: "h" | "m" | "s", v: string) =>
+                                      updatePane(idx, "ra", formatRa(key === "h" ? v : r.h, key === "m" ? v : r.m, key === "s" ? v : r.s));
                                     return (
                                       <span key={unit} className="flex items-center gap-0.5">
                                         <Input
-                                          value={parts[partIdx]}
-                                          onChange={(e) => {
-                                            const next = [...parts] as [string, string, string];
-                                            next[partIdx] = e.target.value.replace(/[^\d.-]/g, "");
-                                            updatePane(idx, "ra", joinSexagesimal(next, ["h", "m", "s"]));
-                                          }}
-                                          className="h-7 w-12 px-1 text-xs text-center"
+                                          value={r[unit]}
+                                          onChange={(e) => set(unit, e.target.value.replace(/[^\d.]/g, ""))}
+                                          className="h-7 w-11 px-1 text-xs text-center"
                                           placeholder="0"
                                         />
                                         <span className="text-[10px] text-muted-foreground">{unit}</span>
@@ -614,18 +612,16 @@ const EditProject = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-0.5">
-                                  {(["d", "m", "s"] as const).map((unit, partIdx) => {
-                                    const parts = splitSexagesimal(pane.dec);
+                                  {(["d", "m", "s"] as const).map((unit) => {
+                                    const dd = parseDec(pane.dec);
+                                    const set = (key: "d" | "m" | "s", v: string) =>
+                                      updatePane(idx, "dec", formatDec(key === "d" ? v : dd.d, key === "m" ? v : dd.m, key === "s" ? v : dd.s));
                                     return (
                                       <span key={unit} className="flex items-center gap-0.5">
                                         <Input
-                                          value={parts[partIdx]}
-                                          onChange={(e) => {
-                                            const next = [...parts] as [string, string, string];
-                                            next[partIdx] = e.target.value.replace(/[^\d.-]/g, "");
-                                            updatePane(idx, "dec", joinSexagesimal(next, ["d", "m", "s"]));
-                                          }}
-                                          className="h-7 w-12 px-1 text-xs text-center"
+                                          value={dd[unit]}
+                                          onChange={(e) => set(unit, e.target.value.replace(unit === "d" ? /[^-\d.]/g : /[^\d.]/g, ""))}
+                                          className="h-7 w-11 px-1 text-xs text-center"
                                           placeholder="0"
                                         />
                                         <span className="text-[10px] text-muted-foreground">{unit}</span>
