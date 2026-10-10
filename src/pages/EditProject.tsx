@@ -576,7 +576,27 @@ const EditProject = () => {
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-base font-semibold">Panneaux mosaïque</Label>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Label className="text-base font-semibold">Panneaux mosaïque</Label>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">Époque :</span>
+                        {(["J2000", "JNow"] as const).map((e) => (
+                          <Button
+                            key={e}
+                            type="button"
+                            size="sm"
+                            variant={paneEpoch === e ? "default" : "outline"}
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setPaneEpoch(e)}
+                          >
+                            {e}
+                          </Button>
+                        ))}
+                        {paneEpoch === "JNow" && (
+                          <span className="text-[10px] text-muted-foreground">converti en J2000</span>
+                        )}
+                      </div>
+                    </div>
                     <Tabs value={coordMode} onValueChange={(v) => setCoordMode(v as "manual" | "csv")}>
                       <TabsList className="h-8">
                         <TabsTrigger value="manual" className="text-xs px-3 h-6">Manuel</TabsTrigger>
