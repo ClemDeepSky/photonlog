@@ -523,7 +523,7 @@ const EditProject = () => {
           </div>
         </div>
 
-        <div className="space-y-6 max-w-3xl">
+        <div className="space-y-6">
           {/* General info */}
           <Card>
             <CardContent className="pt-6 space-y-4">
@@ -546,11 +546,11 @@ const EditProject = () => {
 
               <div>
                 <Label>Nom du projet</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" className="max-w-3xl" />
               </div>
               <div>
                 <Label>Dossier racine du projet</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 max-w-3xl">
                   <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: M31 ou D:\Astro\M31" className="flex-1" />
                   <Button type="button" variant="outline" size="icon" onClick={pickRootFolder} title="Choisir le dossier racine">
                     <FolderOpen className="h-4 w-4" />
