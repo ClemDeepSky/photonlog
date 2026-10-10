@@ -191,6 +191,24 @@ const Landing = () => {
               <p className="mt-3 text-muted-foreground">
                 Invitez vos amis par lien et additionnez vos heures sur un projet commun.
               </p>
+              <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
+                <li className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                  Chacun déclare son setup, son dossier et son plan par filtre et par panneau.
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                  Le cadrage superpose le champ de chaque participant, à sa couleur.
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                  Progression et qualité du projet entier, filtrables par participant.
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                  Chacun ne modifie que sa contribution — sauf l’administrateur de la team.
+                </li>
+              </ul>
               <div className="mt-auto pt-10 text-sm text-muted-foreground">
                 Vos projets personnels restent les vôtres.{" "}
                 <Link to="/confidentialite" className="text-primary hover:underline">
