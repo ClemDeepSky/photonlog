@@ -1,5 +1,6 @@
 import AppLayout from "@/components/AppLayout";
 import { personalProjectFilter } from "@/lib/personalProjectScope";
+import { filterBand } from "@/lib/filterBands";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -146,6 +147,15 @@ const Frames = () => {
       const key = acq.pane_id || "global";
       if (!groups[key]) groups[key] = [];
       groups[key].push(acq);
+    }
+    // Tri des lignes : ordre des filtres L R V B S H O, puis durée de pose croissante
+    for (const key of Object.keys(groups)) {
+      groups[key].sort(
+        (a, b) =>
+          filterBand(a.filter).order - filterBand(b.filter).order ||
+          (a.filter ?? "").localeCompare(b.filter ?? "") ||
+          (a.exposure_duration ?? 0) - (b.exposure_duration ?? 0),
+      );
     }
     return groups;
   })();
