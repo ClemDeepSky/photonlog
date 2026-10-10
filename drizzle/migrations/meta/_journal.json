@@ -64,6 +64,13 @@
       "when": 1791653361371,
       "tag": "0008_fix_invite_policies_auth_users",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791653477443,
+      "tag": "0009_fix_invite_join",
+      "breakpoints": true
     }
   ]
 }
