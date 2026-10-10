@@ -635,7 +635,7 @@ const EditProject = () => {
                                   {(["h", "m", "s"] as const).map((unit) => {
                                     const r = parseRa(pane.ra);
                                     const set = (key: "h" | "m" | "s", v: string) =>
-                                      updatePane(idx, "ra", formatRa(key === "h" ? v : r.h, key === "m" ? v : r.m, key === "s" ? v : r.s));
+                                      commitPaneCoords(idx, formatRa(key === "h" ? v : r.h, key === "m" ? v : r.m, key === "s" ? v : r.s), pane.dec);
                                     return (
                                       <span key={unit} className="flex items-center gap-0.5">
                                         <Input
@@ -655,7 +655,7 @@ const EditProject = () => {
                                   {(["d", "m", "s"] as const).map((unit) => {
                                     const dd = parseDec(pane.dec);
                                     const set = (key: "d" | "m" | "s", v: string) =>
-                                      updatePane(idx, "dec", formatDec(key === "d" ? v : dd.d, key === "m" ? v : dd.m, key === "s" ? v : dd.s));
+                                      commitPaneCoords(idx, pane.ra, formatDec(key === "d" ? v : dd.d, key === "m" ? v : dd.m, key === "s" ? v : dd.s));
                                     return (
                                       <span key={unit} className="flex items-center gap-0.5">
                                         <Input
