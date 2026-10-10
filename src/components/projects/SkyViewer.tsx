@@ -459,7 +459,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
                     cx={s.handle[0]}
                     cy={s.handle[1]}
                     r={8}
-                    fill="#0b1512"
+                    fill="#0b1020"
                     stroke={s.color}
                     strokeWidth={2}
                     style={{ pointerEvents: "auto", cursor: "grab" }}

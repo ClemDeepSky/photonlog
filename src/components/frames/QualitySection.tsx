@@ -31,7 +31,7 @@ import {
 } from "recharts";
 
 // Ordre L R V B S H O, couleur de fond = bande passante du filtre
-const DARK = "hsl(162, 31%, 8%)";
+const DARK = "hsl(222, 47%, 8%)";
 const LIGHT = "hsl(0, 0%, 100%)";
 const BANDS: { keys: string[]; order: number; bg: string; fg: string }[] = [
   { keys: ["L", "LUM", "LUMINANCE", "CLEAR", "C"], order: 0, bg: "hsl(0, 0%, 92%)", fg: DARK },
