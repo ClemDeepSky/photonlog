@@ -91,6 +91,7 @@ const ProjectWorkspace = () => {
         .from("project_panes")
         .select("id, pane_number, ra, dec")
         .eq("project_id", id!)
+        .is("contribution_id", null)
         .order("pane_number", { ascending: true });
       if (error) throw error;
       return data;

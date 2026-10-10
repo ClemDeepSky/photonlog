@@ -461,6 +461,7 @@ export type Database = {
       project_panes: {
         Row: {
           col_index: number | null
+          contribution_id: string | null
           created_at: string
           dec: string
           id: string
@@ -475,6 +476,7 @@ export type Database = {
         }
         Insert: {
           col_index?: number | null
+          contribution_id?: string | null
           created_at?: string
           dec: string
           id?: string
@@ -489,6 +491,7 @@ export type Database = {
         }
         Update: {
           col_index?: number | null
+          contribution_id?: string | null
           created_at?: string
           dec?: string
           id?: string
@@ -502,6 +505,13 @@ export type Database = {
           row_index?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "project_panes_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "project_contributions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_panes_project_id_fkey"
             columns: ["project_id"]

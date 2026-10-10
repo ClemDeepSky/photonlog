@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Trash2, Plus, ArrowLeft, Camera, FolderOpen } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import { useProjectContributions } from "@/lib/teamContributions";
+import MyContribution, { useContributionPanes } from "@/components/projects/MyContribution";
 
 import FilenamePreview from "@/components/projects/FilenamePreview";
 import ProjectImageField from "@/components/projects/ProjectImageField";
@@ -121,10 +122,29 @@ const EditProject = () => {
     ? (Number(selectedSetup.pixel_size) * selectedSetup.sensor_height_px) / 1000 : null;
 
   const { data: contributions } = useProjectContributions(project?.id, !!project?.team_id);
+  const { data: memberPanes } = useContributionPanes(project?.id, !!project?.team_id);
+  const { data: projectTeam } = useQuery({
+    queryKey: ["project-team", project?.team_id],
+    enabled: !!project?.team_id,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("teams").select("owner_id, management_mode").eq("id", project!.team_id!).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const { data: canEditCommon = true } = useQuery({
+    queryKey: ["can-edit-project", project?.id],
+    enabled: !!project?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("can_edit_project", { _project_id: project!.id });
+      if (error) throw error;
+      return !!data;
+    },
+  });
   const { data: projectPanes } = useQuery({
     queryKey: ["project-panes", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("project_panes").select("*").eq("project_id", id!).order("pane_number");
+      const { data, error } = await supabase.from("project_panes").select("*").eq("project_id", id!).is("contribution_id", null).order("pane_number");
       if (error) throw error;
       return data;
     },
@@ -513,6 +533,19 @@ const EditProject = () => {
         </div>
 
         <div className="space-y-6">
+          {project?.team_id && (
+            <>
+              <MyContribution projectId={project.id} team={projectTeam}
+                defaultRa={project.ra || ""} defaultDec={project.dec || ""}
+                defaultAngle={project.position_angle != null ? Number(project.position_angle) : null} />
+              <div className="pt-2">
+                <h2 className="text-lg font-semibold">Projet de l'équipe</h2>
+                <p className="text-xs text-muted-foreground">
+                  {canEditCommon ? "Cible, cadrage commun et objectif global de l'équipe." : "Lecture seule : seul l'administrateur de la team modifie ces réglages."}
+                </p>
+              </div>
+            </>
+          )}
           {/* General info */}
           <Card>
             <CardContent className="pt-6 space-y-4">
@@ -634,6 +667,7 @@ const EditProject = () => {
                   participants={project?.team_id ? (contributions || []).map((c) => ({
                     id: c.id, label: `${c.username}${c.setup ? ` · ${c.setup}` : ""}`, color: c.color,
                     focalLength: c.focal_length, sensorWidthMm: c.sensor_width_mm, sensorHeightMm: c.sensor_height_mm,
+                    panes: (memberPanes || []).filter((p) => p.contribution_id === c.id),
                   })) : undefined}
                 />
             }
@@ -745,7 +779,7 @@ const EditProject = () => {
           {/* Actions */}
           <div className="flex justify-end gap-3 pb-8">
             <Button variant="outline" onClick={() => navigate("/projects")}>Annuler</Button>
-            <Button onClick={() => updateProject.mutate()} disabled={!canSubmit || updateProject.isPending}>
+            <Button onClick={() => updateProject.mutate()} disabled={!canSubmit || !canEditCommon || updateProject.isPending}>
               {updateProject.isPending ? "Enregistrement..." : "Enregistrer les modifications"}
             </Button>
           </div>
