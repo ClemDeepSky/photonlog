@@ -219,7 +219,8 @@ const EditProject = () => {
       if (isTeam) {
         setFolderPath(mine?.folder_path || "");
         setFilenamePattern(mine?.filename_pattern || "");
-        setSetup(mine?.setup || "");
+        // Setup de la contribution ; à défaut, celui du projet s'il fait partie de son matériel.
+        setSetup(mine?.setup || (equipment?.some((e) => e.name === project.setup) ? project.setup || "" : ""));
         setSiteId((mine as any)?.observing_site_id || "");
         setIsMosaic(scopeMosaic);
       }
@@ -287,7 +288,7 @@ const EditProject = () => {
 
       setLoaded(true);
     }
-  }, [project, projectPanes, projectAcquisitions, loaded, isTeam, scopeFallback, mine]);
+  }, [project, projectPanes, projectAcquisitions, loaded, isTeam, scopeFallback, mine, equipment]);
 
   const parseCsv = (text: string): Pane[] => parseTelescopiusCsv(text) as Pane[];
 

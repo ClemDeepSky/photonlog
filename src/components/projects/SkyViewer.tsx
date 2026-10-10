@@ -431,7 +431,8 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
     setTimeout(() => { selfEditRef.current = null; }, 300);
   };
 
-  const interactive = !isMosaic && hasCoordinates && (!!onRaDecChange || !!onRotationChange);
+  // Le cadre suit uniquement les coordonnées saisies : ni déplacement ni rotation à la souris.
+  const interactive = false;
 
   return (
     <div className="space-y-3">
@@ -477,14 +478,14 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
             <g key={i}>
               <polygon
                 points={s.pts.map((p) => p.join(",")).join(" ")}
-                fill={s.interactive ? "rgba(0,255,136,0.08)" : "none"}
+                fill="none"
                 stroke={s.color}
                 strokeWidth={2}
                 strokeDasharray={s.dashed ? "6 4" : undefined}
                 style={{ pointerEvents: s.interactive && interactive ? "auto" : "none", cursor: "move" }}
                 onPointerDown={s.interactive && interactive ? startDrag("move") : undefined}
               />
-              {s.handle && s.center && interactive && (
+              {false && s.handle && s.center && (
                 <>
                   <line
                     x1={(s.pts[2][0] + s.pts[3][0]) / 2}
