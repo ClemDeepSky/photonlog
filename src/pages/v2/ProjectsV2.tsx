@@ -95,6 +95,11 @@ const ProjectsV2 = () => {
                       src={project.image_url || skyThumbnailUrl((project as any).ra, (project as any).dec) || projectPlaceholder}
                       alt={`Aperçu du projet ${project.name}`}
                       loading="lazy"
+                      onError={(e) => {
+                        const el = e.currentTarget;
+                        const sky = skyThumbnailUrl((project as any).ra, (project as any).dec);
+                        el.src = !sky || el.src === sky ? projectPlaceholder : sky;
+                      }}
                       className="h-32 w-full object-cover"
                     />
                   </Link>
