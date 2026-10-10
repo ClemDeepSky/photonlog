@@ -117,3 +117,34 @@
 /* Aladin Lite 3.8+ no longer ships its stylesheet separately: force full size */
 .sky-viewer .aladin-container,
 .sky-viewer > div { width: 100% !important; height: 100% !important; position: relative; }
+
+/* Visite guidée (driver.js) : le popover est en blanc dur par défaut, on l'aligne sur le thème */
+:root { --driver-popover-font-family: 'Roboto', system-ui, sans-serif; }
+
+body .driver-popover {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: 0 8px 30px hsl(0 0% 0% / 0.55);
+  max-width: 340px;
+}
+body .driver-popover .driver-popover-title { color: hsl(var(--foreground)); }
+body .driver-popover .driver-popover-description { color: hsl(var(--muted-foreground)); }
+body .driver-popover .driver-popover-progress-text { color: hsl(var(--muted-foreground)); }
+body .driver-popover .driver-popover-close-btn { color: hsl(var(--muted-foreground)); }
+body .driver-popover .driver-popover-close-btn:hover,
+body .driver-popover .driver-popover-close-btn:focus { color: hsl(var(--foreground)); }
+body .driver-popover .driver-popover-footer-btn {
+  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--primary));
+  border: 1px solid hsl(var(--primary));
+  border-radius: calc(var(--radius) - 4px);
+  padding: 4px 10px;
+}
+body .driver-popover .driver-popover-footer-btn:hover,
+body .driver-popover .driver-popover-footer-btn:focus { background-color: hsl(var(--primary) / 0.85); }
+body .driver-popover-arrow-side-left { border-left-color: hsl(var(--popover)); }
+body .driver-popover-arrow-side-right { border-right-color: hsl(var(--popover)); }
+body .driver-popover-arrow-side-top { border-top-color: hsl(var(--popover)); }
+body .driver-popover-arrow-side-bottom { border-bottom-color: hsl(var(--popover)); }
