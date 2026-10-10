@@ -11,7 +11,7 @@ import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
 import TeamContributions from "@/components/projects/TeamContributions";
-import { useProjectContributions, canEditContribution } from "@/lib/teamContributions";
+import { useProjectContributions } from "@/lib/teamContributions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
