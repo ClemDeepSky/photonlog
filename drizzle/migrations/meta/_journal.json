@@ -43,6 +43,13 @@
       "when": 1791649833693,
       "tag": "0005_team_contribution_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791649850880,
+      "tag": "0006_scope_legacy_policies_to_common_rows",
+      "breakpoints": true
     }
   ]
 }
