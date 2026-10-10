@@ -858,14 +858,11 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                             "absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-border/60 text-[10px] leading-none text-foreground transition-opacity hover:opacity-80 border-dashed border-r-muted-foreground"
                           }
                           style={{ left: `${left}%`, width: `${width}%`, backgroundColor: nightColor(index).replace(")", " / 0.22)") }}
-                          title={`${nightTitle(range.night)} · ${range.count} image${range.count > 1 ? "s" : ""} · Lune ${moonPhase(range.night).symbol} ${moonPhase(range.night).illumination} % — cliquez pour zoomer sur cette nuit`}
+                          title={`${nightTitle(range.night)} · ${range.count} image${range.count > 1 ? "s" : ""} — cliquez pour zoomer sur cette nuit`}
                         >
                           <span className="flex h-full w-full items-center justify-center gap-1 px-1 leading-none">
                             <span>
                               {nightLabel(range.night)}
-                            </span>
-                            <span className="text-[12px]">
-                              {moonPhase(range.night).symbol} {moonPhase(range.night).illumination} %
                             </span>
                           </span>
                         </button>
