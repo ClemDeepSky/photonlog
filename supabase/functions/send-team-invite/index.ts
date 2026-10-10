@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
     queue_name: 'transactional_emails',
     payload: {
       message_id: messageId,
+      idempotency_key: messageId,
       to: invitation.email,
       from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
       sender_domain: SENDER_DOMAIN,
