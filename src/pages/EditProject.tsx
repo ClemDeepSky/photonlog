@@ -605,31 +605,24 @@ const EditProject = () => {
         </div>
 
         <div className="space-y-6">
-          {project?.team_id && (
-            <>
-              <MyContribution projectId={project.id} team={projectTeam}
-                defaultRa={project.ra || ""} defaultDec={project.dec || ""}
-                defaultAngle={project.position_angle != null ? Number(project.position_angle) : null} />
-              <div className="pt-2">
-                <h2 className="text-lg font-semibold">Projet de l'équipe</h2>
-                <p className="text-xs text-muted-foreground">
-                  {canEditCommon ? "Cible, cadrage commun et objectif global de l'équipe." : "Lecture seule : seul l'administrateur de la team modifie ces réglages."}
-                </p>
-              </div>
-            </>
+          {isTeam && (
+            <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 px-3 py-2">
+              Projet d'équipe : votre setup, votre dossier, votre cadrage et vos acquisitions ne concernent que votre contribution.
+              {!isProjectAdmin && " Le nom, la team et le site du projet sont réglés par l'administrateur."}
+            </p>
           )}
           {/* General info */}
           <Card>
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center gap-3">
-                <Switch checked={isTeamProject} onCheckedChange={(v) => { setIsTeamProject(v); if (!v) setSelectedTeamId(""); }} id="team-toggle" disabled={!teams?.length} />
+                <Switch checked={isTeamProject} onCheckedChange={(v) => { setIsTeamProject(v); if (!v) setSelectedTeamId(""); }} id="team-toggle" disabled={!teams?.length || !isProjectAdmin} />
                 <Label htmlFor="team-toggle">Projet de team</Label>
               </div>
 
               {isTeamProject && (
                 <div>
                   <Label>Team</Label>
-                  <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                  <Select value={selectedTeamId} onValueChange={setSelectedTeamId} disabled={!isProjectAdmin}>
                     <SelectTrigger><SelectValue placeholder="Sélectionner une team" /></SelectTrigger>
                     <SelectContent>
                       {teams?.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
@@ -640,10 +633,10 @@ const EditProject = () => {
 
               <div>
                 <Label>Nom du projet</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion"  />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" disabled={!isProjectAdmin} />
               </div>
               <div>
-                <Label>Dossier racine du projet</Label>
+                <Label>{isTeam ? "Mon dossier d'acquisitions" : "Dossier racine du projet"}</Label>
                 <div className="flex gap-2">
                   <Input value={folderPath} onChange={(e) => setFolderPath(e.target.value)} placeholder="Ex: M31 ou D:\Astro\M31" className="flex-1" />
                   <Button type="button" variant="outline" size="icon" onClick={pickRootFolder} title="Choisir le dossier racine">
@@ -669,7 +662,7 @@ const EditProject = () => {
               </div>
               <div >
                 <Label>Setup</Label>
-                {foreignSetup || !canEditCommon ? (
+                {!isTeam && (foreignSetup || !canEditCommon) ? (
                   <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
                     {setup || "Aucun setup"}
                     {foreignSetup && <span className="block text-xs text-muted-foreground">Setup d'un autre membre — visible, non sélectionnable.</span>}
@@ -696,7 +689,7 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Site d'observation</Label>
-                {foreignSite || !canEditCommon ? (
+                {foreignSite || !isProjectAdmin || (!isTeam && !canEditCommon) ? (
                   <div className="mt-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
                     {foreignSite ? (projectSite?.name ?? "Site d'un autre membre") : (sites?.find((s) => s.id === siteId)?.name ?? "Aucun site")}
                     {foreignSite && <span className="block text-xs text-muted-foreground">Site d'un autre membre — visible, non sélectionnable.</span>}
@@ -716,7 +709,7 @@ const EditProject = () => {
               </div>
               <div>
                 <Label>Description (optionnel)</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2}  />
+                <Textarea value={description} disabled={!isProjectAdmin} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez votre projet..." rows={2}  />
               </div>
               <ProjectImageField value={imageUrl} onChange={setImageUrl} ra={ra} dec={dec} />
             </CardContent>
@@ -747,7 +740,7 @@ const EditProject = () => {
                   setupSensorWidthMm={setupSensorWidthMm}
                   setupSensorHeightMm={setupSensorHeightMm}
                   setupName={selectedSetup?.name}
-                  participants={project?.team_id ? (contributions || []).map((c) => ({
+                  participants={isTeam ? (contributions || []).filter((c) => c.id !== mine?.id).map((c) => ({
                     id: c.id, label: `${c.username}${c.setup ? ` · ${c.setup}` : ""}`, color: c.color,
                     focalLength: c.focal_length, sensorWidthMm: c.sensor_width_mm, sensorHeightMm: c.sensor_height_mm,
                     panes: (memberPanes || []).filter((p) => p.contribution_id === c.id),
@@ -859,10 +852,12 @@ const EditProject = () => {
             </CardContent>
           </Card>
 
+          {isTeam && project && <TeamGoalsReminder projectId={project.id} myContributionId={mine?.id} />}
+
           {/* Actions */}
           <div className="flex justify-end gap-3 pb-8">
             <Button variant="outline" onClick={() => navigate("/projects")}>Annuler</Button>
-            <Button onClick={() => updateProject.mutate()} disabled={!canSubmit || !canEditCommon || updateProject.isPending}>
+            <Button onClick={() => updateProject.mutate()} disabled={!canSubmit || (!isTeam && !canEditCommon) || updateProject.isPending}>
               {updateProject.isPending ? "Enregistrement..." : "Enregistrer les modifications"}
             </Button>
           </div>
