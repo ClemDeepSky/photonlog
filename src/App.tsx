@@ -8,7 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import CookieBanner from "@/components/CookieBanner";
 import { CookieConsentProvider } from "@/hooks/useCookieConsent";
 import { DemoTourProvider } from "@/hooks/useDemoTour";
-import Index from "./pages/Index";
+import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
@@ -40,7 +40,7 @@ const App = () => (
           <CookieConsentProvider>
           <DemoTourProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Home />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/confidentialite" element={<Privacy />} />
