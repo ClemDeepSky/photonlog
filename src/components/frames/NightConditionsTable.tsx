@@ -49,7 +49,7 @@ const NightConditionsTable = ({ projectId, nights }: { projectId: string; nights
       }
       let ra = p.ra, dec = p.dec;
       if (p.is_mosaic) {
-        const { data: panes } = await supabase.from("project_panes").select("ra, dec").eq("project_id", projectId).order("pane_number").limit(1);
+        const { data: panes } = await supabase.from("project_panes").select("ra, dec").eq("project_id", projectId).is("contribution_id", null).order("pane_number").limit(1);
         ra = panes?.[0]?.ra ?? null; dec = panes?.[0]?.dec ?? null;
       }
       return { site, ra: parseRaDeg(ra), dec: parseDecDeg(dec) };

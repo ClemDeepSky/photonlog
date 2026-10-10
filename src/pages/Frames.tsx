@@ -10,7 +10,6 @@ import { Progress } from "@/components/ui/progress";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
-import TeamContributions from "@/components/projects/TeamContributions";
 import { useProjectContributions } from "@/lib/teamContributions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -318,15 +317,12 @@ const Frames = () => {
 
             {isTeam && selectedProject && (
               <>
-                <TeamContributions
-                  projectId={selectedProject.id}
-                  isMosaic={selectedProject.is_mosaic}
-                  panes={panes || []}
-                  team={team}
-                  contributions={contributions || []}
-                  acquisitions={allAcquisitions || []}
-                  onChanged={refreshAll}
-                />
+                {!myContribution && (
+                  <p className="text-sm text-muted-foreground">
+                    Pour participer, réglez votre setup, votre cadrage, vos objectifs et votre dossier dans{" "}
+                    <Link to={`/projects/${selectedProject.id}/edit`} className="text-primary underline">la page du projet</Link>.
+                  </p>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Afficher :</span>
                   <Select value={participant} onValueChange={setParticipant}>
