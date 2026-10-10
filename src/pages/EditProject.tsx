@@ -252,6 +252,24 @@ const EditProject = () => {
     ]);
   };
 
+  // Met à jour RA et DEC d'un panneau ensemble, en convertissant en J2000 si la saisie est en JNow.
+  const commitPaneCoords = (index: number, nextRa: string, nextDec: string) => {
+    if (paneEpoch === "JNow") {
+      const pr = parseRa(nextRa);
+      const pd = parseDec(nextDec);
+      const conv = precessDateToJ2000(raHmsToDeg(pr.h, pr.m, pr.s), decDmsToDeg(pd.d, pd.m, pd.s));
+      const cr = degToRaHms(conv.ra);
+      const cd = degToDecDms(conv.dec);
+      nextRa = formatRa(cr.h, cr.m, cr.s);
+      nextDec = formatDec(cd.d, cd.m, cd.s);
+    }
+    setPanes((prev) => {
+      const u = [...prev];
+      u[index] = { ...u[index], ra: nextRa, dec: nextDec };
+      return u;
+    });
+  };
+
   const updatePane = (index: number, field: keyof Pane, value: string) => {
     setPanes((prev) =>
       prev.map((p, i) =>
