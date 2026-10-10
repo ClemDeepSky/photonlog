@@ -24,6 +24,7 @@ import {
 import { CAMERA_CATALOG, findCamera } from "@/data/cameras";
 import { TELESCOPE_CATALOG, findTelescope } from "@/data/telescopes";
 import SearchableSelect from "@/components/SearchableSelect";
+import ObservingSites from "@/components/equipment/ObservingSites";
 import { MOUNT_CATALOG, GUIDE_CAMERA_CATALOG, FILTER_CATALOG, ROTATOR_CATALOG, CORRECTOR_CATALOG, OS_CATALOG, ACQUISITION_SOFTWARE_CATALOG, filterColor } from "@/data/gear";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -292,7 +293,7 @@ const Equipment = () => {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.1 }}>
         <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold">Matériel</h1>
+            <h1 className="text-3xl font-bold">Matériel et observatoires</h1>
             <p className="text-muted-foreground mt-1">Gérez vos profils de matériel d'astrophotographie</p>
           </div>
           <Button onClick={openCreate}>
@@ -402,6 +403,8 @@ const Equipment = () => {
             ))}
           </div>
         )}
+
+        <ObservingSites />
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">

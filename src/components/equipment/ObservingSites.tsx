@@ -161,7 +161,7 @@ const ObservingSites = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <Label>Pays</Label>
-                <SearchableSelect id="site-country" options={COUNTRIES.map((c) => c.name)} value={form.country} onChange={(v: string) => setForm({ ...form, country: v })} placeholder="Choisir un pays" />
+                <SearchableSelect id="site-country" options={COUNTRIES.map((c) => ({ value: c.name, label: c.name }))} value={form.country} onChange={(v: string) => setForm({ ...form, country: v })} placeholder="Choisir un pays" />
               </div>
               <div className="relative">
                 <Label>Ville à proximité</Label>
