@@ -85,6 +85,13 @@
       "when": 1791662802490,
       "tag": "0011_contribution_observing_site",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791664491388,
+      "tag": "0012_avatars_policies",
+      "breakpoints": true
     }
   ]
 }

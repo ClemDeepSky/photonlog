@@ -14,6 +14,7 @@ import {
   X,
   Shield,
   CircleHelp,
+  UserCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -77,7 +78,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           ))}
         </nav>
         <div className="p-4 border-t border-border/20">
-          <p className="text-xs text-muted-foreground mb-3 truncate">{user?.email}</p>
+          <Link to="/account" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3 truncate">
+            <UserCircle className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Mon compte · {user?.email}</span>
+          </Link>
           <Link
             to="/guide"
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-2"
@@ -132,6 +136,14 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 {item.label}
               </Link>
             ))}
+            <Link
+              to="/account"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <UserCircle className="h-4 w-4" />
+              Mon compte
+            </Link>
             <Link
               to="/guide"
               onClick={() => setMobileOpen(false)}
