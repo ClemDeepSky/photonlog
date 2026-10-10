@@ -21,3 +21,6 @@
 - Simplification de la fiche matériel (principal / complémentaire) et presets de convention de nommage.
 - Qualité : brutes suspectes, accepté/rejeté, intégration exploitable (architecture prête, non implémentée).
 - Contributions d'équipe : dossier et setup propres à chaque membre à exposer dans l'interface de création.
+- Photo de profil : doit-elle être visible par les autres membres de vos équipes ? (actuellement privée, visible uniquement par vous)
+- Suppression d'un compte : ses équipes doivent-elles être confiées à un autre membre plutôt qu'effacées ?
+- Lignes d'objectif sans membre (« test team », 12 lignes) : un administrateur doit-il pouvoir les réaffecter à un membre depuis la page projet ?
