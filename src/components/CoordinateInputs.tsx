@@ -58,6 +58,7 @@ type Props = {
   dec: string;
   rotation: string;
   epoch?: Epoch;
+  onCoordinatesChange?: (ra: string, dec: string) => void;
   onRaChange: (v: string) => void;
   onDecChange: (v: string) => void;
   onRotationChange: (v: string) => void;
@@ -73,7 +74,7 @@ export function coordinatesToJ2000(ra: string, dec: string, epoch: Epoch) {
   return { ra: formatRa(cr.h, cr.m, cr.s), dec: formatDec(cd.d, cd.m, cd.s) };
 }
 
-const CoordinateInputs = ({ ra, dec, rotation, onRaChange, onDecChange, onRotationChange, epoch = "J2000" }: Props) => {
+const CoordinateInputs = ({ ra, dec, rotation, onRaChange, onDecChange, onRotationChange, onCoordinatesChange, epoch = "J2000" }: Props) => {
   let displayRa = ra;
   let displayDec = dec;
   if (epoch === "JNow" && ra && dec) {
@@ -91,8 +92,12 @@ const CoordinateInputs = ({ ra, dec, rotation, onRaChange, onDecChange, onRotati
   // En mode JNow, la valeur saisie est convertie en J2000 avant d'être stockée.
   const commit = (nextRa: string, nextDec: string) => {
     const converted = coordinatesToJ2000(nextRa, nextDec, epoch);
-    onRaChange(converted.ra);
-    onDecChange(converted.dec);
+    if (onCoordinatesChange) {
+      onCoordinatesChange(converted.ra, converted.dec);
+    } else {
+      onRaChange(converted.ra);
+      onDecChange(converted.dec);
+    }
   };
 
   return (

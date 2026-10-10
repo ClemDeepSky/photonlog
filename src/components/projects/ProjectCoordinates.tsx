@@ -67,7 +67,7 @@ export default function ProjectCoordinates(props: Props) {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                    <CoordinateInputs epoch={props.epoch} ra={pane.ra} dec={pane.dec} rotation={pane.position_angle?.toString() ?? ""}
+                    <CoordinateInputs onCoordinatesChange={(ra, dec) => props.onPaneCoordinatesChange(index, ra, dec)} epoch={props.epoch} ra={pane.ra} dec={pane.dec} rotation={pane.position_angle?.toString() ?? ""}
                       onRaChange={(ra) => props.onPaneCoordinatesChange(index, ra, pane.dec)}
                       onDecChange={(dec) => props.onPaneCoordinatesChange(index, pane.ra, dec)}
                       onRotationChange={(angle) => props.onPaneAngleChange(index, angle)} />

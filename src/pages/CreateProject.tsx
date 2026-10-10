@@ -1,4 +1,5 @@
-import CoordinateInputs from "@/components/CoordinateInputs";
+import { coordinatesToJ2000 } from "@/components/CoordinateInputs";
+import ProjectCoordinates from "@/components/projects/ProjectCoordinates";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -13,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin } from "lucide-react";
+import { Upload, Trash2, Plus, ArrowLeft, Camera } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 import AstroBinImportDialog from "@/components/projects/AstroBinImportDialog";
 import FilenamePreview from "@/components/projects/FilenamePreview";
@@ -68,6 +69,7 @@ const CreateProject = () => {
   const [positionAngle, setPositionAngle] = useState("");
 
   const [panes, setPanes] = useState<Pane[]>([]);
+  const [paneEpoch, setPaneEpoch] = useState<"J2000" | "JNow">("J2000");
 
   // Single global acquisition list (applies to all panes in mosaic mode)
   const [acquisitions, setAcquisitions] = useState<Acquisition[]>([
@@ -114,7 +116,7 @@ const CreateProject = () => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      const parsed = parseCsv(text);
+      const parsed = parseCsv(text).map((pane) => ({ ...pane, ...coordinatesToJ2000(pane.ra, pane.dec, paneEpoch) }));
       if (parsed.length === 0) {
         toast({ title: "Erreur", description: "Aucune donnée valide trouvée dans le CSV", variant: "destructive" });
         return;
@@ -389,108 +391,19 @@ const CreateProject = () => {
             </CardContent>
           </Card>
 
-          {/* Coordinates / Mosaic */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Switch checked={isMosaic} onCheckedChange={(v) => {
-                  setIsMosaic(v);
-                  if (!v) { setPanes([]); setDisabledAcquisitions({}); }
-                }} id="mosaic" />
-                <Label htmlFor="mosaic">Projet mosaïque (plusieurs panneaux)</Label>
-              </div>
-
-              {!isMosaic ? (
-                <div className="space-y-3">
-                  <Label className="text-base font-semibold">Coordonnées</Label>
-                  <Tabs value={coordMode} onValueChange={(v) => setCoordMode(v as "manual" | "csv")}>
-                    <TabsList className="h-8 mb-3">
-                      <TabsTrigger value="manual" className="text-xs px-3 h-6">Saisie manuelle</TabsTrigger>
-                      <TabsTrigger value="csv" className="text-xs px-3 h-6">Import CSV</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                   {coordMode === "manual" ? (
-                     <CoordinateInputs
-                       ra={ra}
-                       dec={dec}
-                       rotation={positionAngle}
-                       onRaChange={setRa}
-                       onDecChange={setDec}
-                       onRotationChange={setPositionAngle}
-                     />
-                   ) : (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">Importez un CSV Telescopius pour remplir automatiquement les coordonnées.</p>
-                      <CsvUploadZone />
-                      {ra && <p className="text-xs text-muted-foreground mt-2">✓ Coordonnées chargées : RA {ra} / DEC {dec}</p>}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-base font-semibold">Panneaux mosaïque</Label>
-                    <Tabs value={coordMode} onValueChange={(v) => setCoordMode(v as "manual" | "csv")}>
-                      <TabsList className="h-8">
-                        <TabsTrigger value="manual" className="text-xs px-3 h-6">Manuel</TabsTrigger>
-                        <TabsTrigger value="csv" className="text-xs px-3 h-6">CSV</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                  {coordMode === "csv" ? (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">Importez un CSV Telescopius (Pane, RA, DEC, Position Angle, Width, Height, Overlap, Row, Column)</p>
-                      <CsvUploadZone />
-                    </div>
-                  ) : (
-                    <Button variant="outline" size="sm" onClick={addManualPane}>
-                      <Plus className="h-3 w-3 mr-1" /> Ajouter un panneau
-                    </Button>
-                  )}
-                  {panes.length > 0 && (
-                    <div className="max-h-48 overflow-y-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-12">#</TableHead>
-                            <TableHead>RA</TableHead>
-                            <TableHead>DEC</TableHead>
-                            <TableHead>Angle</TableHead>
-                            <TableHead className="w-10"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {panes.map((pane, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell className="text-xs font-mono">{pane.pane_number}</TableCell>
-                              <TableCell><Input value={pane.ra} onChange={(e) => updatePane(idx, "ra", e.target.value)} className="h-7 text-xs" placeholder="RA" /></TableCell>
-                              <TableCell><Input value={pane.dec} onChange={(e) => updatePane(idx, "dec", e.target.value)} className="h-7 text-xs" placeholder="DEC" /></TableCell>
-                              <TableCell><Input value={pane.position_angle?.toString() || ""} onChange={(e) => updatePane(idx, "position_angle", e.target.value)} className="h-7 text-xs" placeholder="°" type="number" /></TableCell>
-                              <TableCell>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removePane(idx)}>
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Sky viewer */}
-          {(ra || dec || (isMosaic && panes.length > 0)) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MapPin className="h-5 w-5" /> Cadrage
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+          <ProjectCoordinates
+            isMosaic={isMosaic}
+            onMosaicChange={(v) => { setIsMosaic(v); if (!v) { setPanes([]); setDisabledAcquisitions({}); } }}
+            mode={coordMode} onModeChange={setCoordMode}
+            epoch={paneEpoch} onEpochChange={setPaneEpoch}
+            ra={ra} dec={dec} angle={positionAngle}
+            onRaChange={setRa} onDecChange={setDec} onAngleChange={setPositionAngle}
+            panes={panes}
+            onPaneCoordinatesChange={(index, r, d) => setPanes((prev) => prev.map((pane, i) => i === index ? { ...pane, ra: r, dec: d } : pane))}
+            onPaneAngleChange={(index, value) => updatePane(index, "position_angle", value)}
+            onAddPane={addManualPane} onRemovePane={removePane}
+            csvUpload={<CsvUploadZone />}
+            viewer={
                 <SkyViewer
                   ra={ra}
                   dec={dec}
@@ -503,17 +416,9 @@ const CreateProject = () => {
                   setupSensorWidthMm={setupSensorWidthMm}
                   setupSensorHeightMm={setupSensorHeightMm}
                   setupName={selectedSetup?.name}
-                  setups={(equipment || []).map((e) => ({
-                    name: e.name,
-                    focal_length: e.focal_length ? Number(e.focal_length) : null,
-                    sensorWidthMm: e.pixel_size && e.sensor_width_px ? (Number(e.pixel_size) * e.sensor_width_px) / 1000 : null,
-                    sensorHeightMm: e.pixel_size && e.sensor_height_px ? (Number(e.pixel_size) * e.sensor_height_px) / 1000 : null,
-                  }))}
-                  onSetupChange={setSetup}
                 />
-              </CardContent>
-            </Card>
-          )}
+            }
+          />
 
           {/* Acquisitions — global list */}
           <Card>
