@@ -681,7 +681,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                   )}
                 </div>
                 <div className="flex items-stretch" style={{ paddingLeft: axisWidth, paddingRight: 16 }}>
-                  <div className="relative h-6 w-full select-none" aria-label="Phase de la lune par nuit">
+                  <div className="relative h-9 w-full select-none" aria-label="Phase de la lune par nuit">
                     {visibleNightRanges.map((range) => {
                       const index = nightRanges.findIndex((item) => item.night === range.night);
                       const mp = moonPhase(range.night);
