@@ -167,6 +167,48 @@ export type Database = {
         }
         Relationships: []
       }
+      observing_sites: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          elevation: number | null
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          elevation?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          elevation?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -506,6 +548,7 @@ export type Database = {
           image_url: string | null
           is_mosaic: boolean
           name: string
+          observing_site_id: string | null
           position_angle: number | null
           ra: string | null
           schema_version: number
@@ -527,6 +570,7 @@ export type Database = {
           image_url?: string | null
           is_mosaic?: boolean
           name: string
+          observing_site_id?: string | null
           position_angle?: number | null
           ra?: string | null
           schema_version?: number
@@ -548,6 +592,7 @@ export type Database = {
           image_url?: string | null
           is_mosaic?: boolean
           name?: string
+          observing_site_id?: string | null
           position_angle?: number | null
           ra?: string | null
           schema_version?: number
@@ -559,6 +604,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_observing_site_id_fkey"
+            columns: ["observing_site_id"]
+            isOneToOne: false
+            referencedRelation: "observing_sites"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_team_id_fkey"
             columns: ["team_id"]

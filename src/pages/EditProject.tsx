@@ -1,3 +1,4 @@
+import { useObservingSites } from "@/components/equipment/ObservingSites";
 import { coordinatesToJ2000 } from "@/components/CoordinateInputs";
 import ProjectCoordinates from "@/components/projects/ProjectCoordinates";
 import { useState, useEffect } from "react";
@@ -61,6 +62,8 @@ const EditProject = () => {
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [setup, setSetup] = useState("");
+  const [siteId, setSiteId] = useState("");
+  const { data: sites } = useObservingSites();
   const [isTeamProject, setIsTeamProject] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [isMosaic, setIsMosaic] = useState(false);
@@ -146,6 +149,7 @@ const EditProject = () => {
     setDescription(project.description || "");
     setImageUrl((project as any).image_url || null);
     setSetup(project.setup || "");
+    setSiteId((project as any).observing_site_id || "");
     setIsMosaic(project.is_mosaic);
     setRa(project.ra || "");
     setDec(project.dec || "");
@@ -345,7 +349,7 @@ const EditProject = () => {
       const { error } = await supabase
         .from("projects")
         .update({
-          name, description: description || null, setup: setup || null,
+          name, description: description || null, setup: setup || null, observing_site_id: siteId || null,
           image_url: imageUrl,
           folder_path: folderPath || null,
           filename_pattern: filenamePattern || null,
@@ -578,6 +582,19 @@ const EditProject = () => {
                     {setupSensorWidthMm ? `capteur ${setupSensorWidthMm.toFixed(1)}×${setupSensorHeightMm!.toFixed(1)}mm` : ""}
                   </p>
                 )}
+              </div>
+              <div>
+                <Label>Site d'observation</Label>
+                <Select value={siteId || "none"} onValueChange={(v) => setSiteId(v === "none" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="Choisir un site" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun site</SelectItem>
+                    {sites?.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}{s.city ? ` — ${s.city}` : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">{sites?.length ? "Sert à calculer la nuit astronomique et la position de la lune." : "Aucun site — créez-en un dans Matériel et observatoires."}</p>
               </div>
               <div>
                 <Label>Description (optionnel)</Label>

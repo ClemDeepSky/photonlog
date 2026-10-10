@@ -21,7 +21,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 const v1NavItems = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { to: "/teams", label: "Teams", icon: Users },
-  { to: "/equipment", label: "Matériel", icon: Wrench },
+  { to: "/equipment", label: "Matériel et sites", icon: Wrench },
   { to: "/projects", label: "Projets", icon: FolderOpen },
   { to: "/frames", label: "Frames", icon: ImagePlus },
 ];
@@ -29,7 +29,7 @@ const v1NavItems = [
 const v2NavItems = [
   { to: "/v2/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { to: "/v2/projects", label: "Projets", icon: FolderOpen },
-  { to: "/equipment", label: "Matériel", icon: Wrench },
+  { to: "/equipment", label: "Matériel et sites", icon: Wrench },
   { to: "/teams", label: "Équipes", icon: Users },
 ];
 

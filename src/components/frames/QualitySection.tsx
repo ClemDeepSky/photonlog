@@ -16,6 +16,7 @@ import {
   requestProjectDirHandle,
 } from "@/lib/dirHandleStore";
 import { getCachedProjectFile } from "@/lib/localFileCache";
+import NightConditionsTable from "@/components/frames/NightConditionsTable";
 import FramePreviewDialog from "@/components/frames/FramePreviewDialog";
 import {
   ScatterChart,
@@ -688,6 +689,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
           </p>
         ) : (
           <div className="space-y-4">
+            <NightConditionsTable projectId={projectId} nights={nightRanges} />
             {hasMetricData ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">

@@ -1,3 +1,4 @@
+import { useObservingSites } from "@/components/equipment/ObservingSites";
 import { coordinatesToJ2000 } from "@/components/CoordinateInputs";
 import ProjectCoordinates from "@/components/projects/ProjectCoordinates";
 import { useState } from "react";
@@ -59,6 +60,8 @@ const CreateProject = () => {
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [setup, setSetup] = useState("");
+  const [siteId, setSiteId] = useState("");
+  const { data: sites } = useObservingSites();
   const [isTeamProject, setIsTeamProject] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [isMosaic, setIsMosaic] = useState(false);
@@ -237,7 +240,7 @@ const CreateProject = () => {
       const { data, error } = await supabase
         .from("projects")
         .insert({
-          name, description: description || null, setup: setup || null, target_object: null,
+          name, description: description || null, setup: setup || null, target_object: null, observing_site_id: siteId || null,
           image_url: imageUrl,
           folder_path: folderPath || null,
           filename_pattern: filenamePattern || null,
@@ -382,6 +385,19 @@ const CreateProject = () => {
                     {setupSensorWidthMm ? `capteur ${setupSensorWidthMm.toFixed(1)}×${setupSensorHeightMm!.toFixed(1)}mm` : ""}
                   </p>
                 )}
+              </div>
+              <div>
+                <Label>Site d'observation</Label>
+                <Select value={siteId || "none"} onValueChange={(v) => setSiteId(v === "none" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="Choisir un site" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun site</SelectItem>
+                    {sites?.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}{s.city ? ` — ${s.city}` : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">{sites?.length ? "Sert à calculer la nuit astronomique et la position de la lune." : "Aucun site — créez-en un dans Matériel et observatoires."}</p>
               </div>
               <div>
                 <Label>Description (optionnel)</Label>
