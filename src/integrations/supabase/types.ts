@@ -879,6 +879,7 @@ export type Database = {
         Returns: boolean
       }
       can_edit_project: { Args: { _project_id: string }; Returns: boolean }
+      current_user_email: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
