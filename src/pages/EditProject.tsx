@@ -1,4 +1,4 @@
-import CoordinateInputs from "@/components/CoordinateInputs";
+import CoordinateInputs, { parseRa, formatRa, parseDec, formatDec } from "@/components/CoordinateInputs";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -590,8 +590,46 @@ const EditProject = () => {
                           {panes.map((pane, idx) => (
                             <TableRow key={idx}>
                               <TableCell className="text-xs font-mono">{pane.pane_number}</TableCell>
-                              <TableCell><Input value={pane.ra} onChange={(e) => updatePane(idx, "ra", e.target.value)} className="h-7 text-xs" placeholder="RA" /></TableCell>
-                              <TableCell><Input value={pane.dec} onChange={(e) => updatePane(idx, "dec", e.target.value)} className="h-7 text-xs" placeholder="DEC" /></TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-0.5">
+                                  {(["h", "m", "s"] as const).map((unit) => {
+                                    const r = parseRa(pane.ra);
+                                    const set = (key: "h" | "m" | "s", v: string) =>
+                                      updatePane(idx, "ra", formatRa(key === "h" ? v : r.h, key === "m" ? v : r.m, key === "s" ? v : r.s));
+                                    return (
+                                      <span key={unit} className="flex items-center gap-0.5">
+                                        <Input
+                                          value={r[unit]}
+                                          onChange={(e) => set(unit, e.target.value.replace(/[^\d.]/g, ""))}
+                                          className="h-7 w-11 px-1 text-xs text-center"
+                                          placeholder="0"
+                                        />
+                                        <span className="text-[10px] text-muted-foreground">{unit}</span>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-0.5">
+                                  {(["d", "m", "s"] as const).map((unit) => {
+                                    const dd = parseDec(pane.dec);
+                                    const set = (key: "d" | "m" | "s", v: string) =>
+                                      updatePane(idx, "dec", formatDec(key === "d" ? v : dd.d, key === "m" ? v : dd.m, key === "s" ? v : dd.s));
+                                    return (
+                                      <span key={unit} className="flex items-center gap-0.5">
+                                        <Input
+                                          value={dd[unit]}
+                                          onChange={(e) => set(unit, e.target.value.replace(unit === "d" ? /[^-\d.]/g : /[^\d.]/g, ""))}
+                                          className="h-7 w-11 px-1 text-xs text-center"
+                                          placeholder="0"
+                                        />
+                                        <span className="text-[10px] text-muted-foreground">{unit}</span>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </TableCell>
                               <TableCell><Input value={pane.position_angle?.toString() || ""} onChange={(e) => updatePane(idx, "position_angle", e.target.value)} className="h-7 text-xs" placeholder="°" type="number" /></TableCell>
                               <TableCell>
                                 <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removePane(idx)}>
