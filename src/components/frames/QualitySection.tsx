@@ -794,17 +794,17 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           type="button"
                           onClick={() => setZoom(frameNight(range.start, range.end, totalPoints))}
                           className={
-                            "absolute inset-y-0 z-10 border-r border-border/60 text-[9px] leading-none text-foreground transition-opacity hover:opacity-80 " +
+                            "absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-border/60 text-[10px] leading-none text-foreground transition-opacity hover:opacity-80 " +
                             (index % 2 === 0 ? "bg-primary/10" : "bg-accent/10")
                           }
                           style={{ left: `${left}%`, width: `${width}%` }}
                           title={`${new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR")} · ${range.count} image${range.count > 1 ? "s" : ""} · Lune ${moonPhase(range.night).symbol} ${moonPhase(range.night).illumination} % — cliquez pour zoomer sur cette nuit`}
                         >
-                           <span className="flex h-full w-full flex-col items-center justify-center px-1 leading-tight">
+                          <span className="flex h-full w-full items-center justify-center gap-1 px-1 leading-none">
                             <span>
                               {new Date(`${range.night}T12:00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                             </span>
-                            <span className="text-[8px] opacity-80">
+                            <span className="text-[12px]">
                               {moonPhase(range.night).symbol} {moonPhase(range.night).illumination} %
                             </span>
                           </span>
