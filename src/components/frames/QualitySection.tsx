@@ -239,15 +239,16 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
       return { ...item, points };
     });
 
-    const ranges = new Map<string, { night: string; start: number; end: number; count: number }>();
+    const ranges = new Map<string, { night: string; start: number; end: number; count: number; firstAt: string; lastAt: string }>();
     for (const { idx, f } of indexed) {
       const night = nightOf(f.captured_at);
       const existing = ranges.get(night);
       if (existing) {
         existing.end = idx;
         existing.count += 1;
+        existing.lastAt = f.captured_at;
       } else {
-        ranges.set(night, { night, start: idx, end: idx, count: 1 });
+        ranges.set(night, { night, start: idx, end: idx, count: 1, firstAt: f.captured_at, lastAt: f.captured_at });
       }
     }
 
@@ -682,7 +683,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                   )}
                 </div>
                 <div className="flex items-stretch" style={{ paddingLeft: axisWidth, paddingRight: 16 }}>
-                  <div className="relative h-9 w-full select-none" aria-label="Phase de la lune par nuit">
+                  <div className="relative h-12 w-full select-none" aria-label="Phase de la lune et horaires par nuit">
                     {visibleNightRanges.map((range) => {
                       const index = nightRanges.findIndex((item) => item.night === range.night);
                       const mp = moonPhase(range.night);
@@ -691,18 +692,25 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                       const hi = Math.min(range.end + 0.5, zoomWindow[1]);
                       const left = span > 0 ? ((lo - zoomWindow[0]) / span) * 100 : 0;
                       const width = span > 0 ? Math.max(1.5, ((hi - lo) / span) * 100) : 100;
+                      const fmtTime = (iso: string) =>
+                        new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
                       return (
                         <button
                           key={`moon-${range.night}`}
                           type="button"
                           onClick={() => setZoom(frameNight(range.start, range.end, totalPoints))}
-                          className="absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-dashed border-muted-foreground/70 text-[15px] leading-none text-foreground transition-opacity hover:opacity-80"
+                          className="absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-dashed border-muted-foreground/70 text-[11px] leading-none text-foreground transition-opacity hover:opacity-80"
                           style={{ left: `${left}%`, width: `${width}%`, backgroundColor: nightColor(index).replace(")", " / 0.12)") }}
-                          title={`${nightTitle(range.night)} · Lune ${mp.symbol} ${mp.illumination} % — cliquez pour zoomer sur cette nuit`}
+                          title={`${nightTitle(range.night)} · Lune ${mp.symbol} ${mp.illumination} % · ${fmtTime(range.firstAt)} → ${fmtTime(range.lastAt)} — cliquez pour zoomer sur cette nuit`}
                         >
-                          <span className="flex h-full w-full items-center justify-center gap-1.5 px-1 leading-none">
-                            <span className="text-[22px]">{mp.symbol}</span>
-                            <span className="font-medium">{mp.illumination} %</span>
+                          <span className="flex h-full w-full flex-col items-center justify-center gap-0.5 px-1 leading-none">
+                            <span className="flex items-center gap-1">
+                              <span className="text-[14px]">{mp.symbol}</span>
+                              <span className="font-medium">{mp.illumination} %</span>
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {fmtTime(range.firstAt)} → {fmtTime(range.lastAt)}
+                            </span>
                           </span>
                         </button>
                       );
