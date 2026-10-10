@@ -14,6 +14,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Download, Camera, Trash2, Loader2 } from "lucide-react";
+import { refreshProfileAvatar } from "@/components/AccountLink";
 
 const csvCell = (v: unknown) => {
   if (v === null || v === undefined) return "";
@@ -77,6 +78,7 @@ const Account = () => {
       await supabase.from("profiles").update({ avatar_url: path }).eq("id", user.id);
       if (old?.length) await supabase.storage.from("avatars").remove(old.map((f) => `${user.id}/${f.name}`));
       await loadAvatar(path);
+      refreshProfileAvatar();
       toast.success("Photo de profil mise à jour.");
     } else toast.error(error.message);
     setBusy(null);
