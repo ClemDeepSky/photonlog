@@ -10,6 +10,7 @@ import { CookieConsentProvider } from "@/hooks/useCookieConsent";
 import { DemoTourProvider } from "@/hooks/useDemoTour";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
+import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Teams from "./pages/Teams";
@@ -41,7 +42,8 @@ const App = () => (
           <DemoTourProvider>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<Auth />} />
+<Route path="/auth" element={<Auth />} />
+            <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/confidentialite" element={<Privacy />} />
             <Route path="/rgpd" element={<Privacy />} />

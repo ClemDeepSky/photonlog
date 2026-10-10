@@ -114,11 +114,26 @@ const AcceptInvite = () => {
           <CardHeader className="text-center">
             <Telescope className="h-10 w-10 text-primary mx-auto mb-2" />
             <CardTitle>Invitation à rejoindre {teamName || "une équipe"}</CardTitle>
-            <CardDescription>Connectez-vous ou créez un compte pour accepter l'invitation.</CardDescription>
+            <CardDescription>
+              Cette invitation a été envoyée à <strong>{invitedEmail}</strong>. Créez un compte ou connectez-vous pour
+              l'accepter.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button className="w-full" onClick={() => navigate(`/auth?redirect=/invite/${token}`)}>
-              Se connecter / S'inscrire
+          <CardContent className="space-y-2">
+            <Button
+              className="w-full"
+              onClick={() =>
+                navigate(`/signup?redirect=/invite/${token}&email=${encodeURIComponent(invitedEmail)}`)
+              }
+            >
+              Créer un compte
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => navigate(`/auth?redirect=/invite/${token}`)}
+            >
+              J'ai déjà un compte
             </Button>
           </CardContent>
         </Card>
