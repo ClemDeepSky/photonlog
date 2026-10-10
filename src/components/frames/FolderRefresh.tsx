@@ -23,12 +23,14 @@ interface FolderRefreshProps {
   pattern?: string | null;
   acquisitions: RefreshAcquisition[];
   isMosaic: boolean;
+  /** Projets Team : contribution de l'utilisateur. Les brutes lui sont rattachées. */
+  contributionId?: string | null;
   onDone?: () => void;
 }
 
 const CHUNK = 400;
 
-const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: FolderRefreshProps) => {
+const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, contributionId = null, onDone }: FolderRefreshProps) => {
   const [busy, setBusy] = useState(false);
 
   const sameExpo = (a: number | null | undefined, b: number | null) =>
@@ -61,11 +63,12 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
     const known: { id: string; relative_path: string }[] = [];
     const PAGE = 1000;
     for (let from = 0; ; from += PAGE) {
-      const { data, error } = await supabase
+      let q = supabase
         .from("project_frames")
         .select("id, relative_path")
-        .eq("project_id", projectId)
-        .range(from, from + PAGE - 1);
+        .eq("project_id", projectId);
+      q = contributionId ? q.eq("contribution_id", contributionId) : q.is("contribution_id", null);
+      const { data, error } = await q.range(from, from + PAGE - 1);
       if (error) throw error;
       known.push(...(data || []));
       if (!data || data.length < PAGE) break;
@@ -92,6 +95,7 @@ const FolderRefresh = ({ projectId, pattern, acquisitions, isMosaic, onDone }: F
 
       rows.push({
         project_id: projectId,
+        contribution_id: contributionId,
         acquisition_id: findAcquisitionId(parsed.filter, parsed.paneNumber, parsed.exposureDuration),
         relative_path: entry.relativePath,
         file_name: entry.name,
