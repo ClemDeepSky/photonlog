@@ -9,12 +9,13 @@ import { Telescope, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
 const AcceptInvite = () => {
   const { token } = useParams<{ token: string }>();
-  const { user, session } = useAuth();
+  const { user, session, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [status, setStatus] = useState<"loading" | "ready" | "accepted" | "error" | "expired">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "accepted" | "error" | "expired" | "mismatch">("loading");
   const [teamName, setTeamName] = useState("");
   const [error, setError] = useState("");
+  const [invitedEmail, setInvitedEmail] = useState("");
 
   useEffect(() => {
     const checkInvitation = async () => {
@@ -29,7 +30,7 @@ const AcceptInvite = () => {
         .select("*, teams(name)")
         .eq("token", token)
         .eq("status", "pending")
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         setStatus("expired");
@@ -42,11 +43,21 @@ const AcceptInvite = () => {
       }
 
       setTeamName((data as any).teams?.name || "Équipe");
+      setInvitedEmail(data.email);
+      if (user?.email && data.email.toLowerCase() !== user.email.toLowerCase()) {
+        setStatus("mismatch");
+        return;
+      }
       setStatus("ready");
     };
 
     checkInvitation();
-  }, [token]);
+  }, [token, user?.email]);
+
+  const switchAccount = async () => {
+    await signOut();
+    navigate(`/auth?redirect=/invite/${token}`);
+  };
 
   const acceptInvitation = async () => {
     if (!user || !token) return;
