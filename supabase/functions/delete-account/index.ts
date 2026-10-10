@@ -29,7 +29,16 @@ Deno.serve(async (req) => {
   try {
     // Projects to delete: personal projects + projects of teams owned by the user
     const { data: ownedTeams } = await db.from('teams').select('id').eq('owner_id', uid)
-    const teamIds = (ownedTeams ?? []).map((t) => t.id)
+    const teamIds: string[] = []
+    // Hand each owned team to the longest-standing other member; delete only teams left empty
+    for (const t of ownedTeams ?? []) {
+      const { data: heir } = await db.from('team_members').select('user_id').eq('team_id', t.id)
+        .neq('user_id', uid).order('joined_at', { ascending: true }).limit(1).maybeSingle()
+      if (!heir) { teamIds.push(t.id); continue }
+      await step('transfer team', db.from('teams').update({ owner_id: heir.user_id }).eq('id', t.id))
+      await step('transfer role', db.from('team_members').update({ role: 'owner' }).eq('team_id', t.id).eq('user_id', heir.user_id))
+      await step('transfer projects', db.from('projects').update({ created_by: heir.user_id }).eq('team_id', t.id).eq('created_by', uid))
+    }
     const { data: personal } = await db.from('projects').select('id').eq('created_by', uid).is('team_id', null)
     let projectIds = (personal ?? []).map((p) => p.id)
     if (teamIds.length) {
