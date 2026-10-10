@@ -77,7 +77,7 @@ const TeamContributions = ({ projectId, isMosaic, panes, team, contributions, ac
     });
 
   const updateContribution = (id: string, patch: Record<string, any>) =>
-    run(async () => supabase.from("project_contributions").update(patch).eq("id", id));
+    run(async () => supabase.from("project_contributions").update(patch as any).eq("id", id));
 
   const chooseSetup = (c: TeamContribution, setupId: string) => {
     const s = setups?.find((x) => x.id === setupId);
@@ -128,7 +128,7 @@ const TeamContributions = ({ projectId, isMosaic, panes, team, contributions, ac
                 supabase.from("project_acquisitions").insert({ ...line, project_id: projectId, contribution_id: c.id }),
               )
             }
-            onUpdateLine={(id, patch) => run(async () => supabase.from("project_acquisitions").update(patch).eq("id", id))}
+            onUpdateLine={(id, patch) => run(async () => supabase.from("project_acquisitions").update(patch as any).eq("id", id))}
             onDeleteLine={(id) => run(async () => supabase.from("project_acquisitions").delete().eq("id", id))}
           />
         ))}
