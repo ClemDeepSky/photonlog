@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 declare global {
   interface Window {
@@ -340,40 +338,6 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-3 items-end flex-wrap">
-        <div className="flex-1 min-w-[180px]">
-          <Label className="text-xs">Setup</Label>
-          {setups && setups.length > 0 ? (
-            <Select value={setupName || ""} onValueChange={(v) => onSetupChange?.(v)}>
-              <SelectTrigger className="h-8">
-                <SelectValue placeholder="Sélectionner un setup" />
-              </SelectTrigger>
-              <SelectContent>
-                {setups.map((s) => (
-                  <SelectItem key={s.name} value={s.name}>
-                    {s.name}
-                    {s.focal_length ? ` — ${s.focal_length}mm` : ""}
-                    {s.sensorWidthMm && s.sensorHeightMm
-                      ? ` / ${s.sensorWidthMm.toFixed(1)}×${s.sensorHeightMm.toFixed(1)}mm`
-                      : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Select value={sensor} onValueChange={setSensor}>
-              <SelectTrigger className="h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(sensorOptions).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-      </div>
       {!isMosaic && (ra || dec) && (
         <p className="text-xs text-muted-foreground font-mono">
           RA {ra || "—"} · Dec {dec || "—"} · Rotation {positionAngle || 0}°
@@ -435,7 +399,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
           Chargement de la carte du ciel...
         </p>
       )}
-      {(!ra || !dec) && ready && (
+      {!hasCoordinates && !isMosaic && ready && (
         <p className="text-xs text-muted-foreground text-center">
           Vue initiale (M31). Saisissez des coordonnées RA/DEC pour centrer le cadre sur votre cible.
         </p>

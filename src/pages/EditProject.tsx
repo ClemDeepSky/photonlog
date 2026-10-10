@@ -1,5 +1,5 @@
-import CoordinateInputs, { parseRa, formatRa, parseDec, formatDec } from "@/components/CoordinateInputs";
-import { raHmsToDeg, decDmsToDeg, degToRaHms, degToDecDms, precessDateToJ2000 } from "@/lib/coords";
+import { coordinatesToJ2000 } from "@/components/CoordinateInputs";
+import ProjectCoordinates from "@/components/projects/ProjectCoordinates";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Trash2, Plus, ArrowLeft, Camera, MapPin, FolderOpen } from "lucide-react";
+import { Upload, Trash2, Plus, ArrowLeft, Camera, FolderOpen } from "lucide-react";
 import SkyViewer from "@/components/projects/SkyViewer";
 
 import FilenamePreview from "@/components/projects/FilenamePreview";
@@ -228,7 +228,7 @@ const EditProject = () => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      const parsed = parseCsv(text);
+      const parsed = parseCsv(text).map((pane) => ({ ...pane, ...coordinatesToJ2000(pane.ra, pane.dec, paneEpoch) }));
       if (parsed.length === 0) {
         toast({ title: "Erreur", description: "Aucune donnée valide trouvée dans le CSV", variant: "destructive" });
         return;
@@ -251,24 +251,6 @@ const EditProject = () => {
       ...prev,
       { pane_number: prev.length + 1, ra: "", dec: "", position_angle: null, pane_width: null, pane_height: null, overlap: null, row_index: null, col_index: null },
     ]);
-  };
-
-  // Met à jour RA et DEC d'un panneau ensemble, en convertissant en J2000 si la saisie est en JNow.
-  const commitPaneCoords = (index: number, nextRa: string, nextDec: string) => {
-    if (paneEpoch === "JNow") {
-      const pr = parseRa(nextRa);
-      const pd = parseDec(nextDec);
-      const conv = precessDateToJ2000(raHmsToDeg(pr.h, pr.m, pr.s), decDmsToDeg(pd.d, pd.m, pd.s));
-      const cr = degToRaHms(conv.ra);
-      const cd = degToDecDms(conv.dec);
-      nextRa = formatRa(cr.h, cr.m, cr.s);
-      nextDec = formatDec(cd.d, cd.m, cd.s);
-    }
-    setPanes((prev) => {
-      const u = [...prev];
-      u[index] = { ...u[index], ra: nextRa, dec: nextDec };
-      return u;
-    });
   };
 
   const updatePane = (index: number, field: keyof Pane, value: string) => {
@@ -605,166 +587,19 @@ const EditProject = () => {
             </CardContent>
           </Card>
 
-          {/* Coordinates / Mosaic */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Switch checked={isMosaic} onCheckedChange={(v) => {
-                  setIsMosaic(v);
-                  if (!v) { setPanes([]); setDisabledAcquisitions({}); }
-                }} id="mosaic" />
-                <Label htmlFor="mosaic">Projet mosaïque (plusieurs panneaux)</Label>
-              </div>
-
-              {!isMosaic ? (
-                <div className="space-y-3">
-                  <Label className="text-base font-semibold">Coordonnées</Label>
-                  <Tabs value={coordMode} onValueChange={(v) => setCoordMode(v as "manual" | "csv")}>
-                    <TabsList className="h-8 mb-3">
-                      <TabsTrigger value="manual" className="text-xs px-3 h-6">Saisie manuelle</TabsTrigger>
-                      <TabsTrigger value="csv" className="text-xs px-3 h-6">Import CSV</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                   {coordMode === "manual" ? (
-                     <CoordinateInputs
-                       ra={ra}
-                       dec={dec}
-                       rotation={positionAngle}
-                       onRaChange={setRa}
-                       onDecChange={setDec}
-                       onRotationChange={setPositionAngle}
-                     />
-                   ) : (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">Importez un CSV Telescopius pour remplir automatiquement les coordonnées.</p>
-                      <CsvUploadZone />
-                      {ra && <p className="text-xs text-muted-foreground mt-2">✓ Coordonnées chargées : RA {ra} / DEC {dec}</p>}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <Label className="text-base font-semibold">Panneaux mosaïque</Label>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Époque :</span>
-                        {(["J2000", "JNow"] as const).map((e) => (
-                          <Button
-                            key={e}
-                            type="button"
-                            size="sm"
-                            variant={paneEpoch === e ? "default" : "outline"}
-                            className="h-6 px-2 text-xs"
-                            onClick={() => setPaneEpoch(e)}
-                          >
-                            {e}
-                          </Button>
-                        ))}
-                        {paneEpoch === "JNow" && (
-                          <span className="text-[10px] text-muted-foreground">converti en J2000</span>
-                        )}
-                      </div>
-                    </div>
-                    <Tabs value={coordMode} onValueChange={(v) => setCoordMode(v as "manual" | "csv")}>
-                      <TabsList className="h-8">
-                        <TabsTrigger value="manual" className="text-xs px-3 h-6">Manuel</TabsTrigger>
-                        <TabsTrigger value="csv" className="text-xs px-3 h-6">CSV</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                  {coordMode === "csv" ? (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">Importez un CSV Telescopius (Pane, RA, DEC, Position Angle, Width, Height, Overlap, Row, Column)</p>
-                      <CsvUploadZone />
-                    </div>
-                  ) : (
-                    <Button variant="outline" size="sm" onClick={addManualPane}>
-                      <Plus className="h-3 w-3 mr-1" /> Ajouter un panneau
-                    </Button>
-                  )}
-                  {panes.length > 0 && (
-                    <div className="max-h-48 overflow-y-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-12">#</TableHead>
-                            <TableHead>RA</TableHead>
-                            <TableHead>DEC</TableHead>
-                            <TableHead>Angle</TableHead>
-                            <TableHead className="w-10"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {panes.map((pane, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell className="text-xs font-mono">{pane.pane_number}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-0.5">
-                                  {(["h", "m", "s"] as const).map((unit) => {
-                                    const r = parseRa(pane.ra);
-                                    const set = (key: "h" | "m" | "s", v: string) =>
-                                      commitPaneCoords(idx, formatRa(key === "h" ? v : r.h, key === "m" ? v : r.m, key === "s" ? v : r.s), pane.dec);
-                                    return (
-                                      <span key={unit} className="flex items-center gap-0.5">
-                                        <Input
-                                          value={r[unit]}
-                                          onChange={(e) => set(unit, e.target.value.replace(/[^\d.]/g, ""))}
-                                          className="h-7 w-11 px-1 text-xs text-center"
-                                          placeholder="0"
-                                        />
-                                        <span className="text-[10px] text-muted-foreground">{unit}</span>
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-0.5">
-                                  {(["d", "m", "s"] as const).map((unit) => {
-                                    const dd = parseDec(pane.dec);
-                                    const set = (key: "d" | "m" | "s", v: string) =>
-                                      commitPaneCoords(idx, pane.ra, formatDec(key === "d" ? v : dd.d, key === "m" ? v : dd.m, key === "s" ? v : dd.s));
-                                    return (
-                                      <span key={unit} className="flex items-center gap-0.5">
-                                        <Input
-                                          value={dd[unit]}
-                                          onChange={(e) => set(unit, e.target.value.replace(unit === "d" ? /[^-\d.]/g : /[^\d.]/g, ""))}
-                                          className="h-7 w-11 px-1 text-xs text-center"
-                                          placeholder="0"
-                                        />
-                                        <span className="text-[10px] text-muted-foreground">{unit}</span>
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              </TableCell>
-                              <TableCell><Input value={pane.position_angle?.toString() || ""} onChange={(e) => updatePane(idx, "position_angle", e.target.value)} className="h-7 text-xs" placeholder="°" type="number" /></TableCell>
-                              <TableCell>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removePane(idx)}>
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Sky viewer */}
-          {(ra || dec || (isMosaic && panes.length > 0)) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MapPin className="h-5 w-5" /> Cadrage
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+          <ProjectCoordinates
+            isMosaic={isMosaic}
+            onMosaicChange={(v) => { setIsMosaic(v); if (!v) { setPanes([]); setDisabledAcquisitions({}); } }}
+            mode={coordMode} onModeChange={setCoordMode}
+            epoch={paneEpoch} onEpochChange={setPaneEpoch}
+            ra={ra} dec={dec} angle={positionAngle}
+            onRaChange={setRa} onDecChange={setDec} onAngleChange={setPositionAngle}
+            panes={panes}
+            onPaneCoordinatesChange={(index, r, d) => setPanes((prev) => prev.map((pane, i) => i === index ? { ...pane, ra: r, dec: d } : pane))}
+            onPaneAngleChange={(index, value) => updatePane(index, "position_angle", value)}
+            onAddPane={addManualPane} onRemovePane={removePane}
+            csvUpload={<CsvUploadZone />}
+            viewer={
                 <SkyViewer
                   ra={ra}
                   dec={dec}
@@ -777,17 +612,9 @@ const EditProject = () => {
                   setupSensorWidthMm={setupSensorWidthMm}
                   setupSensorHeightMm={setupSensorHeightMm}
                   setupName={selectedSetup?.name}
-                  setups={(equipment || []).map((e) => ({
-                    name: e.name,
-                    focal_length: e.focal_length ? Number(e.focal_length) : null,
-                    sensorWidthMm: e.pixel_size && e.sensor_width_px ? (Number(e.pixel_size) * e.sensor_width_px) / 1000 : null,
-                    sensorHeightMm: e.pixel_size && e.sensor_height_px ? (Number(e.pixel_size) * e.sensor_height_px) / 1000 : null,
-                  }))}
-                  onSetupChange={setSetup}
                 />
-              </CardContent>
-            </Card>
-          )}
+            }
+          />
 
           {/* Acquisitions */}
           <Card>
