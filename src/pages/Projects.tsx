@@ -11,11 +11,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import placeholder from "@/assets/project-placeholder.jpg";
+import { useState } from "react";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const Projects = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
@@ -30,13 +33,28 @@ const Projects = () => {
     enabled: !!user,
   });
 
+  const { data: editableIds = [] } = useQuery({
+    queryKey: ["editable-projects", user?.id, projects?.map((p) => p.id)],
+    enabled: !!user && !!projects,
+    queryFn: async () => {
+      const results = await Promise.all((projects ?? []).map(async (project) => {
+        if (!project.team_id) return project.created_by === user?.id ? project.id : null;
+        const { data, error } = await supabase.rpc("can_edit_project", { _project_id: project.id });
+        return !error && data ? project.id : null;
+      }));
+      return results.filter((id): id is string => id !== null);
+    },
+  });
+
   const deleteProject = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("projects").delete().eq("id", id);
+      const { data, error } = await supabase.from("projects").delete().eq("id", id).select("id");
       if (error) throw error;
+      if (!data?.length) throw new Error("Projet non supprimé : vous n’avez pas l’autorisation de supprimer ce projet, ou il n’existe plus.");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries();
+      setPendingDelete(null);
       toast({ title: "Projet supprimé" });
     },
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
@@ -161,13 +179,14 @@ const Projects = () => {
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button
+                      {editableIds.includes(project.id) && <Button
                         variant="ghost" size="icon"
                         className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                        onClick={() => deleteProject.mutate(project.id)}
+                        aria-label={`Supprimer le projet ${project.name}`}
+                        onClick={() => setPendingDelete({ id: project.id, name: project.name })}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      </Button>}
                     </div>
                   </div>
                 </CardContent>
@@ -189,6 +208,20 @@ const Projects = () => {
           </Card>
         )}
       </motion.div>
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => { if (!open && !deleteProject.isPending) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer « {pendingDelete?.name} » ?</AlertDialogTitle>
+            <AlertDialogDescription>Le projet, son plan, ses sessions et l’index de ses acquisitions seront définitivement supprimés. Les fichiers de votre dossier local ne seront pas touchés.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteProject.isPending}>Annuler</AlertDialogCancel>
+            <AlertDialogAction disabled={deleteProject.isPending} onClick={(event) => { event.preventDefault(); if (pendingDelete) deleteProject.mutate(pendingDelete.id); }}>
+              {deleteProject.isPending ? "Suppression…" : "Supprimer définitivement"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
