@@ -153,25 +153,38 @@ const EditProject = () => {
       return !!data;
     },
   });
-  const { data: projectPanes } = useQuery({
-    queryKey: ["project-panes", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("project_panes").select("*").eq("project_id", id!).is("contribution_id", null).order("pane_number");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id && !!user,
-  });
+  // Projet Team : la page entière (setup, dossier, cadrage, acquisitions) porte sur
+  // la contribution du membre connecté ; le projet lui-même n'est modifiable que par l'admin.
+  const isTeam = !!project?.team_id;
+  const mine = contributions?.find((c) => c.user_id === user?.id);
+  const isProjectAdmin = !isTeam || projectTeam?.owner_id === user?.id;
+  const scopeReady = !!project && (!isTeam || (contributions !== undefined && projectTeam !== undefined));
+  const scopeId = isTeam ? mine?.id ?? null : null;
 
-  const { data: projectAcquisitions } = useQuery({
-    queryKey: ["project-acquisitions", id],
+  const { data: scope } = useQuery({
+    queryKey: ["edit-scope", id, scopeId, isTeam],
+    enabled: !!id && !!user && scopeReady,
     queryFn: async () => {
-      const { data, error } = await supabase.from("project_acquisitions").select("*").eq("project_id", id!).is("contribution_id", null);
-      if (error) throw error;
-      return data;
+      const load = async (cid: string | null) => {
+        let pq = supabase.from("project_panes").select("*").eq("project_id", id!);
+        let aq = supabase.from("project_acquisitions").select("*").eq("project_id", id!);
+        pq = cid ? pq.eq("contribution_id", cid) : pq.is("contribution_id", null);
+        aq = cid ? aq.eq("contribution_id", cid) : aq.is("contribution_id", null);
+        const [p, a] = await Promise.all([pq.order("pane_number"), aq]);
+        if (p.error) throw p.error;
+        if (a.error) throw a.error;
+        return { panes: p.data, acqs: a.data };
+      };
+      if (!isTeam) return { ...(await load(null)), fallback: false };
+      const own = scopeId ? await load(scopeId) : { panes: [], acqs: [] };
+      if (own.panes.length || own.acqs.length) return { ...own, fallback: false };
+      // Pas encore de contribution : on part du cadrage et des objectifs du projet.
+      return { ...(await load(null)), fallback: true };
     },
-    enabled: !!id && !!user,
   });
+  const projectPanes = scope?.panes;
+  const projectAcquisitions = scope?.acqs;
+  const scopeFallback = !!scope?.fallback;
 
   // Populate form when data loads
   useEffect(() => {
