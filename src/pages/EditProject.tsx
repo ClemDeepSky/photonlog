@@ -273,7 +273,7 @@ const EditProject = () => {
           setDisabledAcquisitions(disabled);
         } else {
           setAcquisitions(projectAcquisitions.map((a) => ({
-            id: a.id, filter: a.filter, exposure_duration: Number(a.exposure_duration),
+            id: scopeFallback ? undefined : a.id, filter: a.filter, exposure_duration: Number(a.exposure_duration),
             quantity: a.quantity, bin: a.bin,
           })));
         }
