@@ -699,9 +699,9 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           style={{ left: `${left}%`, width: `${width}%`, backgroundColor: nightColor(index).replace(")", " / 0.12)") }}
                           title={`${nightTitle(range.night)} · Lune ${mp.symbol} ${mp.illumination} % — cliquez pour zoomer sur cette nuit`}
                         >
-                          <span className="flex h-full w-full items-center justify-center gap-1 px-1 leading-none">
-                            <span className="text-[13px]">{mp.symbol}</span>
-                            <span>{mp.illumination} %</span>
+                          <span className="flex h-full w-full items-center justify-center gap-1.5 px-1 leading-none">
+                            <span className="text-[22px]">{mp.symbol}</span>
+                            <span className="font-medium">{mp.illumination} %</span>
                           </span>
                         </button>
                       );
