@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { filterBand } from "@/lib/filterBands";
 import { useProjectContributions } from "@/lib/teamContributions";
+import { MemberAvatar, useMemberAvatars } from "@/components/MemberAvatar";
 import { useContributionPanes } from "./MyContribution";
 
 const fmtH = (s: number) => (s >= 3600 ? `${(s / 3600).toFixed(1)} h` : `${Math.round(s / 60)} min`);
@@ -23,6 +24,7 @@ const TeamGoalsReminder = ({ projectId, myContributionId }: Props) => {
     },
   });
   const others = contributions.filter((c) => c.id !== myContributionId);
+  const avatars = useMemberAvatars(others.map((c) => c.user_id));
 
   return (
     <Card>
@@ -47,6 +49,7 @@ const TeamGoalsReminder = ({ projectId, myContributionId }: Props) => {
           return (
             <div key={c.id} className="rounded-md border border-border p-3">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                <MemberAvatar userId={c.user_id} avatars={avatars} fallback={c.username?.[0]?.toUpperCase()} />
                 <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
                 <span className="font-semibold">{c.username}</span>
                 <span className="text-muted-foreground">{c.setup || "Setup non défini"}</span>

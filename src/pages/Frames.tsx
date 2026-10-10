@@ -11,6 +11,7 @@ import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
 import { useProjectContributions } from "@/lib/teamContributions";
+import { MemberAvatar, useMemberAvatars } from "@/components/MemberAvatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
@@ -138,6 +139,7 @@ const Frames = () => {
   const selectedProject = projects?.find((p) => p.id === selectedProjectId);
   const isTeam = !!selectedProject?.team_id;
   const { data: contributions } = useProjectContributions(selectedProjectId, isTeam);
+  const avatars = useMemberAvatars((contributions ?? []).map((c) => c.user_id));
   const myContribution = contributions?.find((c) => c.user_id === user?.id) ?? null;
   const team = selectedProject?.teams ?? null;
   const canEditCommon = !isTeam || (team?.management_mode === "single_admin" ? team.owner_id === user?.id : true);
@@ -358,7 +360,10 @@ const Frames = () => {
                       <SelectItem value="all">Projet complet</SelectItem>
                       {(contributions || []).map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.username}{c.user_id === user?.id ? " (moi)" : ""}
+                          <span className="flex items-center gap-2">
+                            <MemberAvatar userId={c.user_id} avatars={avatars} fallback={c.username?.[0]?.toUpperCase()} className="h-4 w-4" />
+                            {c.username}{c.user_id === user?.id ? " (moi)" : ""}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -448,6 +453,9 @@ const Frames = () => {
                           <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         ) : (
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        {isTeam && contribution && (
+                          <MemberAvatar userId={contribution.user_id} avatars={avatars} fallback={contribution.username?.[0]?.toUpperCase()} />
                         )}
                         <CardTitle className="text-sm font-medium">
                           {isTeam && <span className="text-muted-foreground">{ownerLabel} · </span>}
