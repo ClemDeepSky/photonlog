@@ -936,6 +936,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      shares_team_with: { Args: { _other: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
