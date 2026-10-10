@@ -218,7 +218,8 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
         const rotX = dx * cosA - dy * sinA;
         const rotY = dx * sinA + dy * cosA;
         const cornerDec = cDEC + rotY;
-        const cornerRA = cRA + rotX / Math.cos((cornerDec * Math.PI) / 180);
+        // Sky seen from inside: East (increasing RA) is on the LEFT, so local +x (screen right) = West.
+        const cornerRA = cRA - rotX / Math.cos((cornerDec * Math.PI) / 180);
         const p = aladinRef.current?.world2pix(cornerRA, cornerDec);
         if (!p) return null;
         pts.push([p[0], p[1]]);
@@ -307,7 +308,7 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
       if (dRA < -180) dRA += 360;
       const east = dRA * Math.cos((cDEC * Math.PI) / 180);
       const north = w[1] - cDEC;
-      let pa = -Math.atan2(east, north) * (180 / Math.PI);
+      let pa = Math.atan2(east, north) * (180 / Math.PI);
       pa = Math.round(((pa % 360) + 360) % 360 * 10) / 10;
       onRotationChange?.(pa);
     }
