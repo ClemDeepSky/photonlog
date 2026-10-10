@@ -88,6 +88,10 @@ const AcceptInvite = () => {
         navigate("/teams");
         return;
       }
+      if (memberErr.message.includes("row-level security")) {
+        setStatus("mismatch");
+        return;
+      }
       setStatus("error");
       setError(memberErr.message);
       return;
@@ -160,11 +164,31 @@ const AcceptInvite = () => {
               <CardDescription>{error}</CardDescription>
             </>
           )}
+          {status === "mismatch" && (
+            <>
+              <XCircle className="h-12 w-12 text-destructive mx-auto mb-2" />
+              <CardTitle>Mauvais compte</CardTitle>
+              <CardDescription>
+                Cette invitation à rejoindre {teamName} a été envoyée à <strong>{invitedEmail}</strong>, mais vous êtes
+                connecté avec <strong>{user?.email}</strong>. Connectez-vous avec le compte invité pour l'accepter.
+              </CardDescription>
+            </>
+          )}
         </CardHeader>
         {status === "ready" && (
           <CardContent>
             <Button className="w-full" onClick={acceptInvitation}>
               Accepter l'invitation
+            </Button>
+          </CardContent>
+        )}
+        {status === "mismatch" && (
+          <CardContent className="space-y-2">
+            <Button className="w-full" onClick={switchAccount}>
+              Changer de compte
+            </Button>
+            <Button variant="secondary" className="w-full" onClick={() => navigate("/")}>
+              Retour à l'accueil
             </Button>
           </CardContent>
         )}
