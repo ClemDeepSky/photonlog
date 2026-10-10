@@ -92,7 +92,7 @@ const Guide = () => {
       <main>
         <section className="border-b border-border/60">
           <div className="px-5 py-16 lg:px-8 lg:py-24">
-            <div className="max-w-4xl">
+            <div className="mx-auto max-w-4xl">
               <p className="mb-4 text-sm font-medium text-primary">DOCUMENTATION PHOTONLOG</p>
               <h1 className="max-w-3xl text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
                 Pilotez vos acquisitions, de la cible à la dernière pose
