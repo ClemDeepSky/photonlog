@@ -1,7 +1,7 @@
 // Décodage minimal de fichiers FITS pour un aperçu visuel dans le navigateur.
 // On lit l'en-tête (blocs de 2880 octets, cartes de 80 caractères), puis le plan
-// image principal, et on applique un étirement automatique (percentiles) pour
-// obtenir une vignette lisible. Tout se passe localement, rien n'est envoyé.
+// image principal, et on applique un auto-stretch (MTF) pour obtenir une vignette
+// lisible. Tout se passe localement, rien n'est envoyé.
 
 export interface FitsPreview {
   /** Pixels décodés (après BZERO/BSCALE), ligne du bas en premier (ordre FITS). */
