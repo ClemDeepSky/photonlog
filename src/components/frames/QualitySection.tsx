@@ -695,7 +695,7 @@ const QualitySection = ({ projectId, isMosaic }: { projectId: string; isMosaic: 
                           key={`moon-${range.night}`}
                           type="button"
                           onClick={() => setZoom(frameNight(range.start, range.end, totalPoints))}
-                          className="absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-dashed border-muted-foreground/70 text-[11px] leading-none text-foreground transition-opacity hover:opacity-80"
+                          className="absolute inset-y-0 z-10 overflow-hidden whitespace-nowrap border-r border-dashed border-muted-foreground/70 text-[15px] leading-none text-foreground transition-opacity hover:opacity-80"
                           style={{ left: `${left}%`, width: `${width}%`, backgroundColor: nightColor(index).replace(")", " / 0.12)") }}
                           title={`${nightTitle(range.night)} · Lune ${mp.symbol} ${mp.illumination} % — cliquez pour zoomer sur cette nuit`}
                         >
