@@ -10,6 +10,9 @@ import { Progress } from "@/components/ui/progress";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
+import TeamContributions from "@/components/projects/TeamContributions";
+import { useProjectContributions } from "@/lib/teamContributions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +31,7 @@ interface Acquisition {
   exposure_duration: number;
   bin: number;
   pane_id: string | null;
+  contribution_id?: string | null;
 }
 
 interface Pane {
@@ -44,7 +48,7 @@ interface Project {
   team_id: string | null;
   status: string;
   filename_pattern: string | null;
-  teams: { name: string } | null;
+  teams: { name: string; owner_id: string; management_mode: string } | null;
 }
 
 const filterColors: Record<string, string> = {
@@ -71,7 +75,7 @@ const Frames = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, is_mosaic, team_id, status, filename_pattern, teams(name)")
+        .select("id, name, is_mosaic, team_id, status, filename_pattern, teams(name, owner_id, management_mode)")
         .or(await personalProjectFilter(user?.id))
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -80,7 +84,10 @@ const Frames = () => {
     enabled: !!user,
   });
 
-  const { data: acquisitions } = useQuery({
+  const [participant, setParticipant] = useState<string>("all");
+  useEffect(() => setParticipant("all"), [selectedProjectId]);
+
+  const { data: allAcquisitions } = useQuery({
     queryKey: ["frames-acquisitions", selectedProjectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -129,6 +136,24 @@ const Frames = () => {
 
 
   const selectedProject = projects?.find((p) => p.id === selectedProjectId);
+  const isTeam = !!selectedProject?.team_id;
+  const { data: contributions } = useProjectContributions(selectedProjectId, isTeam);
+  const myContribution = contributions?.find((c) => c.user_id === user?.id) ?? null;
+  const team = selectedProject?.teams ?? null;
+  const canEditCommon = !isTeam || (team?.management_mode === "single_admin" ? team.owner_id === user?.id : true);
+  // Filtre par participant : "all", "common" (lignes sans participant) ou id de contribution.
+  const acquisitions = (allAcquisitions || []).filter((a) =>
+    participant === "all" ? true : participant === "common" ? !a.contribution_id : a.contribution_id === participant,
+  );
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", selectedProjectId] });
+    queryClient.invalidateQueries({ queryKey: ["project-frames", selectedProjectId] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
+  };
+  // Le scan d'un membre ne touche que ses propres lignes et brutes.
+  const scanLines = (allAcquisitions || []).filter((a) =>
+    isTeam && myContribution ? a.contribution_id === myContribution.id : !a.contribution_id,
+  );
 
   const togglePane = (paneId: string) => {
     setExpandedPanes((prev) => {
@@ -271,9 +296,10 @@ const Frames = () => {
                 {selectedProject && (
                   <FolderRefresh
                     projectId={selectedProject.id}
-                    pattern={selectedProject.filename_pattern}
+                    pattern={(isTeam && myContribution?.filename_pattern) || selectedProject.filename_pattern}
                     isMosaic={selectedProject.is_mosaic}
-                    acquisitions={(acquisitions || []).map((a) => ({
+                    contributionId={isTeam ? myContribution?.id ?? null : null}
+                    acquisitions={scanLines.map((a) => ({
                       id: a.id,
                       filter: a.filter,
                       exposure: a.exposure_duration != null ? Number(a.exposure_duration) : null,
@@ -289,6 +315,35 @@ const Frames = () => {
               </div>
             </div>
 
+
+            {isTeam && selectedProject && (
+              <>
+                <TeamContributions
+                  projectId={selectedProject.id}
+                  isMosaic={selectedProject.is_mosaic}
+                  panes={panes || []}
+                  team={team}
+                  contributions={contributions || []}
+                  acquisitions={allAcquisitions || []}
+                  onChanged={refreshAll}
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Afficher :</span>
+                  <Select value={participant} onValueChange={setParticipant}>
+                    <SelectTrigger className="h-8 w-56" aria-label="Participant"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Projet complet</SelectItem>
+                      {(contributions || []).map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.username}{c.user_id === user?.id ? " (moi)" : ""}
+                        </SelectItem>
+                      ))}
+                      {(allAcquisitions || []).some((a) => !a.contribution_id) && <SelectItem value="common">Plan commun</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
 
             {/* Global stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -336,7 +391,13 @@ const Frames = () => {
             </div>
 
             {selectedProject && (
-              <QualitySection projectId={selectedProject.id} isMosaic={selectedProject.is_mosaic} />
+              <QualitySection
+                projectId={selectedProject.id}
+                isMosaic={selectedProject.is_mosaic}
+                participant={participant}
+                myContributionId={myContribution?.id ?? null}
+                canSortCommon={canEditCommon && !(isTeam && myContribution)}
+              />
             )}
 
 

@@ -45,6 +45,8 @@ interface SkyViewerProps {
   onSetupChange?: (name: string) => void;
   onRaDecChange?: (ra: string, dec: string) => void;
   onRotationChange?: (angleDeg: number) => void;
+  /** Projets Team : champ du setup de chaque participant, dessiné sur chaque cadre */
+  participants?: { id: string; label: string; color: string; focalLength: number | null; sensorWidthMm: number | null; sensorHeightMm: number | null }[];
 }
 
 const SENSORS: Record<string, { width: number; height: number; label: string }> = {
@@ -142,7 +144,7 @@ const loadAladin = (): Promise<void> => {
   return aladinInitPromise;
 };
 
-const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLength, setupSensorWidthMm, setupSensorHeightMm, setupName, setups, onSetupChange, onRaDecChange, onRotationChange }: SkyViewerProps) => {
+const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLength, setupSensorWidthMm, setupSensorHeightMm, setupName, setups, onSetupChange, onRaDecChange, onRotationChange, participants }: SkyViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wheelWrapRef = useRef<HTMLDivElement>(null);
   const [wheelHint, setWheelHint] = useState(false);
@@ -220,6 +222,11 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
       ? [((x % 360) + 360) % 360, y] : null;
   };
   const hasCoordinates = validCoordinates(ra, dec) !== null;
+  const [hiddenParticipants, setHiddenParticipants] = useState<Set<string>>(new Set());
+  const participantFovs = (participants || [])
+    .filter((p) => p.focalLength && p.sensorWidthMm && p.sensorHeightMm && !hiddenParticipants.has(p.id))
+    .map((p) => ({ color: p.color, w: calcFOVDeg(p.sensorWidthMm!, p.focalLength!), h: calcFOVDeg(p.sensorHeightMm!, p.focalLength!) }));
+  const participantKey = JSON.stringify(participantFovs);
   const sensorInfo = sensorOptions[sensor] || SENSORS.apsc;
   const fovW = calcFOVDeg(sensorInfo.width, focalLength);
   const fovH = calcFOVDeg(sensorInfo.height, focalLength);
@@ -279,12 +286,12 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
     if (!ready) return;
     let raf = 0;
 
-    const cornersFor = (cRA: number, cDEC: number, angle: number): [number, number][] | null => {
+    const cornersFor = (cRA: number, cDEC: number, angle: number, w = fovW, h = fovH): [number, number][] | null => {
       const a = (angle * Math.PI) / 180;
       const cosA = Math.cos(a);
       const sinA = Math.sin(a);
-      const hw = fovW / 2;
-      const hh = fovH / 2;
+      const hw = w / 2;
+      const hh = h / 2;
       const local: [number, number][] = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
       const pts: [number, number][] = [];
       for (const [dx, dy] of local) {
@@ -327,12 +334,29 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
           }
         }
       }
+      // Champ de chaque participant, centré sur chaque panneau (ou la cible).
+      if (participantFovs.length) {
+        const centers: [number, number, number][] = [];
+        if (isMosaic && panes && panes.length > 0) {
+          for (const pane of panes) {
+            const r = parseRA(pane.ra), d = parseDEC(pane.dec);
+            if (r !== null && d !== null) centers.push([r, d, pane.position_angle ?? positionAngle ?? 0]);
+          }
+        } else if (hasCoordinates) {
+          const r = parseRA(ra), d = parseDEC(dec);
+          if (r !== null && d !== null) centers.push([r, d, positionAngle || 0]);
+        }
+        for (const pf of participantFovs) for (const [r, d, a] of centers) {
+          const pts = cornersFor(r, d, a, pf.w, pf.h);
+          if (pts) next.push({ pts, color: pf.color, interactive: false });
+        }
+      }
       setShapes(next);
     };
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [ready, ra, dec, positionAngle, panes, isMosaic, hasCoordinates, fovW, fovH]);
+  }, [ready, ra, dec, positionAngle, panes, isMosaic, hasCoordinates, fovW, fovH, participantKey]);
 
   const localPoint = (e: React.PointerEvent | PointerEvent) => {
     const rect = containerRef.current!.getBoundingClientRect();
@@ -480,6 +504,23 @@ const SkyViewer = ({ ra, dec, positionAngle = 0, panes, isMosaic, setupFocalLeng
         <p className="text-xs text-muted-foreground text-center">
           Aucune coordonnée de cible renseignée.
         </p>
+      )}
+      {participants && participants.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 text-xs" aria-label="Participants">
+          <span className="text-muted-foreground">Champs des participants :</span>
+          {participants.map((p) => {
+            const missing = !(p.focalLength && p.sensorWidthMm && p.sensorHeightMm);
+            const on = !hiddenParticipants.has(p.id);
+            return (
+              <label key={p.id} className={`flex items-center gap-1.5 ${missing ? "opacity-50" : "cursor-pointer"}`} title={missing ? "Setup non renseigné" : undefined}>
+                <input type="checkbox" disabled={missing} checked={on && !missing}
+                  onChange={() => setHiddenParticipants((prev) => { const n = new Set(prev); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })} />
+                <span className="h-2.5 w-2.5 rounded-sm" style={{ background: p.color }} />
+                {p.label}
+              </label>
+            );
+          })}
+        </div>
       )}
       {interactive && (
         <p className="text-xs text-muted-foreground text-center">

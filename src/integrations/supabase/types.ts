@@ -240,6 +240,7 @@ export type Database = {
         Row: {
           acquired: number
           bin: number
+          contribution_id: string | null
           created_at: string
           exposure_duration: number
           filter: string
@@ -253,6 +254,7 @@ export type Database = {
         Insert: {
           acquired?: number
           bin?: number
+          contribution_id?: string | null
           created_at?: string
           exposure_duration?: number
           filter?: string
@@ -266,6 +268,7 @@ export type Database = {
         Update: {
           acquired?: number
           bin?: number
+          contribution_id?: string | null
           created_at?: string
           exposure_duration?: number
           filter?: string
@@ -277,6 +280,13 @@ export type Database = {
           target_seconds?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "project_acquisitions_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "project_contributions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_acquisitions_pane_id_fkey"
             columns: ["pane_id"]
@@ -298,9 +308,12 @@ export type Database = {
           created_at: string
           equipment_profile_id: string | null
           filename_pattern: string | null
+          focal_length: number | null
           folder_path: string | null
           id: string
           project_id: string
+          sensor_height_mm: number | null
+          sensor_width_mm: number | null
           setup: string | null
           tracking_mode: string
           updated_at: string
@@ -310,9 +323,12 @@ export type Database = {
           created_at?: string
           equipment_profile_id?: string | null
           filename_pattern?: string | null
+          focal_length?: number | null
           folder_path?: string | null
           id?: string
           project_id: string
+          sensor_height_mm?: number | null
+          sensor_width_mm?: number | null
           setup?: string | null
           tracking_mode?: string
           updated_at?: string
@@ -322,9 +338,12 @@ export type Database = {
           created_at?: string
           equipment_profile_id?: string | null
           filename_pattern?: string | null
+          focal_length?: number | null
           folder_path?: string | null
           id?: string
           project_id?: string
+          sensor_height_mm?: number | null
+          sensor_width_mm?: number | null
           setup?: string | null
           tracking_mode?: string
           updated_at?: string
@@ -351,6 +370,7 @@ export type Database = {
         Row: {
           acquisition_id: string | null
           captured_at: string | null
+          contribution_id: string | null
           created_at: string
           eccentricity: number | null
           exposure_duration: number | null
@@ -370,6 +390,7 @@ export type Database = {
         Insert: {
           acquisition_id?: string | null
           captured_at?: string | null
+          contribution_id?: string | null
           created_at?: string
           eccentricity?: number | null
           exposure_duration?: number | null
@@ -389,6 +410,7 @@ export type Database = {
         Update: {
           acquisition_id?: string | null
           captured_at?: string | null
+          contribution_id?: string | null
           created_at?: string
           eccentricity?: number | null
           exposure_duration?: number | null
@@ -411,6 +433,13 @@ export type Database = {
             columns: ["acquisition_id"]
             isOneToOne: false
             referencedRelation: "project_acquisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_frames_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "project_contributions"
             referencedColumns: ["id"]
           },
           {
@@ -845,6 +874,10 @@ export type Database = {
     }
     Functions: {
       can_access_project: { Args: { _project_id: string }; Returns: boolean }
+      can_edit_contribution: {
+        Args: { _contribution_id: string }
+        Returns: boolean
+      }
       can_edit_project: { Args: { _project_id: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
