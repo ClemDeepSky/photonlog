@@ -3,7 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Telescope,
   LayoutDashboard,
   Users,
   Wrench,
@@ -17,6 +16,7 @@ import {
 import { useState } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AccountLink } from "@/components/AccountLink";
+import BrandLogo from "@/components/BrandLogo";
 
 const v1NavItems = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
