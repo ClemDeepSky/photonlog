@@ -874,7 +874,6 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                           key={s.key}
                           name={s.label}
                           data={s.points}
-                          line={{ stroke: s.color, strokeWidth: 1.5 }}
                           fill={s.color}
                           shape={(props: { cx?: number; cy?: number; payload?: { otherMember?: boolean } }) => (
                             <circle cx={props.cx} cy={props.cy}
@@ -886,6 +885,20 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                           cursor="pointer"
                         />
                       ))}
+                      {/* Courbes : un segment par suite de points consécutifs du même membre,
+                          pour ne jamais relier deux setups ayant shooté la même nuit. */}
+                      {series.flatMap((s) =>
+                        (s.lineSegments || []).map((segment, segIndex) => (
+                          <Scatter
+                            key={`${s.key}-line-${segIndex}`}
+                            data={segment}
+                            line={{ stroke: s.color, strokeWidth: 1.5 }}
+                            fill="transparent"
+                            shape={() => <g />}
+                            isAnimationActive={false}
+                          />
+                        ))
+                      )}
                       {selection && (
                         <ReferenceArea
                           x1={Math.max(selection[0], zoomWindow[0])}
