@@ -102,8 +102,8 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-cosmic text-foreground">
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="flex h-16 items-center justify-between px-5 lg:px-10">
-          <BrandLogo imgClassName="h-9 w-auto sm:h-11" />
+        <div className="flex h-20 items-center justify-between px-5 lg:px-10">
+          <BrandLogo imgClassName="h-14 w-auto sm:h-16" />
           <nav className="hidden gap-6 text-sm text-muted-foreground md:flex" aria-label="Sections">
             {blocks.map((b) => (
               <a key={b.id} href={`#${b.id}`} className="transition-colors hover:text-foreground">
