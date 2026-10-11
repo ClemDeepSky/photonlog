@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 interface BrandLogoProps {
   className?: string;
   imgClassName?: string;
+  betaClassName?: string;
   showBeta?: boolean;
 }
 
