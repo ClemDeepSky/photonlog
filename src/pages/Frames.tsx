@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
+import ManualNightEntry from "@/components/frames/ManualNightEntry";
 import { useProjectFrames } from "@/lib/projectFrames";
 import { matchFrameAcquisition } from "@/lib/frameAcquisition";
 import { useProjectContributions } from "@/lib/teamContributions";
@@ -440,6 +441,22 @@ const Frames = () => {
               </Card>
 
             </div>
+
+            {selectedProject && !smartMode && canManual && scanLines.length > 0 && (
+              <ManualNightEntry
+                projectId={selectedProject.id}
+                contributionId={isTeam ? myContribution?.id ?? null : null}
+                lines={scanLines.map((a) => {
+                  const pn = a.pane_id ? panes?.find((p) => p.id === a.pane_id)?.pane_number : null;
+                  return {
+                    id: a.id, filter: a.filter, exposure_duration: Number(a.exposure_duration), bin: a.bin,
+                    pane_id: a.pane_id, acquired: a.acquired,
+                    label: `${pn ? `P${pn} · ` : ""}${a.filter} · ${Number(a.exposure_duration)} s`,
+                  };
+                })}
+                onChanged={refreshAll}
+              />
+            )}
 
             {selectedProject && (
               <QualitySection
