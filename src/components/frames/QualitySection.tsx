@@ -220,7 +220,9 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
           eccentricity: f.eccentricity,
           starCount: f.star_count,
           sensorTemp: f.sensor_temp,
-          otherMember: Boolean(f.contribution_id && f.contribution_id !== myContributionId),
+          // Principe unique (projets team ou individuels) : plein = brute accessible
+          // (mienne, ou commune quand j'ai le droit de la trier), creux = distante.
+          otherMember: !(f.contribution_id ? f.contribution_id === myContributionId : canSortCommon),
         }];
       });
       return { ...item, points };
@@ -245,7 +247,7 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
       totalPoints: indexed.length,
       nightRanges: Array.from(ranges.values()),
     };
-  }, [withDates, selectedFilter, activeMetrics, offPanes, myContributionId]);
+  }, [withDates, selectedFilter, activeMetrics, offPanes, myContributionId, canSortCommon]);
 
   // Zoom horizontal : fenêtre continue [x0, x1] en unités d'index (bords à -0.5 / n-0.5).
   const MIN_SPAN = 2;
@@ -633,11 +635,11 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
           {myContributionId && (
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground" aria-label="Origine des brutes">
               <span className="flex items-center gap-1.5">
-                <svg width="12" height="12" aria-hidden="true" className="text-primary"><circle cx="6" cy="6" r="2.5" fill="currentColor" /></svg>
+                <svg width="12" height="12" aria-hidden="true" className="text-primary"><circle cx="6" cy="6" r="3" fill="currentColor" /></svg>
                 Mes brutes
               </span>
               <span className="flex items-center gap-1.5">
-                <svg width="12" height="12" aria-hidden="true" className="text-primary"><circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
+                <svg width="12" height="12" aria-hidden="true" className="text-primary"><circle cx="6" cy="6" r="3" fill="hsl(var(--card))" stroke="currentColor" strokeWidth="1.5" /></svg>
                 Autres membres
               </span>
             </div>
@@ -856,9 +858,9 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                           fill={s.color}
                           shape={(props: { cx?: number; cy?: number; payload?: { otherMember?: boolean } }) => (
                             <circle cx={props.cx} cy={props.cy}
-                              r={props.payload?.otherMember ? 4.5 : 2.5}
+                              r={3}
                               fill={props.payload?.otherMember ? "hsl(var(--card))" : s.color}
-                              stroke={s.color} strokeWidth={props.payload?.otherMember ? 2 : 0}
+                              stroke={s.color} strokeWidth={props.payload?.otherMember ? 1.5 : 0}
                               data-member-marker={props.payload?.otherMember ? "other" : "mine"} />
                           )}
                           cursor="pointer"
