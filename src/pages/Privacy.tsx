@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Telescope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
+import BrandLogo from "@/components/BrandLogo";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="space-y-3">

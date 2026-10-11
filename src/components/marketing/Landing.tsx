@@ -12,6 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import BrandLogo from "@/components/BrandLogo";
 import dashboardAsset from "@/assets/help/teaser-dashboard.jpg.asset.json";
 import framingAsset from "@/assets/help/teaser-framing.jpg.asset.json";
 import qualityAsset from "@/assets/help/teaser-quality.jpg.asset.json";
