@@ -1,9 +1,7 @@
 # Photonlog V2 — feuille de route
 
-## En cours
-- Accueil : conserver les messages et ajouter des liens « En savoir plus » vers un guide public détaillé (setup, site, projet, modes, équipes et présélection des brutes).
-
 ## Fait
+- Accueil : messages conservés, sept liens « En savoir plus » vers un guide public en huit chapitres (setup, site, projet, modes, équipes, progression, qualité et présélection). Liens, captures et affichage vérifiés.
 - Frames Team : progression calculée aussi depuis les brutes indexées sans lien au plan ; association selon les panneaux propres au membre ; graphique par défaut tous filtres et cercles creux pour les autres membres.
 - Schéma additif : contributions, sessions, lots de poses, objectif en temps, lien brute→session. Rien de supprimé.
 - Interrupteur V1/V2 dans le menu (retour arrière immédiat), navigation V2 sans « Frames ».

@@ -30,9 +30,9 @@ const Steps = ({ items }: { items: ReactNode[] }) => (
   </ol>
 );
 
-const Figure = ({ src, alt, caption }: { src: string; alt: string; caption: string }) => (
+const Figure = ({ src, alt, caption, width = 1280, height = 800 }: { src: string; alt: string; caption: string; width?: number; height?: number }) => (
   <figure className="mt-8">
-    <img src={src} alt={alt} loading="lazy" className="h-auto w-full rounded-lg border border-border" />
+    <img src={src} alt={alt} width={width} height={height} loading="lazy" className="h-auto w-full rounded-lg border border-border" />
     <figcaption className="mt-3 text-sm leading-relaxed text-muted-foreground">{caption}</figcaption>
   </figure>
 );
@@ -117,7 +117,7 @@ const Guide = () => {
                 <>Ajustez la <strong>Latitude</strong> et la <strong>Longitude</strong> en degrés décimaux pour votre lieu exact ; vérifiez aussi l’altitude et le fuseau, puis <strong>Enregistrer</strong>.</>,
                 <>Choisissez ce <strong>Site d’observation</strong> dans votre projet. En équipe, chaque membre choisit le sien.</>,
               ]} />
-              <Figure src={siteAsset.url} alt="Formulaire de création d’un site d’observation" caption="Une ville proche donne un point de départ ; vos coordonnées GPS rendent le calcul plus précis." />
+              <Figure src={siteAsset.url} width={576} height={412} alt="Formulaire de création d’un site d’observation" caption="Une ville proche donne un point de départ ; vos coordonnées GPS rendent le calcul plus précis." />
               <Note>Dans Acquisitions, ouvrez <strong>Conditions par nuit</strong> sous le graphique : durée de nuit astronomique, phase de la lune, lever et coucher, et position lunaire selon les données disponibles.</Note>
             </Chapter>
 
@@ -130,7 +130,7 @@ const Guide = () => {
                 <>Dans <strong>Acquisitions</strong>, définissez chaque objectif : filtre, durée de pose, quantité et binning. Vous pouvez prévoir plusieurs durées pour un même filtre et adapter les lignes par panneau.</>,
                 <>Cliquez sur <strong>Créer le projet</strong>. Pour choisir ou changer le suivi, ouvrez ensuite la modification du projet, réglez <strong>Mode intelligent</strong> et cliquez sur <strong>Enregistrer les modifications</strong>.</>,
               ]} />
-              <Figure src={framingAsset.url} alt="Cadrage de panneaux d’une mosaïque sur le ciel" caption="Une cible simple ou plusieurs panneaux : le champ dépend de votre optique et de votre capteur." />
+              <Figure src={framingAsset.url} width={1660} height={1150} alt="Cadrage de panneaux d’une mosaïque sur le ciel" caption="Une cible simple ou plusieurs panneaux : le champ dépend de votre optique et de votre capteur." />
               <Note>La saisie manuelle des coordonnées n’est pas le mode manuel d’acquisition : vous pouvez saisir vos coordonnées à la main et compter vos brutes automatiquement. Dans le cadrage, réglez la position et l’angle avec les champs ; Ctrl + molette permet de zoomer.</Note>
             </Chapter>
 
@@ -188,7 +188,7 @@ const Guide = () => {
                 <>Repérez les nuits, leurs séparateurs et les informations lunaires. Cliquez sur une nuit pour la cadrer, ou zoomez horizontalement avec la molette et la barre sous le graphique.</>,
                 <>Ouvrez <strong>Conditions par nuit</strong> sous le graphique pour mettre les variations en relation avec le site et la lune.</>,
               ]} />
-              <Figure src={qualityAsset.url} alt="Graphique de qualité des brutes avec nuits et mesures" caption="Les mesures aident à repérer une série inhabituelle ; l’aperçu de l’image permet de confirmer votre choix." />
+              <Figure src={qualityAsset.url} width={1690} height={1240} alt="Graphique de qualité des brutes avec nuits et mesures" caption="Les mesures aident à repérer une série inhabituelle ; l’aperçu de l’image permet de confirmer votre choix." />
               <Note>Les points ont le même diamètre : <strong>pleins pour vos brutes</strong>, <strong>creux pour celles des autres membres</strong>. Un point plein ne dispense pas d’autoriser l’accès au dossier local pour ouvrir l’image. Les courbes ne relient pas les acquisitions de membres différents.</Note>
             </Chapter>
 
