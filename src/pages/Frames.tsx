@@ -51,6 +51,7 @@ interface Project {
   team_id: string | null;
   status: string;
   filename_pattern: string | null;
+  tracking_mode: string;
   teams: { name: string; owner_id: string; management_mode: string } | null;
 }
 
@@ -78,7 +79,7 @@ const Frames = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, is_mosaic, team_id, status, filename_pattern, teams(name, owner_id, management_mode)")
+        .select("id, name, is_mosaic, team_id, status, filename_pattern, tracking_mode, teams(name, owner_id, management_mode)")
         .or(await personalProjectFilter(user?.id))
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -172,6 +173,11 @@ const Frames = () => {
   const scanLines = (allAcquisitions || []).filter((a) =>
     isTeam && myContribution ? a.contribution_id === myContribution.id : !a.contribution_id,
   );
+  // Mode d'acquisition propre à chaque membre (Team) ou au projet (individuel).
+  const smartMode = isTeam
+    ? (myContribution?.tracking_mode ?? "automatic") !== "manual"
+    : selectedProject?.tracking_mode !== "manual";
+  const canManual = !isTeam || !!myContribution;
 
   const togglePane = (paneId: string) => {
     setExpandedPanes((prev) => {
@@ -337,6 +343,9 @@ const Frames = () => {
               </div>
               <div className="flex items-center gap-3">
                 {selectedProject && (
+                  <Badge variant="outline" className="text-xs">{smartMode ? "Mode intelligent" : "Mode manuel"}</Badge>
+                )}
+                {selectedProject && smartMode && (
                   <FolderRefresh
                     projectId={selectedProject.id}
                     pattern={(isTeam && myContribution?.filename_pattern) || selectedProject.filename_pattern}
