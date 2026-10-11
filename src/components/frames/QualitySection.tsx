@@ -630,6 +630,18 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <span className="text-xs text-muted-foreground">Mesures</span>
+          {myContributionId && (
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground" aria-label="Origine des brutes">
+              <span className="flex items-center gap-1.5">
+                <svg width="12" height="12" aria-hidden="true" className="text-primary"><circle cx="6" cy="6" r="2.5" fill="currentColor" /></svg>
+                Mes brutes
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg width="12" height="12" aria-hidden="true" className="text-primary"><circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
+                Autres membres
+              </span>
+            </div>
+          )}
           {METRICS.map((item) => {
             const checkboxId = `quality-${projectId}-${item.key}`;
             return (
@@ -844,9 +856,9 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                           fill={s.color}
                           shape={(props: { cx?: number; cy?: number; payload?: { otherMember?: boolean } }) => (
                             <circle cx={props.cx} cy={props.cy}
-                              r={props.payload?.otherMember ? 3.5 : 2.5}
-                              fill={props.payload?.otherMember ? "none" : s.color}
-                              stroke={s.color} strokeWidth={props.payload?.otherMember ? 1.5 : 0}
+                              r={props.payload?.otherMember ? 4.5 : 2.5}
+                              fill={props.payload?.otherMember ? "hsl(var(--card))" : s.color}
+                              stroke={s.color} strokeWidth={props.payload?.otherMember ? 2 : 0}
                               data-member-marker={props.payload?.otherMember ? "other" : "mine"} />
                           )}
                           cursor="pointer"
