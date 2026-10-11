@@ -536,52 +536,6 @@ const Frames = () => {
                                 </div>
                               </div>
 
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pl-[3.25rem]">
-                                {/* Acquired counter */}
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground w-16">Acquis</span>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      disabled={acq.acquired <= 0 || updateAcquired.isPending}
-                                      onClick={() => updateAcquired.mutate({ id: acq.id, acquired: acq.acquired - 1 })}
-                                    >
-                                      <Minus className="h-3 w-3" />
-                                    </Button>
-                                    <div className="flex items-center gap-1">
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        className="h-7 w-16 text-center text-sm tabular-nums"
-                                        value={draftsAcquired[acq.id] ?? String(acq.acquired)}
-                                        onChange={(e) => setDraftsAcquired((d) => ({ ...d, [acq.id]: e.target.value }))}
-                                        onBlur={() => {
-                                          const raw = draftsAcquired[acq.id];
-                                          setDraftsAcquired((d) => { const n = { ...d }; delete n[acq.id]; return n; });
-                                          if (raw === undefined) return;
-                                          const v = parseInt(raw);
-                                          const next = isNaN(v) ? 0 : Math.max(0, v);
-                                          if (next !== acq.acquired) updateAcquired.mutate({ id: acq.id, acquired: next });
-                                        }}
-                                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                                      />
-                                      <span className="text-xs text-muted-foreground">/ {acq.quantity}</span>
-                                    </div>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      disabled={updateAcquired.isPending}
-                                      onClick={() => updateAcquired.mutate({ id: acq.id, acquired: acq.acquired + 1 })}
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-
-                              </div>
 
 
 
