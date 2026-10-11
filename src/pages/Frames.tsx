@@ -458,7 +458,9 @@ const Frames = () => {
               />
             )}
 
-            {selectedProject && (
+            {/* Le graphique de qualité des brutes n'est pertinent qu'en mode
+                intelligent : en manuel, aucune brute n'est indexée. */}
+            {selectedProject && smartMode && (
               <QualitySection
                 projectId={selectedProject.id}
                 isMosaic={selectedProject.is_mosaic}
