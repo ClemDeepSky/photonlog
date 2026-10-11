@@ -51,12 +51,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen bg-cosmic flex">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-border/20 bg-card/30">
-        <div className="flex items-center gap-2 p-6 border-b border-border/20">
-          <Telescope className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold text-gradient">Photonlog</span>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-1.5 py-0.5 leading-none">
-            Beta
-          </span>
+        <div className="flex items-center p-4 border-b border-border/20">
+          <BrandLogo imgClassName="h-7 w-auto" />
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => (
@@ -92,12 +88,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-sm border-b border-border/20 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Telescope className="h-5 w-5 text-primary" />
-          <span className="font-bold text-gradient">Photonlog</span>
-          <span className="text-[9px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-1 py-0.5 leading-none">
-            Beta
-          </span>
+        <div className="flex items-center">
+          <BrandLogo imgClassName="h-6 w-auto" showBeta />
         </div>
         <div className="flex items-center gap-1">
           <AccountLink compact />
