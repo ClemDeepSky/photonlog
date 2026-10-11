@@ -29,11 +29,13 @@ type Block = {
   icon: typeof Telescope;
   image: string;
   alt: string;
+  guide: string;
 };
 
 const blocks: Block[] = [
   {
     id: "progression",
+    guide: "progression",
     kicker: "Tableau de bord",
     title: "Toutes vos heures, d’un coup d’œil.",
     text: "Intégration acquise, objectif, reste à faire — filtre par filtre.",
@@ -44,6 +46,7 @@ const blocks: Block[] = [
   },
   {
     id: "cadrage",
+    guide: "projet",
     kicker: "Projets",
     title: "Cadrez avant la nuit.",
     text: "Cible simple ou mosaïque, import Telescopius, J2000 ou JNow : vos panneaux posés sur le vrai ciel.",
@@ -54,6 +57,7 @@ const blocks: Block[] = [
   },
   {
     id: "acquisitions",
+    guide: "modes",
     kicker: "Acquisitions",
     title: "Votre dossier parle. Photonlog écoute.",
     text: "Pointez le dossier de vos brutes : filtres, poses et panneaux sont reconnus tout seuls.",
@@ -64,6 +68,7 @@ const blocks: Block[] = [
   },
   {
     id: "qualite",
+    guide: "preselection",
     kicker: "Qualité",
     title: "Chaque nuit, chaque brute.",
     text: "FWHM, excentricité, étoiles… et la lune juste au-dessus. Sélectionnez, comparez, écartez.",
@@ -74,6 +79,7 @@ const blocks: Block[] = [
   },
   {
     id: "materiel",
+    guide: "setup",
     kicker: "Matériel",
     title: "Vos setups, une fois pour toutes.",
     text: "Instrument, caméra, monture, filtres : prêts à être réutilisés sur chaque projet.",
@@ -84,6 +90,7 @@ const blocks: Block[] = [
   },
   {
     id: "sites",
+    guide: "site",
     kicker: "Sites d’observation",
     title: "Le bon endroit, la bonne nuit.",
     text: "Choisissez une ville : durée de nuit astronomique et lune se calculent pour votre ciel.",
@@ -104,12 +111,13 @@ const Landing = () => {
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="flex h-20 items-center justify-between px-5 lg:px-10">
           <BrandLogo />
-          <nav className="hidden gap-6 text-sm text-muted-foreground md:flex" aria-label="Sections">
+          <nav className="hidden gap-4 text-sm text-muted-foreground xl:flex" aria-label="Sections">
             {blocks.map((b) => (
               <a key={b.id} href={`#${b.id}`} className="transition-colors hover:text-foreground">
                 {b.kicker}
               </a>
             ))}
+            <Link to="/guide" className="transition-colors hover:text-foreground">Guide</Link>
           </nav>
           <Button asChild size="sm">
             <Link to={appEntry}>
@@ -162,6 +170,11 @@ const Landing = () => {
                     </li>
                   ))}
                 </ul>
+                <Button asChild variant="link" className="mt-5 px-0">
+                  <Link to={`/guide#${b.guide}`} aria-label={`En savoir plus : ${b.kicker}`}>
+                    En savoir plus <ArrowRight />
+                  </Link>
+                </Button>
               </div>
               <figure className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-glow">
                 <img src={b.image} alt={b.alt} loading="lazy" className="h-auto w-full" />
@@ -170,15 +183,18 @@ const Landing = () => {
           ))}
 
           <section id="sites" className="mx-auto grid max-w-7xl scroll-mt-24 gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-border/70 bg-card/60 p-8">
+            <div className="min-w-0 py-4 md:pr-8">
               <div className="mb-4 flex items-center gap-2 text-sm font-medium text-primary">
                 <MapPin className="h-4 w-4" /> {blocks[5].kicker}
               </div>
               <h2 className="text-2xl font-bold">{blocks[5].title}</h2>
               <p className="mt-3 text-muted-foreground">{blocks[5].text}</p>
               <img src={blocks[5].image} alt={blocks[5].alt} loading="lazy" className="mt-6 w-full rounded-lg border border-border/70" />
+              <Button asChild variant="link" className="mt-5 px-0">
+                <Link to="/guide#site" aria-label="En savoir plus : Sites d’observation">En savoir plus <ArrowRight /></Link>
+              </Button>
             </div>
-            <div className="flex flex-col rounded-xl border border-border/70 bg-card/60 p-8">
+            <div className="flex min-w-0 flex-col border-t border-border/70 py-4 md:border-l md:border-t-0 md:pl-8">
               <div className="mb-4 flex items-center gap-2 text-sm font-medium text-primary">
                 <Users className="h-4 w-4" /> Équipes
               </div>
@@ -204,6 +220,9 @@ const Landing = () => {
                   Chacun ne modifie que sa contribution — sauf l’administrateur de la team.
                 </li>
               </ul>
+              <Button asChild variant="link" className="mt-5 justify-start self-start px-0">
+                <Link to="/guide#teams" aria-label="En savoir plus : Équipes">En savoir plus <ArrowRight /></Link>
+              </Button>
               <div className="mt-auto pt-10 text-sm text-muted-foreground">
                 Vos projets personnels restent les vôtres.{" "}
                 <Link to="/confidentialite" className="text-primary hover:underline">
@@ -229,9 +248,12 @@ const Landing = () => {
       <footer className="border-t border-border/60 px-5 py-8 lg:px-10">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
           <span>Photonlog — suivi d’acquisitions astrophoto</span>
+          <div className="flex flex-wrap gap-5">
+          <Link to="/guide" className="hover:text-foreground">Guide d’utilisation</Link>
           <Link to="/confidentialite" className="hover:text-foreground">
             Confidentialité &amp; cookies
           </Link>
+          </div>
         </div>
       </footer>
     </div>
