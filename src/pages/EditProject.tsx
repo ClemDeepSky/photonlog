@@ -62,6 +62,7 @@ const EditProject = () => {
 
   const [name, setName] = useState("");
   const [folderPath, setFolderPath] = useState("");
+  const [smartMode, setSmartMode] = useState(true);
   const [filenamePattern, setFilenamePattern] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -195,6 +196,7 @@ const EditProject = () => {
 
     setName(project.name);
     setFolderPath((project as any).folder_path || "");
+    setSmartMode((project as any).tracking_mode !== "manual");
     setFilenamePattern((project as any).filename_pattern || "");
     setDescription(project.description || "");
     setImageUrl((project as any).image_url || null);
@@ -218,6 +220,7 @@ const EditProject = () => {
       const scopeMosaic = ownScope ? projectPanes.length > 1 : project.is_mosaic;
       if (isTeam) {
         setFolderPath(mine?.folder_path || "");
+        setSmartMode(mine ? mine.tracking_mode !== "manual" : true);
         setFilenamePattern(mine?.filename_pattern || "");
         // Setup de la contribution ; à défaut, celui du projet s'il fait partie de son matériel.
         setSetup(mine?.setup || (equipment?.some((e) => e.name === project.setup) ? project.setup || "" : ""));
@@ -419,6 +422,7 @@ const EditProject = () => {
             name, description: description || null, setup: setup || null, observing_site_id: siteId || null,
             image_url: imageUrl,
             folder_path: folderPath || null,
+            tracking_mode: smartMode ? "automatic" : "manual",
             filename_pattern: filenamePattern || null,
             team_id: isTeamProject ? selectedTeamId : null, is_mosaic: isMosaic,
             ra: isMosaic ? null : ra || null, dec: isMosaic ? null : dec || null,
@@ -444,6 +448,7 @@ const EditProject = () => {
           setup: setup || null, equipment_profile_id: s?.id ?? null,
           focal_length: s?.focal_length ?? null, sensor_width_mm: mm(s?.sensor_width_px), sensor_height_mm: mm(s?.sensor_height_px),
           folder_path: folderPath || null, filename_pattern: filenamePattern || null,
+          tracking_mode: smartMode ? "automatic" : "manual",
           observing_site_id: siteId || null,
         }).eq("id", cid);
         if (cErr) throw cErr;
@@ -638,6 +643,18 @@ const EditProject = () => {
                 <Label>Nom du projet</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: M42 - Nébuleuse d'Orion" disabled={!isProjectAdmin} />
               </div>
+              <div className="flex items-start gap-3 rounded-md border border-border/60 p-3">
+                <Switch id="smart-mode" checked={smartMode} onCheckedChange={setSmartMode} />
+                <div>
+                  <Label htmlFor="smart-mode">Mode intelligent</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {smartMode
+                      ? "Les brutes sont comptées automatiquement à partir de votre dossier. Le comptage manuel est désactivé dans Frames."
+                      : "Sans dossier : vous saisissez dans Frames le nombre de brutes acquises par nuit."}
+                  </p>
+                </div>
+              </div>
+              {smartMode && (
               <div>
                 <Label>{isTeam ? "Mon dossier d'acquisitions" : "Dossier racine du projet"}</Label>
                 <div className="flex gap-2">
@@ -648,6 +665,7 @@ const EditProject = () => {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Cliquez sur l'icône pour désigner le dossier racine du projet : seul son emplacement est enregistré, aucun fichier n'est lu ni importé.</p>
               </div>
+              )}
               <div>
                 <Label>Structure des noms de fichiers (optionnel)</Label>
                 <Input
