@@ -178,6 +178,14 @@ const Frames = () => {
   const smartMode = isTeam
     ? (myContribution?.tracking_mode ?? "automatic") !== "manual"
     : selectedProject?.tracking_mode !== "manual";
+  // En team, le graphique de qualité reste visible dès qu'un membre au moins est
+  // en mode intelligent : toute l'équipe suit les brutes indexées du projet.
+  const teamContributions = contributions ?? [];
+  const showQuality = isTeam
+    ? teamContributions.length > 0
+      ? teamContributions.some((c) => (c.tracking_mode ?? "automatic") !== "manual")
+      : smartMode
+    : smartMode;
   const canManual = !isTeam || !!myContribution;
 
   const togglePane = (paneId: string) => {
@@ -458,9 +466,9 @@ const Frames = () => {
               />
             )}
 
-            {/* Le graphique de qualité des brutes n'est pertinent qu'en mode
-                intelligent : en manuel, aucune brute n'est indexée. */}
-            {selectedProject && smartMode && (
+            {/* Le graphique de qualité n'est visible qu'en mode intelligent. En
+                team, il suffit qu'un seul membre le soit pour que tous le voient. */}
+            {selectedProject && showQuality && (
               <QualitySection
                 projectId={selectedProject.id}
                 isMosaic={selectedProject.is_mosaic}
