@@ -102,13 +102,7 @@ const Landing = () => {
     <div className="min-h-screen bg-cosmic text-foreground">
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="flex h-16 items-center justify-between px-5 lg:px-10">
-          <Link to="/" className="flex items-center gap-2" aria-label="Accueil Photonlog">
-            <Telescope className="h-6 w-6 text-primary" />
-            <span className="text-lg font-bold text-gradient">Photonlog</span>
-            <span className="rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none tracking-wider text-primary">
-              Beta
-            </span>
-          </Link>
+          <BrandLogo imgClassName="h-6 w-auto" />
           <nav className="hidden gap-6 text-sm text-muted-foreground md:flex" aria-label="Sections">
             {blocks.map((b) => (
               <a key={b.id} href={`#${b.id}`} className="transition-colors hover:text-foreground">

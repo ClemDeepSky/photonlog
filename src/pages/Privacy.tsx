@@ -17,10 +17,7 @@ const Privacy = () => {
     <div className="min-h-screen bg-cosmic">
       <header className="border-b border-border/20">
         <div className="w-full px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <Telescope className="h-5 w-5 text-primary" />
-            <span className="text-lg font-bold text-gradient">Photonlog</span>
-          </Link>
+          <BrandLogo imgClassName="h-6 w-auto" showBeta={false} />
           <Button variant="ghost" size="sm" asChild>
             <Link to="/dashboard">Retour à l'application</Link>
           </Button>
