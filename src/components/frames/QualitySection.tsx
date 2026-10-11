@@ -195,6 +195,9 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
     const kept = indexed;
 
     const metricRanges: Partial<Record<MetricKey, { min: number; max: number }>> = {};
+    // Clé de membre : on ne relie jamais par une courbe deux membres différents,
+    // même quand deux setups ont shooté la même nuit.
+    const memberKey = (f: FrameRow) => f.contribution_id ?? "__commun__";
     const metricSeries = METRICS.filter((item) => activeMetrics.has(item.key)).map((item) => {
       const values = kept
         .map(({ f }) => f[item.key])
@@ -225,7 +228,24 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
           otherMember: !(f.contribution_id ? f.contribution_id === myContributionId : canSortCommon),
         }];
       });
-      return { ...item, points };
+      // Segments de courbe : suite de points consécutifs du même membre (≥ 2).
+      const pointsByX = new Map(points.map((p) => [p.x, p]));
+      const lineSegments: typeof points[] = [];
+      let run: typeof points = [];
+      let runKey: string | null = null;
+      for (const { idx, f } of kept) {
+        const p = pointsByX.get(idx);
+        if (!p) continue;
+        const key = memberKey(f);
+        if (key !== runKey) {
+          if (run.length >= 2) lineSegments.push(run);
+          run = [];
+          runKey = key;
+        }
+        run.push(p);
+      }
+      if (run.length >= 2) lineSegments.push(run);
+      return { ...item, points, lineSegments };
     });
 
     const ranges = new Map<string, { night: string; start: number; end: number; count: number; firstAt: string; lastAt: string }>();
@@ -854,7 +874,6 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                           key={s.key}
                           name={s.label}
                           data={s.points}
-                          line={{ stroke: s.color, strokeWidth: 1.5 }}
                           fill={s.color}
                           shape={(props: { cx?: number; cy?: number; payload?: { otherMember?: boolean } }) => (
                             <circle cx={props.cx} cy={props.cy}
@@ -866,6 +885,20 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                           cursor="pointer"
                         />
                       ))}
+                      {/* Courbes : un segment par suite de points consécutifs du même membre,
+                          pour ne jamais relier deux setups ayant shooté la même nuit. */}
+                      {series.flatMap((s) =>
+                        (s.lineSegments || []).map((segment, segIndex) => (
+                          <Scatter
+                            key={`${s.key}-line-${segIndex}`}
+                            data={segment}
+                            line={{ stroke: s.color, strokeWidth: 1.5 }}
+                            fill="transparent"
+                            shape={() => <g />}
+                            isAnimationActive={false}
+                          />
+                        ))
+                      )}
                       {selection && (
                         <ReferenceArea
                           x1={Math.max(selection[0], zoomWindow[0])}
