@@ -99,6 +99,13 @@
       "when": 1791665056029,
       "tag": "0013_team_members_read_avatars",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791747073696,
+      "tag": "0014_smart_mode_default",
+      "breakpoints": true
     }
   ]
 }

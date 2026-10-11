@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { ImagePlus, Minus, Plus, ChevronDown, ChevronRight, Users, User, Grid3X3 } from "lucide-react";
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
+import ManualNightEntry from "@/components/frames/ManualNightEntry";
 import { useProjectFrames } from "@/lib/projectFrames";
 import { matchFrameAcquisition } from "@/lib/frameAcquisition";
 import { useProjectContributions } from "@/lib/teamContributions";
@@ -51,6 +52,7 @@ interface Project {
   team_id: string | null;
   status: string;
   filename_pattern: string | null;
+  tracking_mode: string;
   teams: { name: string; owner_id: string; management_mode: string } | null;
 }
 
@@ -78,7 +80,7 @@ const Frames = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, is_mosaic, team_id, status, filename_pattern, teams(name, owner_id, management_mode)")
+        .select("id, name, is_mosaic, team_id, status, filename_pattern, tracking_mode, teams(name, owner_id, management_mode)")
         .or(await personalProjectFilter(user?.id))
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -172,6 +174,11 @@ const Frames = () => {
   const scanLines = (allAcquisitions || []).filter((a) =>
     isTeam && myContribution ? a.contribution_id === myContribution.id : !a.contribution_id,
   );
+  // Mode d'acquisition propre à chaque membre (Team) ou au projet (individuel).
+  const smartMode = isTeam
+    ? (myContribution?.tracking_mode ?? "automatic") !== "manual"
+    : selectedProject?.tracking_mode !== "manual";
+  const canManual = !isTeam || !!myContribution;
 
   const togglePane = (paneId: string) => {
     setExpandedPanes((prev) => {
@@ -337,6 +344,9 @@ const Frames = () => {
               </div>
               <div className="flex items-center gap-3">
                 {selectedProject && (
+                  <Badge variant="outline" className="text-xs">{smartMode ? "Mode intelligent" : "Mode manuel"}</Badge>
+                )}
+                {selectedProject && smartMode && (
                   <FolderRefresh
                     projectId={selectedProject.id}
                     pattern={(isTeam && myContribution?.filename_pattern) || selectedProject.filename_pattern}
@@ -431,6 +441,22 @@ const Frames = () => {
               </Card>
 
             </div>
+
+            {selectedProject && !smartMode && canManual && scanLines.length > 0 && (
+              <ManualNightEntry
+                projectId={selectedProject.id}
+                contributionId={isTeam ? myContribution?.id ?? null : null}
+                lines={scanLines.map((a) => {
+                  const pn = a.pane_id ? panes?.find((p) => p.id === a.pane_id)?.pane_number : null;
+                  return {
+                    id: a.id, filter: a.filter, exposure_duration: Number(a.exposure_duration), bin: a.bin,
+                    pane_id: a.pane_id, acquired: a.acquired,
+                    label: `${pn ? `P${pn} · ` : ""}${a.filter} · ${Number(a.exposure_duration)} s`,
+                  };
+                })}
+                onChanged={refreshAll}
+              />
+            )}
 
             {selectedProject && (
               <QualitySection
@@ -536,52 +562,6 @@ const Frames = () => {
                                 </div>
                               </div>
 
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pl-[3.25rem]">
-                                {/* Acquired counter */}
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground w-16">Acquis</span>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      disabled={acq.acquired <= 0 || updateAcquired.isPending}
-                                      onClick={() => updateAcquired.mutate({ id: acq.id, acquired: acq.acquired - 1 })}
-                                    >
-                                      <Minus className="h-3 w-3" />
-                                    </Button>
-                                    <div className="flex items-center gap-1">
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        className="h-7 w-16 text-center text-sm tabular-nums"
-                                        value={draftsAcquired[acq.id] ?? String(acq.acquired)}
-                                        onChange={(e) => setDraftsAcquired((d) => ({ ...d, [acq.id]: e.target.value }))}
-                                        onBlur={() => {
-                                          const raw = draftsAcquired[acq.id];
-                                          setDraftsAcquired((d) => { const n = { ...d }; delete n[acq.id]; return n; });
-                                          if (raw === undefined) return;
-                                          const v = parseInt(raw);
-                                          const next = isNaN(v) ? 0 : Math.max(0, v);
-                                          if (next !== acq.acquired) updateAcquired.mutate({ id: acq.id, acquired: next });
-                                        }}
-                                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                                      />
-                                      <span className="text-xs text-muted-foreground">/ {acq.quantity}</span>
-                                    </div>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      disabled={updateAcquired.isPending}
-                                      onClick={() => updateAcquired.mutate({ id: acq.id, acquired: acq.acquired + 1 })}
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-
-                              </div>
 
 
 
