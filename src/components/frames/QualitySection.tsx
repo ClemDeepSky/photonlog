@@ -220,7 +220,9 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
           eccentricity: f.eccentricity,
           starCount: f.star_count,
           sensorTemp: f.sensor_temp,
-          otherMember: Boolean(f.contribution_id && f.contribution_id !== myContributionId),
+          // Principe unique (projets team ou individuels) : plein = brute accessible
+          // (mienne, ou commune quand j'ai le droit de la trier), creux = distante.
+          otherMember: !(f.contribution_id ? f.contribution_id === myContributionId : canSortCommon),
         }];
       });
       return { ...item, points };
