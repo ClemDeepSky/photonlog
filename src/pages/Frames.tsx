@@ -373,8 +373,8 @@ const Frames = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {selectedProject && (
-                  <Badge variant="outline" className="text-xs">{smartMode ? "Mode intelligent" : "Mode manuel"}</Badge>
+                {selectedProject && !smartMode && (
+                  <Badge variant="outline" className="text-xs">Mode manuel</Badge>
                 )}
                 {selectedProject && smartMode && (
                   <FolderRefresh
