@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, Plus, Telescope, Calendar, Trash2, Grid3X3, User, Pencil, Camera, CheckCircle2 } from "lucide-react";
+import { FolderOpen, Telescope, Calendar, Trash2, Grid3X3, User, Pencil, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

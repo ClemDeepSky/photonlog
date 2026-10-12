@@ -18,7 +18,7 @@ const Privacy = () => {
       <AppHeader>
           
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/dashboard">Retour à l'application</Link>
+            <Link to="/dashboard"><span className="sm:hidden">Retour</span><span className="hidden sm:inline">Retour à l'application</span></Link>
           </Button>
       </AppHeader>
 

@@ -119,9 +119,9 @@ const Landing = () => {
             <Link to="/guide" className="transition-colors hover:text-foreground">Guide</Link>
           </nav>
           <Button asChild size="sm">
-            <Link to={appEntry}>
-              {session ? "Ouvrir Photonlog" : "Connexion"}
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Link to={appEntry} aria-label={session ? "Ouvrir Photonlog" : "Connexion"}>
+              <span className="hidden sm:inline">{session ? "Ouvrir Photonlog" : "Connexion"}</span>
+              <ArrowRight className="h-4 w-4 sm:ml-2" />
             </Link>
           </Button>
       </AppHeader>

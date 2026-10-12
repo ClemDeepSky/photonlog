@@ -74,7 +74,7 @@ const Guide = () => {
           
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link to="/"><ArrowLeft /> Accueil</Link></Button>
-            <Button asChild size="sm"><Link to={appEntry}>{session ? "Ouvrir Photonlog" : "Connexion"}<ArrowRight /></Link></Button>
+            <Button asChild size="sm"><Link to={appEntry} aria-label={session ? "Ouvrir Photonlog" : "Connexion"}><span className="hidden sm:inline">{session ? "Ouvrir Photonlog" : "Connexion"}</span><ArrowRight /></Link></Button>
           </div>
       </AppHeader>
 
@@ -99,7 +99,7 @@ const Guide = () => {
             <Chapter id="setup" title="Créer son setup">
               <p className="leading-relaxed text-muted-foreground">Un setup rassemble l’équipement que vous utilisez ensemble. Vous le préparez une fois, puis le réutilisez sur vos projets.</p>
               <Steps items={[
-                <>Ouvrez <strong>Matériel et observatoires</strong>, puis cliquez sur <strong>Nouveau setup</strong>. Donnez-lui un nom reconnaissable.</>,
+                <>Ouvrez <strong>Matériel et observatoires</strong>, puis cliquez sur <strong>Ajouter un matériel</strong>. Donnez-lui un nom reconnaissable.</>,
                 <>Choisissez votre <strong>Optique</strong> et votre <strong>Imageur</strong> dans les catalogues. Si votre modèle n’y figure pas, choisissez <strong>Autre…</strong> et saisissez ses caractéristiques.</>,
                 <>Vérifiez la <strong>focale</strong>, la <strong>taille des pixels</strong> et la <strong>résolution du capteur</strong> : ces informations déterminent le champ affiché dans le cadrage. Complétez la monture et le guidage si nécessaire.</>,
                 <>Cochez vos <strong>Filtres</strong>, puis cliquez sur <strong>Enregistrer</strong>. Ce setup sera disponible dans la configuration de vos projets.</>,
@@ -110,7 +110,7 @@ const Guide = () => {
             <Chapter id="site" title="Créer son site d’observation">
               <p className="leading-relaxed text-muted-foreground">Le site situe vos acquisitions sur Terre : il permet de calculer la durée de nuit astronomique et les conditions lunaires pour votre ciel.</p>
               <Steps items={[
-                <>Dans <strong>Matériel et observatoires</strong>, repérez <strong>Sites d’observation</strong> et cliquez sur <strong>Nouveau site</strong>.</>,
+                <>Dans <strong>Matériel et observatoires</strong>, repérez <strong>Sites d’observation</strong> et cliquez sur <strong>Ajouter un site d’observation</strong>.</>,
                 <>Renseignez le <strong>Nom du site</strong>, choisissez le <strong>Pays</strong> et recherchez une <strong>Ville à proximité</strong>. Sélectionnez une proposition pour préremplir les coordonnées et le fuseau.</>,
                 <>Ajustez la <strong>Latitude</strong> et la <strong>Longitude</strong> en degrés décimaux pour votre lieu exact ; vérifiez aussi l’altitude et le fuseau, puis <strong>Enregistrer</strong>.</>,
                 <>Choisissez ce <strong>Site d’observation</strong> dans votre projet. En équipe, chaque membre choisit le sien.</>,
@@ -121,7 +121,7 @@ const Guide = () => {
 
             <Chapter id="projet" title="Créer son projet et son plan">
               <Steps items={[
-                <>Dans <strong>Projets</strong>, cliquez sur <strong>Nouveau projet</strong>. Choisissez un projet personnel ou une team, puis renseignez le <strong>Nom du projet</strong>.</>,
+                <>Dans <strong>Projets</strong>, cliquez sur <strong>Ajouter un projet</strong>. Choisissez un projet personnel ou une team, puis renseignez le <strong>Nom du projet</strong>.</>,
                 <>Choisissez votre <strong>Setup</strong> et votre <strong>Site d’observation</strong>. Pour un suivi automatique, indiquez votre dossier d’acquisitions. Le dossier devra ensuite être autorisé lors de l’actualisation.</>,
                 <>Dans <strong>Coordonnées</strong>, saisissez RA, DEC et l’angle, ou utilisez <strong>Import CSV</strong> avec un export Telescopius. Vérifiez l’époque <strong>J2000 / JNow</strong> utilisée par vos coordonnées.</>,
                 <>Pour une mosaïque, définissez vos panneaux. Le <strong>Cadrage</strong> utilise le setup choisi plus haut : vérifiez que les champs couvrent votre cible. Le relevé du ciel et la luminosité se règlent au-dessus de la carte.</>,
@@ -159,7 +159,7 @@ const Guide = () => {
 
             <Chapter id="teams" title="Une cible, plusieurs participants">
               <Steps items={[
-                <>Dans <strong>Teams</strong>, cliquez sur <strong>Nouvelle Team</strong>, donnez un nom et choisissez le mode de gestion : <strong>Administrateur unique</strong> ou <strong>Collaboratif</strong>.</>,
+                <>Dans <strong>Teams</strong>, cliquez sur <strong>Ajouter une nouvelle team</strong>, donnez un nom et choisissez le mode de gestion : <strong>Administrateur unique</strong> ou <strong>Collaboratif</strong>.</>,
                 <>Ouvrez la team et utilisez <strong>Inviter</strong> avec l’email du participant. Il reçoit un lien d’invitation ; un lien à copier reste disponible. Il rejoint avec le compte correspondant à l’adresse invitée, ou crée un compte si nécessaire.</>,
                 <>Créez un projet associé à cette team. Chaque membre ouvre ensuite sa configuration et définit <strong>son setup, son site, son mode de suivi, son cadrage et ses objectifs</strong>.</>,
                 <>Le cadrage unique superpose les champs des participants. Un membre peut avoir une mosaïque et un autre un panneau simple : chacun garde son propre plan.</>,
