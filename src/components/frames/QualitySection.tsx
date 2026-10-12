@@ -299,6 +299,7 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
   useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, totalPoints]);
   const [drag, setDrag] = useState<{ start: number; cur: number } | null>(null);
   const [selection, setSelection] = useState<[number, number] | null>(null);
+  const [selectionPaths, setSelectionPaths] = useState<Set<string>>(new Set());
   // La sélection survit à l'inspection et au rejet d'une image : seul le bouton d'effacement la vide.
   useEffect(() => setSelection(null), [selectedFilter, offPanes]);
   // Cases à cocher de la liste de sélection (rejet vers « _rejetées »).
@@ -597,6 +598,9 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
     if (Math.abs(end - drag.start) > 4) {
       const a = pxToX(Math.min(drag.start, end));
       const b = pxToX(Math.max(drag.start, end));
+      const paths: string[] = [];
+      for (const s of series) for (const p of s.points) if (p.x >= a && p.x <= b) paths.push(p.relativePath);
+      setSelectionPaths(new Set(paths));
       setSelection([a, b]);
     } else {
       // Clic simple (déplacement ≤ 4px) : ouvre la brute du point le plus proche.
@@ -619,12 +623,18 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
 
   const selectedFrames = (() => {
     if (!selection) return [];
-    const byX = new Map<number, (typeof series)[number]["points"][number]>();
+    const byPath = new Map<string, (typeof series)[number]["points"][number]>();
     for (const s of series) for (const p of s.points) {
-      if (p.x >= selection[0] && p.x <= selection[1] && !byX.has(p.x)) byX.set(p.x, p);
+      if (selectionPaths.has(p.relativePath) && !byPath.has(p.relativePath)) byPath.set(p.relativePath, p);
     }
-    return Array.from(byX.values()).sort((a, b) => a.x - b.x);
+    return Array.from(byPath.values()).sort((a, b) => a.x - b.x);
   })();
+  // Zone surlignée recalculée sur les brutes restantes (les index bougent après un rejet).
+  const selectionArea: [number, number] | null = selection
+    ? selectedFrames.length
+      ? [selectedFrames[0].x, selectedFrames[selectedFrames.length - 1].x]
+      : selection
+    : null;
 
   return (
     <Card className="border-border/50">
@@ -914,8 +924,8 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                       )}
                       {selection && (
                         <ReferenceArea
-                          x1={Math.max(selection[0], zoomWindow[0])}
-                          x2={Math.min(selection[1], zoomWindow[1])}
+                          x1={Math.max(selectionArea![0], zoomWindow[0])}
+                          x2={Math.min(selectionArea![1], zoomWindow[1])}
                           fillOpacity={0}
                           stroke="hsl(var(--foreground))"
                           strokeDasharray="4 2"
