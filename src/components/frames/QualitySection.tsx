@@ -299,7 +299,8 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
   useEffect(() => setZoom(null), [selectedFilter, activeMetrics, offPanes, totalPoints]);
   const [drag, setDrag] = useState<{ start: number; cur: number } | null>(null);
   const [selection, setSelection] = useState<[number, number] | null>(null);
-  useEffect(() => setSelection(null), [selectedFilter, offPanes, totalPoints]);
+  // La sélection survit à l'inspection et au rejet d'une image : seul le bouton d'effacement la vide.
+  useEffect(() => setSelection(null), [selectedFilter, offPanes]);
   // Cases à cocher de la liste de sélection (rejet vers « _rejetées »).
   const [checkedPaths, setCheckedPaths] = useState<Set<string>>(new Set());
   const [rejecting, setRejecting] = useState(false);
@@ -486,9 +487,21 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
         await supabase.from("project_acquisitions").update({ acquired: count || 0 }).eq("id", acqId);
       }
 
+      // Retrait immédiat du cache pour que tous les décomptes se mettent à jour.
+      const movedSet = new Set(moved);
+      queryClient.setQueriesData({ queryKey: ["project-frames", projectId] }, (old: any) =>
+        Array.isArray(old) ? old.filter((f: any) => !movedSet.has(f.relative_path)) : old,
+      );
       queryClient.invalidateQueries({ queryKey: ["project-frames", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["frames-acquisitions", projectId] });
       queryClient.invalidateQueries({ queryKey: ["project-acquisitions"] });
       queryClient.invalidateQueries({ queryKey: ["acquisitions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-projects"] });
+      setCheckedPaths((prev) => {
+        const next = new Set(prev);
+        moved.forEach((p) => next.delete(p));
+        return next;
+      });
     }
 
     if (failed.length) {
@@ -991,7 +1004,6 @@ const QualitySection = ({ projectId, isMosaic, participant = "all", myContributi
                             setRejecting(true);
                             try {
                               await rejectFrames(Array.from(checkedPaths));
-                              setSelection(null);
                             } finally {
                               setRejecting(false);
                             }
