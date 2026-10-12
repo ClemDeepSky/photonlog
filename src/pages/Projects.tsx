@@ -1,3 +1,4 @@
+import { useCollectionView, CollectionViewSelector, CollectionGrid, AddCollectionItem } from "@/components/CollectionView";
 import { skyThumbnailUrl } from "@/lib/skyThumb";
 import { personalProjectFilter } from "@/lib/personalProjectScope";
 import AppLayout from "@/components/AppLayout";
@@ -5,7 +6,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, Plus, Telescope, Calendar, Trash2, Grid3X3, User, Pencil, Camera, CheckCircle2 } from "lucide-react";
+import { FolderOpen, Telescope, Calendar, Trash2, Grid3X3, User, Pencil, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +17,7 @@ import { useState } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const Projects = () => {
+  const view = useCollectionView();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -71,14 +73,12 @@ const Projects = () => {
   return (
     <AppLayout>
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-wrap gap-4 items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Projets</h1>
             <p className="text-muted-foreground mt-1">Organisez vos projets d'acquisition</p>
           </div>
-          <Button onClick={() => navigate("/projects/new")}>
-            <Plus className="h-4 w-4 mr-2" /> Nouveau projet
-          </Button>
+          <CollectionViewSelector view={view} />
         </div>
 
         {isLoading ? (
@@ -89,11 +89,11 @@ const Projects = () => {
               </Card>
             ))}
           </div>
-        ) : projects?.length ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.map((project) => (
-              <Card key={project.id} className="group hover:border-primary/50 transition-colors">
-                <div className="relative h-32 w-full overflow-hidden rounded-t-lg">
+        ) : (
+          <CollectionGrid view={view} kind="projects">
+            {(projects ?? []).map((project) => (
+              <Card key={project.id} className="collection-item group hover:border-primary/50 transition-colors">
+                <div className="collection-item-image relative h-32 w-full overflow-hidden rounded-t-lg">
                   <img
                     src={(project as any).image_url || skyThumbnailUrl((project as any).ra, (project as any).dec) || placeholder}
                     alt={`Vignette du projet ${project.name}`}
@@ -106,8 +106,8 @@ const Projects = () => {
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
+                <CardHeader className="collection-item-header pb-3">
+                  <div className="flex flex-wrap gap-2 items-start justify-between">
                     <div className="flex items-center gap-3">
                       {(project as any).teams?.logo_url ? (
                         <img src={(project as any).teams.logo_url} alt="Team logo" className="h-8 w-8 rounded-md object-cover" />
@@ -117,7 +117,7 @@ const Projects = () => {
                         </div>
                       )}
                       <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
+                        <CardTitle className="text-lg flex flex-wrap items-center gap-2">
                           {project.name}
                           {project.is_mosaic && <Grid3X3 className="h-3.5 w-3.5 text-muted-foreground" />}
                         </CardTitle>
@@ -131,7 +131,7 @@ const Projects = () => {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="collection-item-content">
                   {project.description && (
                     <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{project.description}</p>
                   )}
@@ -166,8 +166,8 @@ const Projects = () => {
                     );
                   })()}
 
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap gap-2 items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-4">
                       {project.ra && project.dec && (
                         <span className="flex items-center gap-1">
                           <Telescope className="h-3 w-3" /> {project.ra} / {project.dec}
@@ -199,20 +199,8 @@ const Projects = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
-        ) : (
-          <Card className="border-border/50 border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <FolderOpen className="h-16 w-16 text-muted-foreground mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Aucun projet</h2>
-              <p className="text-muted-foreground max-w-md mb-4">
-                Créez votre premier projet d'acquisition pour commencer à organiser vos sessions.
-              </p>
-              <Button onClick={() => navigate("/projects/new")}>
-                <Plus className="h-4 w-4 mr-2" /> Créer un projet
-              </Button>
-            </CardContent>
-          </Card>
+            <AddCollectionItem label="Ajouter un projet" onClick={() => navigate("/projects/new")} />
+          </CollectionGrid>
         )}
       </motion.div>
       <AlertDialog open={!!pendingDelete} onOpenChange={(open) => { if (!open && !deleteProject.isPending) setPendingDelete(null); }}>

@@ -10,3 +10,6 @@
 - In team projects the edit page keeps the classic layout but scopes setup, folder, framing (project_panes.contribution_id) and acquisition lines to the signed-in member contribution; project name/team/site are owner-only and other members are a read-only reminder, so one framing view overlays everyone.
 - Acquisition tracking mode lives on projects.tracking_mode (personal) and project_contributions.tracking_mode (team members): automatic = folder scan only, manual = per-night session_batches that adjust project_acquisitions.acquired, so each member chooses independently.
 - The frames quality chart follows the scope, not the viewer: hidden for a personal project in manual mode, and in team visible to every member as soon as one contribution is automatic, so a mixed team keeps one shared curve.
+
+- Render public and authenticated page banners through AppHeader, keeping brand geometry independent of page content and navigation.
+- Use CollectionView for collection display modes and the final creation tile, so teams, equipment, sites and projects share responsive ordering and controls.

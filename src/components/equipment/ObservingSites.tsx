@@ -1,6 +1,7 @@
+import { useCollectionView, CollectionViewSelector, CollectionGrid, AddCollectionItem } from "@/components/CollectionView";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MapPin, Plus, Pencil, Trash2, Loader2, Search } from "lucide-react";
+import { MapPin, Pencil, Trash2, Loader2, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ export const useObservingSites = () => {
 const empty = { name: "", country: "France", city: "", latitude: "", longitude: "", elevation: "", timezone: "" };
 
 const ObservingSites = () => {
+  const view = useCollectionView();
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: sites, isLoading } = useObservingSites();
@@ -123,17 +125,15 @@ const ObservingSites = () => {
           <h2 className="text-2xl font-bold flex items-center gap-2"><MapPin className="h-5 w-5 text-primary" /> Sites d'observation</h2>
           <p className="text-sm text-muted-foreground">Les coordonnées servent à calculer la nuit astronomique et la position de la lune pour chaque session.</p>
         </div>
-        <Button onClick={startNew}><Plus className="h-4 w-4 mr-1" /> Nouveau site</Button>
+        <CollectionViewSelector view={view} />
       </div>
       {isLoading ? (
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      ) : !sites?.length ? (
-        <Card className="border-dashed border-border/50"><CardContent className="py-10 text-center text-sm text-muted-foreground">Aucun site d'observation. Ajoutez votre jardin, votre observatoire ou votre spot de nomade.</CardContent></Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {sites.map((s) => (
-            <Card key={s.id} className="border-border/50">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 gap-2">
+        <CollectionGrid view={view} kind="sites">
+          {(sites ?? []).map((s) => (
+            <Card key={s.id} className="collection-item border-border/50">
+              <CardHeader className="collection-item-header flex flex-row items-start justify-between space-y-0 gap-2">
                 <div>
                   <CardTitle className="text-lg">{s.name}</CardTitle>
                   <p className="text-xs text-muted-foreground">{[s.city, s.country].filter(Boolean).join(", ")}</p>
@@ -143,14 +143,15 @@ const ObservingSites = () => {
                   <Button size="icon" variant="ghost" onClick={() => confirm(`Supprimer le site « ${s.name} » ?`) && remove.mutate(s.id)} aria-label="Supprimer"><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </CardHeader>
-              <CardContent className="text-sm space-y-1">
+              <CardContent className="collection-item-content text-sm space-y-1">
                 <div className="flex justify-between"><span className="text-muted-foreground">GPS</span><span className="font-mono">{Number(s.latitude).toFixed(4)}°, {Number(s.longitude).toFixed(4)}°</span></div>
                 {s.elevation != null && <div className="flex justify-between"><span className="text-muted-foreground">Altitude</span><span>{s.elevation} m</span></div>}
                 {s.timezone && <div className="flex justify-between"><span className="text-muted-foreground">Fuseau</span><span>{s.timezone}</span></div>}
               </CardContent>
             </Card>
           ))}
-        </div>
+          <AddCollectionItem label="Ajouter un site d’observation" onClick={startNew} />
+        </CollectionGrid>
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>

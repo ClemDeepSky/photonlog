@@ -1,3 +1,4 @@
+import AppHeader from "@/components/AppHeader";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Telescope } from "lucide-react";
+
 
 const ResetPassword = () => {
   const { toast } = useToast();
@@ -44,12 +45,11 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-cosmic flex items-center justify-center p-4">
+    <div className="min-h-screen bg-cosmic">
+      <AppHeader />
+      <div className="min-h-[calc(100dvh-5rem)] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <Telescope className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold text-gradient">Photonlog</h1>
-        </div>
+
         <Card className="border-border/50 shadow-glow">
           <form onSubmit={handleSubmit}>
             <CardHeader>
@@ -75,6 +75,7 @@ const ResetPassword = () => {
             </CardContent>
           </form>
         </Card>
+      </div>
       </div>
     </div>
   );

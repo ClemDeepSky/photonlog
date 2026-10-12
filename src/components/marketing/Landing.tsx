@@ -12,7 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import BrandLogo from "@/components/BrandLogo";
+import AppHeader from "@/components/AppHeader";
 import dashboardAsset from "@/assets/help/teaser-dashboard.jpg.asset.json";
 import framingAsset from "@/assets/help/teaser-framing.jpg.asset.json";
 import qualityAsset from "@/assets/help/teaser-quality.jpg.asset.json";
@@ -108,9 +108,8 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-cosmic text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="flex h-20 items-center justify-between px-5 lg:px-10">
-          <BrandLogo />
+      <AppHeader>
+          
           <nav className="hidden gap-4 text-sm text-muted-foreground xl:flex" aria-label="Sections">
             {blocks.map((b) => (
               <a key={b.id} href={`#${b.id}`} className="transition-colors hover:text-foreground">
@@ -120,13 +119,12 @@ const Landing = () => {
             <Link to="/guide" className="transition-colors hover:text-foreground">Guide</Link>
           </nav>
           <Button asChild size="sm">
-            <Link to={appEntry}>
-              {session ? "Ouvrir Photonlog" : "Connexion"}
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Link to={appEntry} aria-label={session ? "Ouvrir Photonlog" : "Connexion"}>
+              <span className="hidden sm:inline">{session ? "Ouvrir Photonlog" : "Connexion"}</span>
+              <ArrowRight className="h-4 w-4 sm:ml-2" />
             </Link>
           </Button>
-        </div>
-      </header>
+      </AppHeader>
 
       <main>
         <section className="px-5 pb-12 pt-20 text-center lg:px-10 lg:pt-28">
