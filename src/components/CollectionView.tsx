@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Grid3X3, LayoutGrid, List, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -9,14 +9,13 @@ export type CollectionMode = "3" | "6" | "list";
 export function useCollectionView() {
   const [mode, setMode] = useState<CollectionMode>("3");
   const [width, setWidth] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
+  const [element, ref] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
-    const element = ref.current;
     if (!element) return;
     const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [element]);
   const columns = width >= 780 ? 3 : width >= 500 ? 2 : 1;
   const effectiveMode = mode === "6" && width < 1260 ? "3" : mode;
   return { mode, setMode, ref, columns, effectiveMode, canSix: width >= 1260 };
@@ -43,7 +42,7 @@ export function CollectionViewSelector({ view }: { view: ReturnType<typeof useCo
 }
 
 export function CollectionGrid({ view, children, kind }: { view: ReturnType<typeof useCollectionView>; children: ReactNode; kind: "teams" | "equipment" | "sites" | "projects" }) {
-  return <div ref={view.ref} className={cn("collection-grid", `collection-${kind}`)} data-mode={view.effectiveMode}>{children}</div>;
+  return <div ref={view.ref} className={cn("collection-grid", `collection-${kind}`)} data-mode={view.effectiveMode} data-columns={view.columns}>{children}</div>;
 }
 
 export function AddCollectionItem({ label, onClick }: { label: string; onClick: () => void }) {
