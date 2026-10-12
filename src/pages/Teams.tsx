@@ -1,3 +1,4 @@
+import { useCollectionView, CollectionViewSelector, CollectionGrid, AddCollectionItem } from "@/components/CollectionView";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Users, Crown, Globe } from "lucide-react";
@@ -24,6 +25,7 @@ interface Team {
 }
 
 const Teams = () => {
+  const view = useCollectionView();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -86,15 +88,13 @@ const Teams = () => {
   return (
     <AppLayout>
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap gap-4 items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Teams</h1>
             <p className="text-muted-foreground mt-1">Gérez vos équipes d'astrophotographie</p>
           </div>
+          <CollectionViewSelector view={view} />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-2" />Nouvelle Team</Button>
-            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Créer une Team</DialogTitle>
@@ -129,23 +129,15 @@ const Teams = () => {
           <div className="flex justify-center py-12">
             <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : teams.length === 0 ? (
-          <Card className="border-border/50 border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Users className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Aucune team pour le moment</p>
-              <p className="text-sm text-muted-foreground">Créez votre première team pour commencer à collaborer</p>
-            </CardContent>
-          </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <CollectionGrid view={view} kind="teams">
             {teams.map((team, i) => (
               <motion.div key={team.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Card
-                  className="border-border/50 hover:shadow-glow transition-shadow cursor-pointer"
+                  className="collection-item h-full border-border/50 hover:shadow-glow transition-shadow cursor-pointer"
                   onClick={() => navigate(`/teams/${team.id}`)}
                 >
-                  <CardHeader>
+                  <CardHeader className="collection-item-header">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-lg bg-secondary/50 border border-border/50 flex items-center justify-center overflow-hidden shrink-0">
                         {team.logo_url ? (
@@ -173,7 +165,8 @@ const Teams = () => {
                 </Card>
               </motion.div>
             ))}
-          </div>
+            <AddCollectionItem label="Ajouter une nouvelle team" onClick={() => setDialogOpen(true)} />
+          </CollectionGrid>
         )}
       </motion.div>
     </AppLayout>

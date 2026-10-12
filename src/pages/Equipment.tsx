@@ -1,3 +1,4 @@
+import { useCollectionView, CollectionViewSelector, CollectionGrid, AddCollectionItem } from "@/components/CollectionView";
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
@@ -119,6 +120,7 @@ const CatalogPicker = ({ id, label, options, value, onChange, placeholder }: Pic
 };
 
 const Equipment = () => {
+  const view = useCollectionView();
   const { user } = useAuth();
   const [items, setItems] = useState<EquipmentProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -298,35 +300,18 @@ const Equipment = () => {
             <h1 className="text-3xl font-bold">Matériel et observatoires</h1>
             <p className="text-muted-foreground mt-1">Gérez vos profils de matériel d'astrophotographie</p>
           </div>
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau setup
-          </Button>
+          <CollectionViewSelector view={view} />
         </div>
 
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
-        ) : items.length === 0 ? (
-          <Card className="border-border/50 border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <Wrench className="h-16 w-16 text-muted-foreground mb-4 animate-float" />
-              <h2 className="text-xl font-semibold mb-2">Aucun setup</h2>
-              <p className="text-muted-foreground max-w-md mb-4">
-                Créez votre premier profil : télescope, imageur, monture, guidage et filtres.
-              </p>
-              <Button onClick={openCreate}>
-                <Plus className="h-4 w-4 mr-2" />
-                Créer un setup
-              </Button>
-            </CardContent>
-          </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <CollectionGrid view={view} kind="equipment">
             {items.map((item) => (
-              <Card key={item.id} className="border-border/50">
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 gap-2">
+              <Card key={item.id} className="collection-item border-border/50">
+                <CardHeader className="collection-item-header flex flex-row items-start justify-between space-y-0 gap-2">
                   <div>
                     <CardTitle className="text-lg">{item.name}</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -349,7 +334,7 @@ const Equipment = () => {
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm">
+                <CardContent className="collection-item-content space-y-2 text-sm">
                   <div className="flex justify-between gap-4">
                     <span className="text-muted-foreground">Imageur</span>
                     <span className="text-right">
@@ -403,7 +388,8 @@ const Equipment = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
+            <AddCollectionItem label="Ajouter un matériel" onClick={openCreate} />
+          </CollectionGrid>
         )}
 
         <ObservingSites />
