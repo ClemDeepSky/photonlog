@@ -1,5 +1,9 @@
 # Photonlog V2 — feuille de route
 
+## En cours
+- Harmoniser le bandeau public et intérieur, et les logos des pages de connexion.
+- Ajouter les cartes finales de création et les affichages 3/6 colonnes/liste aux équipes, matériels, sites et projets.
+
 ## Fait
 - Accueil : messages conservés, sept liens « En savoir plus » vers un guide public en huit chapitres (setup, site, projet, modes, équipes, progression, qualité et présélection). Liens, captures et affichage vérifiés.
 - Frames Team : progression calculée aussi depuis les brutes indexées sans lien au plan ; association selon les panneaux propres au membre ; graphique par défaut tous filtres et cercles creux pour les autres membres.
