@@ -15,24 +15,6 @@ const fmtDay = (d: Date | null, night: string) => {
   return `${fmt(d)}${nextDay ? " (+1)" : ""}`;
 };
 
-const MoonCurve = ({ curve, firstAt, lastAt }: { curve: { t: number; alt: number }[]; firstAt: string; lastAt: string }) => {
-  if (curve.length < 2) return null;
-  const W = 140, H = 32;
-  const t0 = curve[0].t, t1 = curve[curve.length - 1].t;
-  const x = (t: number) => ((t - t0) / (t1 - t0)) * W;
-  const y = (a: number) => H / 2 - (a / 90) * (H / 2);
-  const path = curve.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.alt).toFixed(1)}`).join(" ");
-  const a = Math.max(0, Math.min(W, x(new Date(firstAt).getTime())));
-  const b = Math.max(0, Math.min(W, x(new Date(lastAt).getTime())));
-  return (
-    <svg width={W} height={H} className="block" aria-label="Hauteur de la lune pendant la nuit">
-      <rect x={a} y={0} width={Math.max(1, b - a)} height={H} className="fill-primary/15" />
-      <line x1={0} x2={W} y1={H / 2} y2={H / 2} className="stroke-muted-foreground/50" strokeDasharray="2 2" />
-      <path d={path} fill="none" className="stroke-foreground" strokeWidth={1.5} />
-    </svg>
-  );
-};
-
 const NightConditionsTable = ({ projectId, nights }: { projectId: string; nights: NightRange[] }) => {
   const { user } = useAuth();
   const { data } = useQuery({
@@ -97,7 +79,6 @@ const NightConditionsTable = ({ projectId, nights }: { projectId: string; nights
               <th className="px-3 py-1.5 text-left font-normal">Lever / coucher</th>
               <th className="px-3 py-1.5 text-left font-normal">Hauteur max</th>
               <th className="px-3 py-1.5 text-left font-normal">Distance cible</th>
-              <th className="px-3 py-1.5 text-left font-normal">Hauteur de la lune</th>
             </tr>
           </thead>
           <tbody>
@@ -114,7 +95,6 @@ const NightConditionsTable = ({ projectId, nights }: { projectId: string; nights
                     {c.moonAltMaxDuringAcq !== null ? `${Math.round(c.moonAltMaxDuringAcq)}°` : "—"}{!up && " (couchée)"}
                   </td>
                   <td className="px-3 py-1.5">{c.separation !== null ? `${Math.round(c.separation)}°` : "—"}</td>
-                  <td className="px-3 py-1"><MoonCurve curve={c.curve} firstAt={firstAt} lastAt={lastAt} /></td>
                 </tr>
               );
             })}
@@ -122,7 +102,7 @@ const NightConditionsTable = ({ projectId, nights }: { projectId: string; nights
         </table>
       </div>
       <p className="px-3 pb-2 pt-1 text-[11px] text-muted-foreground">
-        Hauteur max = hauteur la plus élevée de la lune pendant vos acquisitions. Courbe : du crépuscule à l'aube, zone colorée = acquisitions, pointillés = horizon. Heures locales de votre navigateur ; (+1) = lendemain matin.
+        Hauteur max = hauteur la plus élevée de la lune pendant vos acquisitions. Heures locales de votre navigateur ; (+1) = lendemain matin.
       </p>
     </details>
   );
