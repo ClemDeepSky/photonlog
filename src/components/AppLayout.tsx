@@ -16,7 +16,7 @@ import {
 import { useState } from "react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AccountLink } from "@/components/AccountLink";
-import BrandLogo from "@/components/BrandLogo";
+import AppHeader from "@/components/AppHeader";
 
 const v1NavItems = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -48,12 +48,16 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
 
   return (
-    <div className="min-h-screen bg-cosmic flex">
+    <div className="min-h-screen bg-cosmic flex flex-col">
+      <AppHeader>
+        <AccountLink />
+        <Button variant="ghost" size="icon" className="md:hidden" aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"} onClick={() => setMobileOpen(!mobileOpen)}>
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+      </AppHeader>
+      <div className="flex flex-1 min-w-0">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-border/20 bg-card/30">
-        <div className="flex items-center p-2 pl-3 border-b border-border/20">
-          <BrandLogo />
-        </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => (
             <Link
@@ -86,22 +90,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </aside>
 
-      {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-sm border-b border-border/20 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center">
-          <BrandLogo showBeta />
-        </div>
-        <div className="flex items-center gap-1">
-          <AccountLink compact />
-          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </div>
-      </div>
-
       {/* Mobile nav */}
       {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-background/95 backdrop-blur-sm pt-16">
+        <div className="md:hidden fixed inset-0 z-40 bg-background/95 backdrop-blur-sm pt-20">
           <nav className="p-4 space-y-1">
             {navItems.map((item) => (
               <Link
@@ -128,12 +119,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       )}
 
       {/* Main content */}
-      <main className="flex-1 md:pt-0 pt-14 overflow-auto">
-        <header className="hidden md:flex sticky top-0 z-30 h-12 shrink-0 items-center justify-end border-b border-border/20 bg-card/70 px-8 backdrop-blur-sm">
-          <AccountLink />
-        </header>
+      <main className="flex-1 min-w-0">
         <div className="p-6 md:p-8 w-full">{children}</div>
       </main>
+      </div>
     </div>
   );
 };

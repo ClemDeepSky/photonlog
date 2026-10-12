@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
-import BrandLogo from "@/components/BrandLogo";
+import AppHeader from "@/components/AppHeader";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="space-y-3">
@@ -15,14 +15,12 @@ const Privacy = () => {
 
   return (
     <div className="min-h-screen bg-cosmic">
-      <header className="border-b border-border/20">
-        <div className="w-full px-6 py-4 flex items-center justify-between">
-          <BrandLogo showBeta={false} />
+      <AppHeader>
+          
           <Button variant="ghost" size="sm" asChild>
             <Link to="/dashboard">Retour à l'application</Link>
           </Button>
-        </div>
-      </header>
+      </AppHeader>
 
       <main className="w-full px-6 py-12 space-y-10">
         <div className="space-y-3">

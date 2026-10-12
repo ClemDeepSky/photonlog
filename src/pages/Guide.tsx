@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft, ArrowRight, BookOpen, Crosshair, FolderOpen, MapPin, MousePointer2, Users, Wrench, BarChart3 } from "lucide-react";
-import BrandLogo from "@/components/BrandLogo";
+import AppHeader from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import equipmentAsset from "@/assets/help/equipment.png.asset.json";
@@ -70,15 +70,13 @@ const Guide = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-3 px-5 lg:px-10">
-          <BrandLogo />
+      <AppHeader>
+          
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link to="/"><ArrowLeft /> Accueil</Link></Button>
             <Button asChild size="sm"><Link to={appEntry}>{session ? "Ouvrir Photonlog" : "Connexion"}<ArrowRight /></Link></Button>
           </div>
-        </div>
-      </header>
+      </AppHeader>
 
       <main className="mx-auto max-w-7xl px-5 pb-16 pt-12 lg:px-10">
         <div className="mb-10 max-w-3xl">
