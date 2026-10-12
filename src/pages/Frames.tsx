@@ -269,6 +269,28 @@ const Frames = () => {
     ? acquisitions.reduce((s, a) => s + Math.max(0, a.quantity - a.acquired), 0)
     : 0;
 
+  // FWHM par filtre, sur toutes les brutes indexées du projet (tous panneaux).
+  const fwhmByFilter = (() => {
+    const m = new Map<string, number[]>();
+    for (const f of indexedFrames ?? []) {
+      if (f.fwhm == null || !f.filter) continue;
+      const v = Number(f.fwhm);
+      if (!isFinite(v) || v <= 0) continue;
+      const arr = m.get(f.filter) ?? [];
+      arr.push(v);
+      m.set(f.filter, arr);
+    }
+    return Array.from(m.entries())
+      .map(([filter, vals]) => ({
+        filter,
+        count: vals.length,
+        avg: vals.reduce((s, v) => s + v, 0) / vals.length,
+        min: Math.min(...vals),
+        max: Math.max(...vals),
+      }))
+      .sort((a, b) => filterBand(a.filter).order - filterBand(b.filter).order || a.filter.localeCompare(b.filter));
+  })();
+
   const formatExposure = (seconds: number) => {
     if (seconds < 3600) return `${Math.round(seconds / 60)} min`;
     const h = Math.floor(seconds / 3600);
@@ -351,8 +373,8 @@ const Frames = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {selectedProject && (
-                  <Badge variant="outline" className="text-xs">{smartMode ? "Mode intelligent" : "Mode manuel"}</Badge>
+                {selectedProject && !smartMode && (
+                  <Badge variant="outline" className="text-xs">Mode manuel</Badge>
                 )}
                 {selectedProject && smartMode && (
                   <FolderRefresh
@@ -449,6 +471,30 @@ const Frames = () => {
               </Card>
 
             </div>
+
+            {fwhmByFilter.length > 0 && (
+              <Card className="border-border/50">
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-xs text-muted-foreground mb-2">FWHM par filtre (toutes les brutes, tous panneaux)</p>
+                  <div className="flex flex-wrap gap-3">
+                    {fwhmByFilter.map((f) => {
+                      const band = filterBand(f.filter);
+                      return (
+                        <div key={f.filter} className="flex items-center gap-2 rounded-md border border-border/50 px-3 py-1.5">
+                          <span className="rounded px-1.5 py-0.5 text-xs font-semibold" style={{ background: band.bg, color: band.fg }}>
+                            {f.filter}
+                          </span>
+                          <span className="text-sm font-semibold">{f.avg.toFixed(2)}</span>
+                          <span className="text-xs text-muted-foreground">
+                            min {f.min.toFixed(2)} · max {f.max.toFixed(2)} · {f.count} brute{f.count > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {selectedProject && !smartMode && canManual && scanLines.length > 0 && (
               <ManualNightEntry
