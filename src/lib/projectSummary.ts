@@ -119,9 +119,16 @@ const aggregateByFilter = (lines: SummaryPlanLine[]): FilterAggregate[] => {
     if (exposure > 0 && !agg.durations.includes(exposure)) agg.durations.push(exposure);
     map.set(filter, agg);
   }
-  return [...map.values()].sort(
-    (a, b) => filterBand(a.filter).order - filterBand(b.filter).order || a.filter.localeCompare(b.filter),
-  );
+  return [...map.values()]
+    // Une ligne sans aucune donnée (ni objectif, ni brute) est ignorée : jamais
+    // de zéro inventé, et le filtre n'apparaît ni dans la liste ni en détail.
+    .filter(
+      (a) => a.plannedSubs > 0 || a.plannedSeconds > 0 || a.acquiredSubs > 0 || a.acquiredSeconds > 0,
+    )
+    .sort(
+      (a, b) => filterBand(a.filter).order - filterBand(b.filter).order || a.filter.localeCompare(b.filter),
+    );
+
 };
 
 export function buildProjectSummary(input: SummaryInput): ProjectSummary {
