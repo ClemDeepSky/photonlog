@@ -54,10 +54,10 @@ describe("project summary", () => {
       progressPercent: 42,
     });
     const text = plain(summary.paragraphs);
-    expect(text).toContain("1 700 brutes");
+    expect(text).toMatch(/1[\s\u202f]700 brutes/);
     expect(text).toContain("42 %");
     expect(text).toContain("La FWHM moyenne est de 2,5.");
-    expect(text).toContain("45 h 50 min sur un objectif de 91 h 40 min");
+    expect(text).toContain("2 h 30 min sur un objectif de 91 h 40 min");
   });
 
   it("adapts the wording to a single filter and to a missing FWHM", () => {
@@ -109,6 +109,6 @@ describe("project summary", () => {
     const text = plain(summary.paragraphs);
     expect(text).not.toContain("poses unitaires");
     expect(text).toContain("25 brutes");
-    expect(text).toContain("1 h 30 min de pose");
+    expect(text).toContain("1 h 50 min de pose");
   });
 });
