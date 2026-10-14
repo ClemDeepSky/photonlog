@@ -1,11 +1,8 @@
 // Bloc « Résumé du projet » : présentation rédigée, générée à partir des données
 // déjà enregistrées (objectifs, avancement, FWHM). Aucune saisie manuelle.
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Copy, Check } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { buildProjectSummary, type SummaryFwhm, type SummaryLine, type SummaryPlanLine } from "@/lib/projectSummary";
@@ -97,7 +94,6 @@ const ProjectSummary = ({
   // La page peut fournir sa propre FWHM (Frames) : on ne relit alors rien.
   const { data: ownFwhm } = useProjectFwhm(fwhmByFilter == null ? projectId : null);
   const fwhm = fwhmByFilter ?? ownFwhm;
-  const [copied, setCopied] = useState(false);
 
   const summary = useMemo(
     () =>
@@ -111,57 +107,10 @@ const ProjectSummary = ({
 
   if (!summary || rows.length === 0) return null;
 
-  const copy = async () => {
-    const text = summary.text;
-    let ok = false;
-    try {
-      await navigator.clipboard.writeText(text);
-      ok = true;
-    } catch {
-      // Accès au presse-papiers refusé : on passe par une zone de saisie cachée.
-      try {
-        const area = document.createElement("textarea");
-        area.value = text;
-        area.setAttribute("readonly", "");
-        area.style.position = "fixed";
-        area.style.top = "-1000px";
-        area.style.opacity = "0";
-        document.body.appendChild(area);
-        area.select();
-        ok = document.execCommand("copy");
-        document.body.removeChild(area);
-      } catch {
-        ok = false;
-      }
-    }
-    if (ok) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({ title: "Résumé copié" });
-    } else {
-      toast({
-        title: "Copie impossible",
-        description: "Votre navigateur n'autorise pas l'accès au presse-papiers.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-2">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <CardTitle className="text-sm">{title}</CardTitle>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Texte généré automatiquement à partir des objectifs, de l'avancement et de la FWHM enregistrés.
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={copy} className="shrink-0 h-7 px-2.5 text-xs">
-            {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-            Copier le texte
-          </Button>
-        </div>
+        <CardTitle className="text-sm">{title}</CardTitle>
       </CardHeader>
       <CardContent className="pb-4">
         <div className="space-y-2">
