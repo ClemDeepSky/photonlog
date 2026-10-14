@@ -1,7 +1,9 @@
 # Photonlog V2 — feuille de route
 
 ## Fait
+- Fiche projet : bloc « Résumé du projet » rédigé automatiquement sous le titre (objectifs, avancement, FWHM moyenne par filtre), avec bouton « Copier le texte » ; présent sur la fiche V1 et l’espace de travail V2, intitulé « Résumé de votre contribution » en équipe ; calculs vérifiés par tests et à l’écran.
 - Bandeau commun et logo actuel sur accueil, connexion et pages intérieures ; cartes d’ajout finales et affichages adaptatifs grille/liste sur équipes, matériel, sites et projets.
+
 - Accueil : messages conservés, sept liens « En savoir plus » vers un guide public en huit chapitres (setup, site, projet, modes, équipes, progression, qualité et présélection). Liens, captures et affichage vérifiés.
 - Frames Team : progression calculée aussi depuis les brutes indexées sans lien au plan ; association selon les panneaux propres au membre ; graphique par défaut tous filtres et cercles creux pour les autres membres.
 - Schéma additif : contributions, sessions, lots de poses, objectif en temps, lien brute→session. Rien de supprimé.

@@ -13,3 +13,5 @@
 
 - Render public and authenticated page banners through AppHeader, keeping brand geometry independent of page content and navigation.
 - Use CollectionView for collection display modes and the final creation tile, so teams, equipment, sites and projects share responsive ordering and controls.
+- Build the project fiche recap with the deterministic projectSummary generator and the shared ProjectSummary card, fed by the page's own plan lines, indexed FWHM and progress value, so no new calculation, table or AI call is introduced and missing data is omitted rather than zeroed.
+
