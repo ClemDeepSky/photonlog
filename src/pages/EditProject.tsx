@@ -20,8 +20,6 @@ import SkyViewer from "@/components/projects/SkyViewer";
 import { useProjectContributions } from "@/lib/teamContributions";
 import { useContributionPanes } from "@/components/projects/MyContribution";
 import TeamGoalsReminder from "@/components/projects/TeamGoalsReminder";
-import ProjectSummary from "@/components/projects/ProjectSummary";
-import type { SummaryPlanLine } from "@/lib/projectSummary";
 
 import { ensureContribution } from "@/lib/sessions";
 
@@ -592,14 +590,6 @@ const EditProject = () => {
     </label>
   );
 
-  // Résumé rédigé : objectifs, avancement et FWHM du projet — ou de la
-  // contribution du membre connecté lorsqu'il s'agit d'un projet d'équipe.
-  const summaryLines = (projectAcquisitions ?? []) as SummaryPlanLine[];
-  const summaryTotal = summaryLines.reduce((s, a) => s + Number(a.quantity ?? 0), 0);
-  const summaryDone = summaryLines.reduce((s, a) => s + Number(a.acquired ?? 0), 0);
-  const summaryProgress =
-    summaryTotal > 0 ? Math.min(100, Math.round((summaryDone / summaryTotal) * 100)) : 0;
-
   if (isLoading || !loaded) {
     return (
       <AppLayout>
@@ -624,15 +614,6 @@ const EditProject = () => {
           </div>
         </div>
 
-        <ProjectSummary
-          projectId={project.id}
-          target={(project.target_object || project.name || "").trim()}
-          isMosaic={isTeam ? (projectPanes?.length ?? 0) > 1 : !!project.is_mosaic}
-          paneCount={projectPanes?.length ?? null}
-          lines={summaryLines}
-          progressPercent={summaryProgress}
-          title={isTeam ? "Résumé de votre contribution" : "Résumé du projet"}
-        />
 
         <div className="space-y-6">
 

@@ -53,6 +53,8 @@ interface Props {
   lines: SummaryPlanLine[] | null | undefined;
   /** Progression globale déjà calculée par la page appelante. */
   progressPercent: number;
+  /** FWHM déjà calculée par la page appelante : évite une seconde lecture en base. */
+  fwhmByFilter?: SummaryFwhm[];
   title?: string;
 }
 
@@ -63,17 +65,20 @@ const ProjectSummary = ({
   paneCount,
   lines,
   progressPercent,
+  fwhmByFilter,
   title = "Résumé du projet",
 }: Props) => {
-  const { data: fwhmByFilter } = useProjectFwhm(projectId);
+  // La page peut fournir sa propre FWHM (Frames) : on ne relit alors rien.
+  const { data: ownFwhm } = useProjectFwhm(fwhmByFilter == null ? projectId : null);
+  const fwhm = fwhmByFilter ?? ownFwhm;
   const [copied, setCopied] = useState(false);
 
   const summary = useMemo(
     () =>
       lines
-        ? buildProjectSummary({ target, isMosaic, paneCount, lines, fwhmByFilter, progressPercent })
+        ? buildProjectSummary({ target, isMosaic, paneCount, lines, fwhmByFilter: fwhm, progressPercent })
         : null,
-    [lines, target, isMosaic, paneCount, fwhmByFilter, progressPercent],
+    [lines, target, isMosaic, paneCount, fwhm, progressPercent],
   );
 
   if (!summary || summary.paragraphs.length === 0) return null;
@@ -114,26 +119,25 @@ const ProjectSummary = ({
     }
   };
 
-
   return (
     <Card className="border-border/50">
-      <CardHeader className="pb-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <CardTitle className="text-base">{title}</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <CardTitle className="text-sm">{title}</CardTitle>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               Texte généré automatiquement à partir des objectifs, de l'avancement et de la FWHM enregistrés.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={copy} className="shrink-0">
-            {copied ? <Check className="h-3.5 w-3.5 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+          <Button variant="outline" size="sm" onClick={copy} className="shrink-0 h-7 px-2.5 text-xs">
+            {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
             Copier le texte
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-1.5 pb-4">
         {summary.paragraphs.map((paragraph, i) => (
-          <p key={i} className="text-sm leading-relaxed text-muted-foreground">
+          <p key={i} className="text-xs leading-relaxed text-muted-foreground">
             {paragraph.map((segment, j) =>
               segment.strong ? (
                 <strong key={j} className="font-semibold text-foreground">

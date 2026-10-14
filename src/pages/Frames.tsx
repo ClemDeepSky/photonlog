@@ -15,6 +15,8 @@ import { useProjectFrames } from "@/lib/projectFrames";
 import { matchFrameAcquisition } from "@/lib/frameAcquisition";
 import { useProjectContributions } from "@/lib/teamContributions";
 import { MemberAvatar, useMemberAvatars } from "@/components/MemberAvatar";
+import ProjectSummary from "@/components/projects/ProjectSummary";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
@@ -52,6 +54,8 @@ interface Project {
   team_id: string | null;
   status: string;
   filename_pattern: string | null;
+  target_object: string | null;
+
   tracking_mode: string;
   teams: { name: string; owner_id: string; management_mode: string } | null;
 }
@@ -80,7 +84,7 @@ const Frames = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, is_mosaic, team_id, status, filename_pattern, tracking_mode, teams(name, owner_id, management_mode)")
+        .select("id, name, target_object, is_mosaic, team_id, status, filename_pattern, tracking_mode, teams(name, owner_id, management_mode)")
         .or(await personalProjectFilter(user?.id))
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -265,7 +269,19 @@ const Frames = () => {
     ? acquisitions.reduce((s, a) => s + a.acquired * a.exposure_duration, 0)
     : 0;
 
+  // Récapitulatif rédigé : il décrit le périmètre réellement affiché (un seul
+  // participant en équipe, l'ensemble du projet sinon).
+  const recapPanes =
+    isTeam && participant !== "all"
+      ? (panes ?? []).filter((p) => p.contribution_id === participant)
+      : panes ?? [];
+  const recapUsername =
+    isTeam && participant !== "all"
+      ? contributions?.find((c) => c.id === participant)?.username
+      : null;
+
   const totalRemainingFrames = acquisitions
+
     ? acquisitions.reduce((s, a) => s + Math.max(0, a.quantity - a.acquired), 0)
     : 0;
 
@@ -427,7 +443,21 @@ const Frames = () => {
               </>
             )}
 
+            {selectedProject && (
+              <ProjectSummary
+                projectId={selectedProject.id}
+                target={(selectedProject.target_object || selectedProject.name || "").trim()}
+                isMosaic={isTeam ? recapPanes.length > 1 : !!selectedProject.is_mosaic}
+                paneCount={recapPanes.length || null}
+                lines={acquisitions}
+                progressPercent={globalAcquiredProgress}
+                fwhmByFilter={fwhmByFilter.map((f) => ({ filter: f.filter, avg: f.avg }))}
+                title={recapUsername ? `Résumé de la contribution de ${recapUsername}` : "Résumé du projet"}
+              />
+            )}
+
             {/* Global stats */}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-4">
