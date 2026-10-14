@@ -79,15 +79,41 @@ const ProjectSummary = ({
   if (!summary || summary.paragraphs.length === 0) return null;
 
   const copy = async () => {
+    const text = summary.text;
+    let ok = false;
     try {
-      await navigator.clipboard.writeText(summary.text);
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch {
+      // Accès au presse-papiers refusé : on passe par une zone de saisie cachée.
+      try {
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.top = "-1000px";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        ok = document.execCommand("copy");
+        document.body.removeChild(area);
+      } catch {
+        ok = false;
+      }
+    }
+    if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast({ title: "Résumé copié" });
-    } catch {
-      toast({ title: "Copie impossible", description: "Votre navigateur n'autorise pas l'accès au presse-papiers.", variant: "destructive" });
+    } else {
+      toast({
+        title: "Copie impossible",
+        description: "Votre navigateur n'autorise pas l'accès au presse-papiers.",
+        variant: "destructive",
+      });
     }
   };
+
 
   return (
     <Card className="border-border/50">
