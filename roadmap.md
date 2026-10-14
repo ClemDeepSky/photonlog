@@ -1,7 +1,7 @@
 # Photonlog V2 — feuille de route
 
 ## Fait
-- Récapitulatif rédigé : bloc « Résumé du projet » sur la page Frames, en petit corps de texte, avec bouton « Copier le texte » ; objectifs en gras, avancement en italique, détail par filtre en liste à puces, sans gras sur filtres, durées ni FWHM ; en équipe le périmètre suit le sélecteur de participant ; retiré de la fiche projet, conservé sur l’espace de travail V2 qui n’a pas de page Frames ; calculs vérifiés par tests et à l’écran.
+- Récapitulatif rédigé : bloc « Résumé du projet » sur la page Frames, en petit corps de texte, sans bouton de copie ni phrase explicative ; objectifs en gras, avancement en italique, détail par filtre en liste à puces, sans gras sur filtres, durées ni FWHM ; en équipe le périmètre suit le sélecteur de participant ; retiré de la fiche projet, conservé sur l’espace de travail V2 qui n’a pas de page Frames ; calculs vérifiés par tests et à l’écran.
 - Bandeau commun et logo actuel sur accueil, connexion et pages intérieures ; cartes d’ajout finales et affichages adaptatifs grille/liste sur équipes, matériel, sites et projets.
 
 - Accueil : messages conservés, sept liens « En savoir plus » vers un guide public en huit chapitres (setup, site, projet, modes, équipes, progression, qualité et présélection). Liens, captures et affichage vérifiés.
