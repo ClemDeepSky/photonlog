@@ -135,20 +135,34 @@ const ProjectSummary = ({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-1.5 pb-4">
-        {summary.paragraphs.map((paragraph, i) => (
-          <p key={i} className="text-xs leading-relaxed text-muted-foreground">
-            {paragraph.map((segment, j) =>
-              segment.strong ? (
-                <strong key={j} className="font-semibold text-foreground">
-                  {segment.text}
-                </strong>
-              ) : (
-                <span key={j}>{segment.text}</span>
-              ),
-            )}
-          </p>
-        ))}
+      <CardContent className="pb-4">
+        <div className="space-y-2">
+          {summary.paragraphs
+            .filter((p) => p.kind === "intro")
+            .map((p, i) => (
+              <p key={i} className="text-xs font-semibold leading-relaxed text-foreground">
+                {p.text}
+              </p>
+            ))}
+          {summary.paragraphs
+            .filter((p) => p.kind === "progress")
+            .map((p, i) => (
+              <p key={i} className="text-xs italic leading-relaxed text-muted-foreground">
+                {p.text}
+              </p>
+            ))}
+          {summary.paragraphs.filter((p) => p.kind === "detail").length > 0 && (
+            <ul className="list-disc space-y-1 pl-4">
+              {summary.paragraphs
+                .filter((p) => p.kind === "detail")
+                .map((p, i) => (
+                  <li key={i} className="text-xs leading-relaxed text-muted-foreground">
+                    {p.text}
+                  </li>
+                ))}
+            </ul>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -110,4 +110,21 @@ describe("project summary", () => {
     expect(text).toContain("25 brutes");
     expect(text).toContain("1 h 50 min de pose");
   });
+
+  it("marks the recap parts so the card can style them differently", () => {
+    const summary = buildProjectSummary({
+      target: "M31",
+      isMosaic: true,
+      paneCount: 2,
+      lines: [
+        { id: "l", filter: "L", exposure_duration: 300, quantity: 10, acquired: 4 },
+        { id: "r", filter: "R", exposure_duration: 300, quantity: 10, acquired: 0 },
+      ],
+      progressPercent: 40,
+    });
+    expect(summary.paragraphs.map((p) => p.kind)).toEqual(["intro", "progress", "detail", "detail"]);
+    expect(summary.paragraphs[0].text).toContain("mosaïque composée de 2 panneaux");
+    expect(summary.paragraphs[1].text).toContain("La progression globale atteint 40 %");
+    expect(summary.text).not.toMatch(/\*\*|__/);
+  });
 });
