@@ -11,8 +11,7 @@ const m31: SummaryPlanLine[] = [
   { id: "b", filter: "B", exposure_duration: 300, quantity: 75, acquired: 0 },
 ];
 
-const plain = (paragraphs: { text: string }[][]) =>
-  paragraphs.map((p) => p.map((s) => s.text).join("")).join("\n\n");
+const plain = (paragraphs: { text: string }[]) => paragraphs.map((p) => p.text).join("\n\n");
 
 describe("project summary", () => {
   it("formats integration durations in hours and minutes", () => {

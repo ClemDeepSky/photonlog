@@ -5,11 +5,21 @@
 import { filterBand } from "@/lib/filterBands";
 import { planLineTargetSeconds, type PlanLine } from "@/lib/progress";
 
-export type SummarySegment = { text: string; strong?: boolean };
-export type SummaryParagraph = SummarySegment[];
+/**
+ * Rôle visuel d'une ligne du résumé :
+ * - « intro » : présentation et objectifs (affichée en gras),
+ * - « progress » : avancement global (affiché en italique),
+ * - « detail » : une ligne par filtre (affichée en liste).
+ */
+export type SummaryKind = "intro" | "progress" | "detail";
+
+export interface SummaryLine {
+  kind: SummaryKind;
+  text: string;
+}
 
 export interface ProjectSummary {
-  paragraphs: SummaryParagraph[];
+  paragraphs: SummaryLine[];
   /** Texte brut, sans titre ni éléments d'interface (pour la copie). */
   text: string;
 }
@@ -44,8 +54,7 @@ const num = (v: unknown) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-const txt = (text: string): SummarySegment => ({ text });
-const bold = (text: string): SummarySegment => ({ text, strong: true });
+const line = (kind: SummaryKind, text: string): SummaryLine => ({ kind, text });
 
 const count = (n: number) => Math.round(num(n)).toLocaleString("fr-FR");
 const plural = (n: number, word: string) => `${count(n)} ${word}${Math.round(num(n)) > 1 ? "s" : ""}`;
@@ -146,94 +155,89 @@ export function buildProjectSummary(input: SummaryInput): ProjectSummary {
   const acquiredSeconds = aggregates.reduce((s, a) => s + a.acquiredSeconds, 0);
   const paneCount = num(input.paneCount);
 
-  const paragraphs: SummaryParagraph[] = [];
+  const paragraphs: SummaryLine[] = [];
 
   // 1. Présentation et objectifs.
-  const intro: SummaryParagraph = [];
-  if (target) intro.push(txt("Le projet "), bold(target));
-  else intro.push(txt("Ce projet"));
+  let intro = target ? `Le projet ${target}` : "Ce projet";
   if (input.isMosaic) {
-    intro.push(txt(" est une mosaïque"));
-    if (paneCount > 0) intro.push(txt(" composée de "), bold(`${count(paneCount)} ${paneCount > 1 ? "panneaux" : "panneau"}`));
-    intro.push(txt("."));
+    intro += " est une mosaïque";
+    if (paneCount > 0) intro += ` composée de ${count(paneCount)} ${paneCount > 1 ? "panneaux" : "panneau"}`;
+    intro += ".";
   } else {
-    intro.push(txt(" repose sur un cadrage unique."));
+    intro += " repose sur un cadrage unique.";
   }
   if (aggregates.length > 0) {
-    intro.push(
-      txt(aggregates.length > 1 ? " Il associe des acquisitions en " : " Il prévoit des acquisitions en "),
-      bold(listFilters(aggregates.map((a) => a.filter))),
-    );
+    intro += aggregates.length > 1 ? " Il associe des acquisitions en " : " Il prévoit des acquisitions en ";
+    intro += listFilters(aggregates.map((a) => a.filter));
     if (plannedSubs > 0 && plannedSeconds > 0) {
-      intro.push(txt(", pour un objectif de "), bold(plural(plannedSubs, "brute")), txt(", soit "), bold(formatIntegration(plannedSeconds)), txt(" d'intégration."));
+      intro += `, pour un objectif de ${plural(plannedSubs, "brute")}, soit ${formatIntegration(plannedSeconds)} d'intégration.`;
     } else if (plannedSubs > 0) {
-      intro.push(txt(", pour un objectif de "), bold(plural(plannedSubs, "brute")), txt("."));
+      intro += `, pour un objectif de ${plural(plannedSubs, "brute")}.`;
     } else if (plannedSeconds > 0) {
-      intro.push(txt(", pour un objectif de "), bold(formatIntegration(plannedSeconds)), txt(" d'intégration."));
+      intro += `, pour un objectif de ${formatIntegration(plannedSeconds)} d'intégration.`;
     } else {
-      intro.push(txt("."));
+      intro += ".";
     }
   } else {
-    intro.push(txt(" Les objectifs d'acquisition ne sont pas encore définis."));
+    intro += " Les objectifs d'acquisition ne sont pas encore définis.";
   }
-  paragraphs.push(intro);
+  paragraphs.push(line("intro", intro));
 
   // 2. Avancement global — la progression est celle fournie par l'application.
   const progress = num(input.progressPercent);
   if (acquiredSubs > 0 || acquiredSeconds > 0) {
-    const p: SummaryParagraph = [txt("À ce jour, ")];
-    if (acquiredSubs > 0) p.push(bold(plural(acquiredSubs, "brute")), txt(" ont été acquises"));
-    else p.push(txt("des poses ont été acquises"));
-    if (acquiredSeconds > 0) p.push(txt(", représentant "), bold(formatIntegration(acquiredSeconds)), txt(" de pose"));
-    p.push(txt(". "));
-    if (progress >= 100) p.push(txt("Les acquisitions prévues sont terminées."));
-    else if (progress > 0) p.push(txt("La progression globale atteint "), bold(`${Math.round(progress)} %`), txt("."));
-    paragraphs.push(p);
+    let p = "À ce jour, ";
+    if (acquiredSubs > 0) p += `${plural(acquiredSubs, "brute")} ont été acquises`;
+    else p += "des poses ont été acquises";
+    if (acquiredSeconds > 0) p += `, représentant ${formatIntegration(acquiredSeconds)} de pose`;
+    p += ". ";
+    if (progress >= 100) p += "Les acquisitions prévues sont terminées.";
+    else if (progress > 0) p += `La progression globale atteint ${Math.round(progress)} %.`;
+    paragraphs.push(line("progress", p));
   } else {
-    paragraphs.push([txt("Les acquisitions n'ont pas encore commencé.")]);
+    paragraphs.push(line("progress", "Les acquisitions n'ont pas encore commencé."));
   }
 
   // 3. Détail par filtre, dans l'ordre déjà utilisé dans l'application.
   for (const agg of aggregates) {
     const uniform = agg.durations.length === 1 ? agg.durations[0] : null;
     const fwhmAvg = formatDecimal(fwhm.get(agg.filter) ?? 0);
-    const p: SummaryParagraph = [txt("En "), bold(agg.filter), txt(", ")];
 
     if (agg.acquiredSubs > 0) {
-      p.push(bold(plural(agg.acquiredSubs, "brute")));
-      if (agg.plannedSubs > 0) p.push(txt(" sur les "), bold(count(agg.plannedSubs)), txt(" prévues"));
-      p.push(txt(" ont été acquises"));
+      let p = `En ${agg.filter}, ${plural(agg.acquiredSubs, "brute")}`;
+      if (agg.plannedSubs > 0) p += ` sur les ${count(agg.plannedSubs)} prévues`;
+      p += " ont été acquises";
       // Pas de durée unitaire lorsqu'un filtre mélange plusieurs durées de pose.
-      if (uniform) p.push(txt(", avec des poses unitaires de "), bold(formatSeconds(uniform)));
-      p.push(txt("."));
+      if (uniform) p += `, avec des poses unitaires de ${formatSeconds(uniform)}`;
+      p += ".";
       if (agg.acquiredSeconds > 0 && agg.plannedSeconds > 0) {
-        p.push(txt(" Cette couche totalise "), bold(formatIntegration(agg.acquiredSeconds)), txt(" sur un objectif de "), bold(formatIntegration(agg.plannedSeconds)), txt("."));
+        p += ` Cette couche totalise ${formatIntegration(agg.acquiredSeconds)} sur un objectif de ${formatIntegration(agg.plannedSeconds)}.`;
       } else if (agg.acquiredSeconds > 0) {
-        p.push(txt(" Cette couche totalise "), bold(formatIntegration(agg.acquiredSeconds)), txt("."));
+        p += ` Cette couche totalise ${formatIntegration(agg.acquiredSeconds)}.`;
       }
-      if (fwhmAvg) p.push(txt(" La FWHM moyenne est de "), bold(fwhmAvg), txt("."));
+      if (fwhmAvg) p += ` La FWHM moyenne est de ${fwhmAvg}.`;
       if (agg.plannedSubs > 0 && agg.acquiredSubs > agg.plannedSubs) {
-        p.push(txt(" L'objectif de cette couche est dépassé."));
+        p += " L'objectif de cette couche est dépassé.";
       }
-      paragraphs.push(p);
+      paragraphs.push(line("detail", p));
     } else if (agg.plannedSubs > 0 || agg.plannedSeconds > 0) {
-      p.push(txt("l'objectif est de "));
+      let p = `En ${agg.filter}, l'objectif est de `;
       if (agg.plannedSubs > 0 && uniform) {
-        p.push(bold(plural(agg.plannedSubs, "pose")), txt(" de "), bold(formatSeconds(uniform)));
+        p += `${plural(agg.plannedSubs, "pose")} de ${formatSeconds(uniform)}`;
       } else if (agg.plannedSubs > 0) {
-        p.push(bold(plural(agg.plannedSubs, "pose")));
+        p += plural(agg.plannedSubs, "pose");
       } else {
-        p.push(bold(formatIntegration(agg.plannedSeconds)), txt(" d'intégration"));
+        p += `${formatIntegration(agg.plannedSeconds)} d'intégration`;
       }
       if (agg.plannedSeconds > 0 && agg.plannedSubs > 0) {
-        p.push(txt(", soit "), bold(formatIntegration(agg.plannedSeconds)), txt(" d'intégration"));
+        p += `, soit ${formatIntegration(agg.plannedSeconds)} d'intégration`;
       }
-      p.push(txt(". Les acquisitions de cette couche n'ont pas encore commencé."));
-      paragraphs.push(p);
+      p += ". Les acquisitions de cette couche n'ont pas encore commencé.";
+      paragraphs.push(line("detail", p));
     }
-    // Aucune donnée pour ce filtre : paragraphe omis, jamais de zéro inventé.
+    // Aucune donnée pour ce filtre : ligne omise, jamais de zéro inventé.
   }
 
-  const text = paragraphs.map((p) => p.map((s) => s.text).join("")).join("\n\n");
+  const text = paragraphs.map((p) => p.text).join("\n\n");
   return { paragraphs, text };
 }
