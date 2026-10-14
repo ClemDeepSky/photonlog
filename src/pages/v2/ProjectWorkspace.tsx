@@ -29,6 +29,8 @@ import {
 import SessionDialog from "@/components/v2/SessionDialog";
 import FolderRefresh from "@/components/frames/FolderRefresh";
 import QualitySection from "@/components/frames/QualitySection";
+import ProjectSummary from "@/components/projects/ProjectSummary";
+
 import { ArrowLeft, CalendarPlus, Grid3X3, Settings, Trash2, Users } from "lucide-react";
 
 interface Project {
@@ -255,7 +257,17 @@ const ProjectWorkspace = () => {
           <Badge variant="outline">{progress.percent}% du plan</Badge>
         </div>
 
+        <ProjectSummary
+          projectId={project.id}
+          target={(project.target_object || project.name || "").trim()}
+          isMosaic={!!project.is_mosaic}
+          paneCount={panes?.length ?? null}
+          lines={plan}
+          progressPercent={progress.percent}
+        />
+
         {!isV2 && (
+
           <Card className="border-primary/40 mb-6">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Activer le suivi V2 sur ce projet</CardTitle>
