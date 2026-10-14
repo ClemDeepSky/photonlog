@@ -20,6 +20,9 @@ import SkyViewer from "@/components/projects/SkyViewer";
 import { useProjectContributions } from "@/lib/teamContributions";
 import { useContributionPanes } from "@/components/projects/MyContribution";
 import TeamGoalsReminder from "@/components/projects/TeamGoalsReminder";
+import ProjectSummary from "@/components/projects/ProjectSummary";
+import type { SummaryPlanLine } from "@/lib/projectSummary";
+
 import { ensureContribution } from "@/lib/sessions";
 
 import FilenamePreview from "@/components/projects/FilenamePreview";
@@ -589,9 +592,18 @@ const EditProject = () => {
     </label>
   );
 
+  // Résumé rédigé : objectifs, avancement et FWHM du projet — ou de la
+  // contribution du membre connecté lorsqu'il s'agit d'un projet d'équipe.
+  const summaryLines = (projectAcquisitions ?? []) as SummaryPlanLine[];
+  const summaryTotal = summaryLines.reduce((s, a) => s + Number(a.quantity ?? 0), 0);
+  const summaryDone = summaryLines.reduce((s, a) => s + Number(a.acquired ?? 0), 0);
+  const summaryProgress =
+    summaryTotal > 0 ? Math.min(100, Math.round((summaryDone / summaryTotal) * 100)) : 0;
+
   if (isLoading || !loaded) {
     return (
       <AppLayout>
+
         <div className="flex items-center justify-center py-20">
           <p className="text-muted-foreground animate-pulse">Chargement du projet...</p>
         </div>
@@ -612,7 +624,18 @@ const EditProject = () => {
           </div>
         </div>
 
+        <ProjectSummary
+          projectId={project.id}
+          target={(project.target_object || project.name || "").trim()}
+          isMosaic={isTeam ? (projectPanes?.length ?? 0) > 1 : !!project.is_mosaic}
+          paneCount={projectPanes?.length ?? null}
+          lines={summaryLines}
+          progressPercent={summaryProgress}
+          title={isTeam ? "Résumé de votre contribution" : "Résumé du projet"}
+        />
+
         <div className="space-y-6">
+
           {isTeam && (
             <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 px-3 py-2">
               Projet d'équipe : votre setup, votre dossier, votre cadrage et vos acquisitions ne concernent que votre contribution.
