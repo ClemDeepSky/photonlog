@@ -154,7 +154,7 @@ export function buildProjectSummary(input: SummaryInput): ProjectSummary {
   else intro.push(txt("Ce projet"));
   if (input.isMosaic) {
     intro.push(txt(" est une mosaïque"));
-    if (paneCount > 0) intro.push(txt(" composée de "), bold(`${count(paneCount)} panneau${paneCount > 1 ? "s" : ""}`));
+    if (paneCount > 0) intro.push(txt(" composée de "), bold(`${count(paneCount)} ${paneCount > 1 ? "panneaux" : "panneau"}`));
     intro.push(txt("."));
   } else {
     intro.push(txt(" repose sur un cadrage unique."));
